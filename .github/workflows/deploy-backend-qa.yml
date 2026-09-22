@@ -1,0 +1,46 @@
+name: Deploy backend (QA)
+
+on:
+  push:
+    branches: [qa]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-backend-qa.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend-qa
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy QA
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            APP_ROOT=/apps/gigkaro-qa
+            cd "$APP_ROOT"
+            git fetch origin qa
+            git checkout qa
+            git reset --hard origin/qa
+            cd backend
+            npm ci
+            mkdir -p uploads/companies
+            if pm2 describe gigkaro-api-qa >/dev/null 2>&1; then
+              pm2 restart gigkaro-api-qa --update-env
+            else
+              pm2 start npm --name gigkaro-api-qa --cwd "$APP_ROOT/backend" -- start
+            fi
+            pm2 save
+            sleep 2
+            curl -fsS http://127.0.0.1:5001/api/health
+            echo
+            echo "QA deploy OK"

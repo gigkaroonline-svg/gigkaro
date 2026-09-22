@@ -1,0 +1,47 @@
+name: Deploy backend (PROD)
+
+on:
+  push:
+    branches: [prod]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-backend-prod.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy PROD
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            APP_ROOT=/apps/gigkaro-prod
+            cd "$APP_ROOT"
+            git fetch origin prod
+            git checkout prod
+            git reset --hard origin/prod
+            cd backend
+            npm ci
+            mkdir -p uploads/companies
+            if pm2 describe gigkaro-api-prod >/dev/null 2>&1; then
+              pm2 restart gigkaro-api-prod --update-env
+            else
+              pm2 start npm --name gigkaro-api-prod --cwd "$APP_ROOT/backend" -- start
+            fi
+            pm2 save
+            sleep 2
+            curl -fsS http://127.0.0.1:5000/api/health
+            echo
+            echo "PROD deploy OK"
