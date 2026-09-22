@@ -1,0 +1,12 @@
+node_modules/
+.next/
+out/
+.sites-runtime/
+*.tsbuildinfo
+.env
+.env.local
+.env*.local
+!.env.example
+backend/.env
+
+.DS_Store
