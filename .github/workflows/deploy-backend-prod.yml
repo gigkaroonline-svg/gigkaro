@@ -26,7 +26,16 @@ jobs:
           script_stop: true
           script: |
             set -euo pipefail
-            APP_ROOT="$HOME/PROD/gigkaro"
+            if [ -d "$HOME/prod/gigkaro/backend" ]; then
+              APP_ROOT="$HOME/prod/gigkaro"
+            elif [ -d "$HOME/prod/backend" ]; then
+              APP_ROOT="$HOME/prod"
+            else
+              echo "PROD app not found. Expected ~/prod/gigkaro or ~/prod"
+              ls -la "$HOME" "$HOME/prod" 2>/dev/null || true
+              exit 1
+            fi
+            echo "Using APP_ROOT=$APP_ROOT"
             cd "$APP_ROOT"
             git fetch origin prod
             git checkout prod
