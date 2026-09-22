@@ -40,9 +40,17 @@ jobs:
               pm2 start npm --name gigkaro-api-qa --cwd "$APP_ROOT/backend" -- start
             fi
             pm2 save
-            sleep 2
             PORT=$(grep -E '^PORT=' .env | cut -d= -f2 | tr -d '"' | tr -d "'" || true)
             PORT="${PORT:-5001}"
-            curl -fsS "http://127.0.0.1:${PORT}/api/health"
-            echo
-            echo "QA deploy OK"
+            echo "Waiting for API on port ${PORT}..."
+            for i in $(seq 1 30); do
+              if curl -fsS "http://127.0.0.1:${PORT}/api/health"; then
+                echo
+                echo "QA deploy OK"
+                exit 0
+              fi
+              sleep 2
+            done
+            echo "Health check failed"
+            pm2 logs gigkaro-api-qa --lines 50 --nostream || true
+            exit 1
