@@ -26,7 +26,7 @@ jobs:
           script_stop: true
           script: |
             set -euo pipefail
-            APP_ROOT=/apps/gigkaro-qa
+            APP_ROOT="$HOME/QA/gigkaro"
             cd "$APP_ROOT"
             git fetch origin qa
             git checkout qa
@@ -41,6 +41,8 @@ jobs:
             fi
             pm2 save
             sleep 2
-            curl -fsS http://127.0.0.1:5001/api/health
+            PORT=$(grep -E '^PORT=' .env | cut -d= -f2 | tr -d '"' | tr -d "'" || true)
+            PORT="${PORT:-5001}"
+            curl -fsS "http://127.0.0.1:${PORT}/api/health"
             echo
             echo "QA deploy OK"

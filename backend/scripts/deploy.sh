@@ -10,6 +10,11 @@ if [[ "$ENV" != "qa" && "$ENV" != "prod" ]]; then
 fi
 
 APP_ROOT="/apps/gigkaro-${ENV}"
+if [[ -d "$HOME/QA/gigkaro" && "$ENV" == "qa" ]]; then
+  APP_ROOT="$HOME/QA/gigkaro"
+elif [[ -d "$HOME/PROD/gigkaro" && "$ENV" == "prod" ]]; then
+  APP_ROOT="$HOME/PROD/gigkaro"
+fi
 APP_DIR="${APP_ROOT}/backend"
 BRANCH="$ENV"
 PM2_NAME="gigkaro-api-${ENV}"

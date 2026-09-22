@@ -16,7 +16,6 @@ jobs:
   deploy:
     name: Deploy PROD
     runs-on: ubuntu-latest
-    environment: production
     steps:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
@@ -27,7 +26,7 @@ jobs:
           script_stop: true
           script: |
             set -euo pipefail
-            APP_ROOT=/apps/gigkaro-prod
+            APP_ROOT="$HOME/PROD/gigkaro"
             cd "$APP_ROOT"
             git fetch origin prod
             git checkout prod
@@ -42,6 +41,8 @@ jobs:
             fi
             pm2 save
             sleep 2
-            curl -fsS http://127.0.0.1:5000/api/health
+            PORT=$(grep -E '^PORT=' .env | cut -d= -f2 | tr -d '"' | tr -d "'" || true)
+            PORT="${PORT:-5000}"
+            curl -fsS "http://127.0.0.1:${PORT}/api/health"
             echo
             echo "PROD deploy OK"
