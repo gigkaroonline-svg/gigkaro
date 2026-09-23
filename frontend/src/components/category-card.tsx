@@ -1,4 +1,3 @@
-import { uiText } from "@/lib/i18n";
 import Link from "next/link";
 import {
   Bike,
@@ -33,18 +32,16 @@ export function CategoryCard({
   return (
     <Link href={`/jobs?category=${category.id}`} className="category-card">
       <div className={`icon-tile ${category.color}`}>
-        <Icon size={23} />
+        <Icon size={22} />
       </div>
-      <ArrowUpRight className="category-arrow" size={17} />
       <h3>{category.title}</h3>
       <p>{category.subtitle}</p>
       <span>
-        {count} {uiText("jobsNearby")}
-        <ArrowRightSmall />
+        {count > 0
+          ? `${count} open ${count === 1 ? "role" : "roles"}`
+          : "Browse roles"}
+        <ArrowUpRight size={15} />
       </span>
     </Link>
   );
-}
-function ArrowRightSmall() {
-  return <span aria-hidden="true">→</span>;
 }

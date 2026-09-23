@@ -14,6 +14,7 @@ export const env = {
   corsOrigin: process.env.CORS_ORIGIN || "http://127.0.0.1:3000",
   devOtp: process.env.DEV_OTP || "123456",
   adminIdentifiers: parseIdentifiers(process.env.ADMIN_IDENTIFIERS),
+  contactTo: process.env.CONTACT_TO || "info@gigkaro.in",
 };
 
 export function isAdminIdentifier(mobile?: string, email?: string) {

@@ -144,14 +144,14 @@ function HiringFunnel({ funnel }: { funnel: Record<string, number> }) {
     <section className="panel">
       <h2>Hiring funnel</h2>
       <p>Application stages across the platform.</p>
-      <div className="funnel">
+      <div className="admin-funnel">
         {applicationStatuses.map((s) => (
-          <div key={s}>
+          <div className="admin-funnel-row" key={s}>
             <div className="row spread">
               <strong>{s}</strong>
               <span>{funnel[s] || 0}</span>
             </div>
-            <div className="funnel-bar">
+            <div className="admin-meter">
               <span
                 style={{ width: `${((funnel[s] || 0) / max) * 100}%` }}
               />
@@ -1319,7 +1319,7 @@ export function AdminPage({ view = "overview" }: { view?: string }) {
       <div className="container page-content">
         <EmptyState
           title="Admin sign-in required"
-          description="Use an allowlisted admin mobile (9999999999) or email (admin@gigkaro.local) with OTP 123456."
+          description="Sign in with an allowlisted admin mobile number or email."
         >
           <Link className="button button-primary" href="/login?role=admin">
             Admin login

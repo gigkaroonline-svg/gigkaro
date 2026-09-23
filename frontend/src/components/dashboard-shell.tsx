@@ -95,6 +95,13 @@ export function DashboardShell({
                     Open admin
                   </Link>
                 )}
+                <button
+                  type="button"
+                  className="text-link"
+                  onClick={() => logout()}
+                >
+                  <LogOut size={14} /> {uiText("signOut")}
+                </button>
               </>
             ) : (
               <>
