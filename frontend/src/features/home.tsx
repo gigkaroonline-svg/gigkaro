@@ -6,9 +6,6 @@ import {
   ShieldCheck,
   Zap,
   IndianRupee,
-  Bike,
-  Boxes,
-  BatteryCharging,
   Navigation,
   HeartHandshake,
   Clock3,
@@ -79,51 +76,6 @@ export function Hero() {
                 <MapPin size={25} fill="currentColor" />
                 <span>{uiText("youReHere")}</span>
               </div>
-            </div>
-            <div className="floating-job float-one">
-              <span className="icon-tile blue">
-                <Bike size={22} />
-              </span>
-              <div>
-                <strong>{uiText("deliveryPartner")}</strong>
-                <b>
-                  ₹22,000–₹32,000<span> {uiText("month")}</span>
-                </b>
-                <small>
-                  <MapPin size={11} />
-                  {uiText("24KmAway")} <i>•</i> {uiText("18Openings")}
-                </small>
-              </div>
-              <span className="float-check">
-                <BadgeCheck size={18} />
-              </span>
-            </div>
-            <div className="floating-job float-two">
-              <span className="icon-tile orange">
-                <Boxes size={22} />
-              </span>
-              <div>
-                <strong>{uiText("warehouseAssociate")}</strong>
-                <b>
-                  ₹18,000–₹24,000<span> {uiText("month")}</span>
-                </b>
-                <small className="text-green">
-                  <Zap size={11} />
-                  {uiText("immediateJoining")}
-                </small>
-              </div>
-            </div>
-            <div className="floating-job float-three">
-              <span className="icon-tile green">
-                <BatteryCharging size={21} />
-              </span>
-              <div>
-                <strong>{uiText("evDeliveryRider")}</strong>
-                <small>
-                  {uiText("flexibleShifts")} <i>•</i> {uiText("nearYou")}
-                </small>
-              </div>
-              <ArrowRight size={18} />
             </div>
             <span className="map-pin pin-one">
               <MapPin size={19} />
@@ -218,10 +170,7 @@ export function HomePage() {
               {uiText("changeLocation")}
             </Link>
           </div>
-          <JobList jobs={jobs.slice(0, 3)} />
-          <p className="jobs-demo-note">
-            {uiText("aPreviewOfWhatSPossibleTheseListingsAreFictional")}
-          </p>
+          {jobs.length > 0 && <JobList jobs={jobs.slice(0, 3)} />}
         </div>
       </section>
       <section className="section container pincode-section">
@@ -338,10 +287,7 @@ export function HomePage() {
                 <Building2 size={24} />
                 <div>
                   <h3>{l.city}</h3>
-                  <p>
-                    {jobs.filter((j) => j.city === l.city).length}{" "}
-                    {uiText("demoOpportunities")}
-                  </p>
+                  <p>Browse jobs</p>
                 </div>
                 <ArrowRight size={16} />
               </Link>

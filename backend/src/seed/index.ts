@@ -1,20 +1,17 @@
 import "dotenv/config";
 import { connectDb } from "../config/db.js";
 import { Job } from "../models/Job.js";
-import { catalogJobs } from "./catalog.js";
+import { Company } from "../models/Company.js";
+
+const dummyCompanyKeys = ["swift", "fresh", "pack", "volt", "meal", "local"];
 
 async function seed() {
   await connectDb();
-  let upserted = 0;
-  for (const job of catalogJobs) {
-    await Job.findOneAndUpdate(
-      { jobKey: job.jobKey },
-      { ...job, status: "Active" },
-      { upsert: true, new: true },
-    );
-    upserted += 1;
-  }
-  console.log(`Seeded ${upserted} jobs`);
+  const jobs = await Job.deleteMany({ jobKey: /^job_\d+_\d+$/ });
+  const companies = await Company.deleteMany({ key: { $in: dummyCompanyKeys } });
+  console.log(
+    `Removed dummy data (${jobs.deletedCount} jobs, ${companies.deletedCount} companies)`,
+  );
   process.exit(0);
 }
 

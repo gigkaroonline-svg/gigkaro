@@ -22,11 +22,16 @@ async function main() {
   const { Job } = await import("./models/Job.js");
   const { Company } = await import("./models/Company.js");
   const { Category } = await import("./models/Category.js");
-  const { catalogJobs, catalogCompanies } = await import("./seed/catalog.js");
   const { catalogCategories } = await import("./data/taxonomy.js");
-  if ((await Company.countDocuments()) === 0) {
-    await Company.insertMany(catalogCompanies);
-    console.log(`Auto-seeded ${catalogCompanies.length} companies`);
+  const dummyCompanyKeys = ["swift", "fresh", "pack", "volt", "meal", "local"];
+  const removedJobs = await Job.deleteMany({ jobKey: /^job_\d+_\d+$/ });
+  const removedCompanies = await Company.deleteMany({
+    key: { $in: dummyCompanyKeys },
+  });
+  if (removedJobs.deletedCount || removedCompanies.deletedCount) {
+    console.log(
+      `Removed dummy data (${removedJobs.deletedCount} jobs, ${removedCompanies.deletedCount} companies)`,
+    );
   }
   if ((await Category.countDocuments()) === 0) {
     await Category.insertMany(catalogCategories);
@@ -34,12 +39,6 @@ async function main() {
   }
   const { seedPincodesIfEmpty } = await import("./utils/seedPincodes.js");
   await seedPincodesIfEmpty();
-  if ((await Job.countDocuments()) === 0) {
-    await Job.insertMany(
-      catalogJobs.map((j) => ({ ...j, status: "Active" as const })),
-    );
-    console.log(`Auto-seeded ${catalogJobs.length} jobs`);
-  }
 
   await bootstrapAdmin();
 
