@@ -17,11 +17,7 @@ import { useDemoStore } from "@/hooks/use-demo-store";
 import { useAuth } from "@/hooks/use-auth";
 import { api, ApiError } from "@/lib/api";
 import type { Job } from "@/types";
-import {
-  SalaryBadge,
-  VerifiedEmployerBadge,
-  ImmediateJoiningBadge,
-} from "./primitives";
+import { SalaryBadge } from "./primitives";
 
 export function SaveJobButton({ id }: { id: string }) {
   const { user } = useAuth();
@@ -95,41 +91,46 @@ export function JobCard({
   compact?: boolean;
 }) {
   const active = (job as Job & { status?: string }).status !== "Paused";
+  const nearby =
+    job.distanceFromSearch && job.distanceKm <= 0.05
+      ? "In this area"
+      : job.distanceFromSearch
+        ? `~${Number(job.distanceKm.toFixed(1))} km away`
+        : "";
+
   return (
     <article className={`job-card ${compact ? "job-card-compact" : ""}`}>
       <div className="job-card-top">
-        <div className={`company-avatar ${job.color}`}>{job.initials}</div>
+        <div className={`company-avatar ${job.color}`}>
+          {job.initials.slice(0, 2).toUpperCase()}
+        </div>
         <div className="job-heading">
           <h3>
             <Link href={jobHref(job)}>{job.title}</Link>
           </h3>
           <p>
             {job.company}
+            {job.verified && <span className="job-verified">Verified</span>}
           </p>
         </div>
-        <SaveJobButton id={job.id} />
+        {/* <SaveJobButton id={job.id} /> */}
       </div>
       <p className="job-location">
         <MapPin size={14} />
-        {job.locality}, {job.city}
-        <span className="job-pin"> · {job.pincode}</span>
+        <span>
+          {job.locality}, {job.city}
+          <span className="job-pin"> · {job.pincode}</span>
+        </span>
       </p>
-      {job.distanceFromSearch ? (
-        <p className="job-distance">
-          {job.distanceKm <= 0.05
-            ? `In selected area · ${job.pincode}`
-            : `~${Number(job.distanceKm.toFixed(1))} km from selected area · ${job.pincode}`}
-        </p>
-      ) : (
-        <p className="job-distance">Pincode {job.pincode}</p>
-      )}
-      <SalaryBadge min={job.salaryMin} max={job.salaryMax} />
-      {job.incentiveMax > 0 && (
-        <p className="incentive">
-          {uiText("upTo")} {job.incentiveMax.toLocaleString("en-IN")}{" "}
-          {uiText("inIncentives")}
-        </p>
-      )}
+      {nearby && <p className="job-distance">{nearby}</p>}
+      <div className="job-pay">
+        <SalaryBadge min={job.salaryMin} max={job.salaryMax} />
+        {job.incentiveMax > 0 && (
+          <p className="incentive">
+            + up to ₹{job.incentiveMax.toLocaleString("en-IN")} incentives
+          </p>
+        )}
+      </div>
       <div className="job-tags">
         <span>
           <Clock3 size={13} />
@@ -143,16 +144,13 @@ export function JobCard({
           <Users size={13} />
           {job.openings} {uiText("openings")}
         </span>
-      </div>
-      <div className="job-badges">
-        {job.verified && <VerifiedEmployerBadge />}
-        {job.immediateJoining && <ImmediateJoiningBadge />}
-        {!active && <span className="badge">Unavailable</span>}
+        {job.immediateJoining && <span>{uiText("immediateJoining")}</span>}
+        {!active && <span>Unavailable</span>}
       </div>
       <div className="job-card-bottom">
         <span>{job.postedAt}</span>
         <Link className="apply-link" href={jobHref(job)}>
-          Apply Now
+          View job
           <ArrowUpRight size={14} />
         </Link>
       </div>

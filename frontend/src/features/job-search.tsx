@@ -11,7 +11,8 @@ import {
   Bell,
   ArrowRight,
 } from "lucide-react";
-import { getLocations } from "@/lib/services/locations";
+import { getLocationByPincode, getLocations } from "@/lib/services/locations";
+import { api } from "@/lib/api";
 import { getCategories } from "@/lib/services/categories";
 import { JobCard } from "@/components/job-card";
 import { EmptyState, Breadcrumb } from "@/components/primitives";
@@ -157,6 +158,35 @@ export function SearchResults({
     immediate: params.get("immediate") === "true",
   };
   const [error, setError] = useState("");
+  const [placeName, setPlaceName] = useState("");
+  useEffect(() => {
+    const location = (filters.location || "").trim();
+    if (!/^\d{6}$/.test(location)) {
+      setPlaceName("");
+      return;
+    }
+    const known = getLocationByPincode(location);
+    setPlaceName(
+      known ? [known.locality, known.city].filter(Boolean).join(", ") : "",
+    );
+    let cancelled = false;
+    api<{ location: { locality: string; city: string } }>(
+      `/locations/${location}`,
+      { auth: false },
+    )
+      .then((data) => {
+        if (cancelled) return;
+        const name = [data.location.locality, data.location.city]
+          .filter(Boolean)
+          .join(", ");
+        if (name) setPlaceName(name);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [filters.location]);
+  const nearLabel = placeName || filters.location;
   useEffect(() => {
     setText(params.get("location") || initialLocation);
     setLimit(12);
@@ -220,7 +250,7 @@ export function SearchResults({
           <div className="eyebrow">{uiText("goodWorkCloserToHome2")}</div>
           <h1>
             {heading ||
-              `Jobs ${filters.location ? "near " + filters.location : "near you"}`}
+              `Jobs ${nearLabel ? "near " + nearLabel : "near you"}`}
           </h1>
           <p>{uiText("findYourFitKnowYourEarningsMakeYourNextMove")}</p>
           <form className="results-search" onSubmit={submit}>
@@ -280,7 +310,7 @@ export function SearchResults({
             <h2>
               {jobs.length} {jobs.length === 1 ? "job" : "jobs"}{" "}
               <span>
-                {filters.location ? `near ${filters.location}` : "to explore"}
+                {nearLabel ? `near ${nearLabel}` : "to explore"}
               </span>
             </h2>
             <label className="sort-label">
@@ -378,7 +408,7 @@ export function SearchResults({
             </>
           ) : (
             <EmptyState
-              title={`No matching jobs ${filters.location ? "near " + filters.location : "yet"}`}
+              title={`No matching jobs ${nearLabel ? "near " + nearLabel : "yet"}`}
               description="Try a wider radius or remove a filter. We’re adding more neighbourhoods to the demo."
             >
               <button

@@ -22,7 +22,7 @@ import { LocationSearch } from "@/components/search";
 import { CategoryCard } from "@/components/category-card";
 import { JobList } from "@/components/job-card";
 import { SectionHeading } from "@/components/primitives";
-import { getJobs } from "@/lib/services/jobs";
+import { getCategoryCounts, getJobs } from "@/lib/services/jobs";
 import { getCategories } from "@/lib/services/categories";
 import { getPopularLocations } from "@/lib/services/locations";
 export function Hero() {
@@ -106,8 +106,9 @@ export function Hero() {
     </section>
   );
 }
-export function HomePage() {
+export async function HomePage() {
   const jobs = getJobs();
+  const categoryCounts = await getCategoryCounts();
   return (
     <>
       <Hero />
@@ -142,11 +143,7 @@ export function HomePage() {
             <CategoryCard
               key={c.id}
               category={c}
-              count={
-                jobs.filter(
-                  (j) => j.category === c.id && j.city === "Bengaluru",
-                ).length
-              }
+              count={categoryCounts[c.id] || 0}
             />
           ))}
         </div>
