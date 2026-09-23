@@ -104,7 +104,7 @@ export function JobCard({
             <Link href={jobHref(job)}>{job.title}</Link>
           </h3>
           <p>
-            {job.company} <span className="demo-label">{uiText("demo3")}</span>
+            {job.company}
           </p>
         </div>
         <SaveJobButton id={job.id} />

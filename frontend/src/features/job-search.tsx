@@ -404,11 +404,6 @@ export function SearchResults({
               </button>
             </EmptyState>
           )}
-          <p className="jobs-demo-note">
-            {uiText("demoListingsCompaniesAreFictional")}{" "}
-            {filters.salary ? "Salary ranges may overlap. " : ""}
-            {uiText("noRealApplicationsAreSent")}
-          </p>
         </section>
       </div>
     </>

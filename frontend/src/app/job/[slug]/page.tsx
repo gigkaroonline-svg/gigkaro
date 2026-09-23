@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
-import { getJobs, getJobBySlug } from "@/lib/services/jobs";
+import { getJobBySlug } from "@/lib/services/jobs";
 import { JobDetail } from "@/features/job-detail";
 import type { Job } from "@/types";
+
+export const dynamic = "force-dynamic";
 
 const apiBase =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
@@ -22,9 +24,6 @@ async function loadJob(slug: string): Promise<Job | null> {
   return getJobBySlug(slug) ?? null;
 }
 
-export function generateStaticParams() {
-  return getJobs().map((j) => ({ slug: j.slug }));
-}
 export async function generateMetadata({
   params,
 }: {

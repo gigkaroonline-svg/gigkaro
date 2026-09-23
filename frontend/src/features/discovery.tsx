@@ -121,7 +121,6 @@ export function PincodePage({ pincode }: { pincode: string }) {
                     {uiText("demoOpportunities")}
                   </p>
                 </div>
-                <span className="demo-label">{uiText("fictional")}</span>
               </div>
             ))}
           </div>

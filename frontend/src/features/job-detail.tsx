@@ -46,9 +46,6 @@ export function JobDetail({ job }: { job: Job }) {
             <div>
               <div className="row">
                 <VerifiedEmployerBadge />
-                <span className="demo-label">
-                  {uiText("fictionalDemoCompany")}
-                </span>
               </div>
               <h1>{job.title}</h1>
               <p>
