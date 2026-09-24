@@ -14,6 +14,22 @@ export async function fetchJobs(filters: SearchFilters & { sort?: string } = {})
   return data.jobs;
 }
 
+export async function fetchPublicJobSlugs() {
+  const base = (
+    process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000/api"
+  ).replace(/\/$/, "");
+  try {
+    const res = await fetch(`${base}/jobs`, { next: { revalidate: 3600 } });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { jobs?: { slug?: string }[] };
+    return (data.jobs || [])
+      .map((job) => job.slug)
+      .filter((slug): slug is string => Boolean(slug));
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchPublicJob(slug: string) {
   const base = (
     process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000/api"
