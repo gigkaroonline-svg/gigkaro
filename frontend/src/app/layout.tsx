@@ -8,19 +8,26 @@ import { MainHeader, Footer, MobileNav } from "@/components/layout";
 import { WebMCP } from "@/components/webmcp";
 import { DemoProvider } from "@/hooks/use-demo-store";
 import { AuthProvider } from "@/hooks/use-auth";
+import { siteOrigin, siteSchema } from "@/lib/metadata";
+
+const description =
+  "Kaam Karo. Kamao. Find nearby delivery, warehouse, logistics and field opportunities by pincode.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteOrigin),
   title: {
     default: "GigKaro — Find Gig Jobs Near You",
     template: "%s | GigKaro",
   },
-  description:
-    "Kaam Karo. Kamao. Find nearby delivery, warehouse, logistics and field opportunities by pincode.",
+  description,
   icons: { icon: "/favicon.svg" },
-  robots: { index: false, follow: false },
+  robots: { index: true, follow: true },
   openGraph: {
     title: "GigKaro — Find Gig Jobs Near You",
     description: "Good work. Closer to home.",
     type: "website",
+    siteName: "GigKaro",
+    url: siteOrigin,
   },
   twitter: { card: "summary", title: "GigKaro — Find Gig Jobs Near You" },
 };
@@ -32,6 +39,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(siteSchema()) }}
+        />
         <DemoProvider>
           <AuthProvider>
             <WebMCP />

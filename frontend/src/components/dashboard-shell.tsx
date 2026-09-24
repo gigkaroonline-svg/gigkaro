@@ -10,7 +10,6 @@ import {
   Building2,
   Wallet,
   Settings,
-  MapPin,
   Layers,
   ShieldCheck,
   LogOut,
@@ -35,8 +34,6 @@ const adminNav = [
   ["candidates", "Candidates", Users],
   ["companies", "Companies", Building2],
   ["categories", "Categories", Layers],
-  ["locations", "Locations", MapPin],
-  ["pincodes", "Pincodes", MapPin],
 ] as const;
 
 export function DashboardShell({

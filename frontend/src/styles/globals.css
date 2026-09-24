@@ -1725,6 +1725,109 @@ textarea::placeholder {
 .form-field-full {
   grid-column: 1/-1;
 }
+.company-create {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(280px, 1.2fr) auto;
+  gap: 16px 18px;
+  align-items: end;
+}
+.company-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 46px;
+}
+.company-logo-preview,
+.company-logo-placeholder {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  border: 1px solid #e0e7f0;
+  flex-shrink: 0;
+  background: #fff;
+}
+.company-logo-preview {
+  object-fit: cover;
+}
+.company-logo-preview-wrap {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+}
+.company-logo-preview-wrap .company-logo-preview {
+  display: block;
+  width: 46px;
+  height: 46px;
+}
+.company-logo-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 50%;
+  background: #17385b;
+  color: #fff;
+  font-size: 14px;
+  line-height: 18px;
+  padding: 0;
+  cursor: pointer;
+}
+.company-logo-placeholder {
+  display: grid;
+  place-items: center;
+  background: #f6f8fb;
+  color: #8b97a8;
+  font-size: 11px;
+  font-weight: 650;
+}
+.company-logo-controls {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+.company-logo-field input[type="file"] {
+  height: 48px;
+  min-height: 48px;
+  padding: 0 13px;
+  font-size: 14px;
+  line-height: 46px;
+}
+.company-create > .button {
+  min-height: 46px;
+  white-space: nowrap;
+}
+.company-table-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.company-table-logo,
+.company-table-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.company-table-logo {
+  object-fit: cover;
+  border: 1px solid #e0e7f0;
+  background: #fff;
+}
+.company-table-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1;
+}
 .searchable-select {
   position: relative;
   width: 100%;
@@ -2937,9 +3040,13 @@ details p {
   .panel {
     padding: 21px;
   }
-  .form-grid {
+  .form-grid,
+  .company-create {
     grid-template-columns: 1fr;
     gap: 18px;
+  }
+  .company-create > .button {
+    width: 100%;
   }
   .form-field-full {
     grid-column: auto;
@@ -4840,6 +4947,12 @@ details p {
   }
   .auth-card h2 {
     font-size: 23px;
+  }
+  .company-create {
+    grid-template-columns: 1fr;
+  }
+  .company-create > .button {
+    justify-self: start;
   }
   .dashboard-layout {
     grid-template-columns: 140px 1fr;

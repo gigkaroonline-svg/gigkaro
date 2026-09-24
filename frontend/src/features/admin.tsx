@@ -12,9 +12,16 @@ import {
   Layers,
   ShieldCheck,
   LogOut,
+  CheckCircle2,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { LogoCropDialog } from "@/components/logo-crop-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { SearchableSelect } from "@/components/searchable-select";
 import { useAuth } from "@/hooks/use-auth";
 import { useDemoStore } from "@/hooks/use-demo-store";
@@ -36,8 +43,6 @@ const adminNav = [
   ["candidates", "Candidates", Users],
   ["companies", "Companies", Building2],
   ["categories", "Categories", Layers],
-  ["locations", "Locations", MapPin],
-  ["pincodes", "Pincodes", MapPin],
 ] as const;
 
 const jobStatuses = [
@@ -182,10 +187,10 @@ const emptyPostForm = {
   companyId: "",
   category: "delivery",
   pincode: EVERYWHERE_VALUE,
-  salaryMin: 15000,
-  salaryMax: 25000,
-  openings: 5,
-  incentiveMax: 0,
+  salaryMin: 15000 as number | "",
+  salaryMax: 25000 as number | "",
+  openings: 5 as number | "",
+  incentiveMax: "" as number | "",
   immediateJoining: true,
   vehicle: "Bike required",
   employmentType: "Full-time",
@@ -198,8 +203,11 @@ const emptyPostForm = {
 };
 
 function AdminPostJob({ onCreated }: { onCreated: () => void }) {
-  const { toast } = useDemoStore();
   const [form, setForm] = useState(emptyPostForm);
+  const [posted, setPosted] = useState<{
+    title: string;
+    everywhere: boolean;
+  } | null>(null);
   const [locations, setLocations] = useState<
     { pincode: string; locality: string; city: string }[]
   >([]);
@@ -239,6 +247,13 @@ function AdminPostJob({ onCreated }: { onCreated: () => void }) {
     value: (typeof emptyPostForm)[K],
   ) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  function setNumberField(
+    key: "salaryMin" | "salaryMax" | "openings" | "incentiveMax",
+    value: string,
+  ) {
+    setField(key, value === "" ? "" : Number(value));
   }
 
   async function submit(e: React.FormEvent) {
@@ -281,11 +296,7 @@ function AdminPostJob({ onCreated }: { onCreated: () => void }) {
           showEverywhere: everywhere,
         }),
       });
-      toast(
-        everywhere
-          ? "Job posted. It will show for every location and pincode search."
-          : "Job posted successfully.",
-      );
+      setPosted({ title: form.title.trim(), everywhere });
       setForm({
         ...emptyPostForm,
         companyId: form.companyId,
@@ -412,7 +423,7 @@ function AdminPostJob({ onCreated }: { onCreated: () => void }) {
                 required
                 min={0}
                 value={form.salaryMin}
-                onChange={(e) => setField("salaryMin", Number(e.target.value))}
+                onChange={(e) => setNumberField("salaryMin", e.target.value)}
               />
             </div>
             <div className="form-field">
@@ -423,7 +434,7 @@ function AdminPostJob({ onCreated }: { onCreated: () => void }) {
                 required
                 min={0}
                 value={form.salaryMax}
-                onChange={(e) => setField("salaryMax", Number(e.target.value))}
+                onChange={(e) => setNumberField("salaryMax", e.target.value)}
               />
             </div>
             <div className="form-field">
@@ -434,7 +445,7 @@ function AdminPostJob({ onCreated }: { onCreated: () => void }) {
                 required
                 min={1}
                 value={form.openings}
-                onChange={(e) => setField("openings", Number(e.target.value))}
+                onChange={(e) => setNumberField("openings", e.target.value)}
               />
             </div>
             <div className="form-field">
@@ -444,9 +455,7 @@ function AdminPostJob({ onCreated }: { onCreated: () => void }) {
                 type="number"
                 min={0}
                 value={form.incentiveMax}
-                onChange={(e) =>
-                  setField("incentiveMax", Number(e.target.value))
-                }
+                onChange={(e) => setNumberField("incentiveMax", e.target.value)}
               />
             </div>
           </div>
@@ -564,6 +573,30 @@ function AdminPostJob({ onCreated }: { onCreated: () => void }) {
           </p>
         )}
       </form>
+      <Dialog
+        open={Boolean(posted)}
+        onOpenChange={(open) => !open && setPosted(null)}
+      >
+        <DialogContent className="contact-sent-dialog" showCloseButton={false}>
+          <CheckCircle2 size={36} aria-hidden />
+          <DialogTitle>Job posted</DialogTitle>
+          <DialogDescription>
+            {posted?.title
+              ? `${posted.title} is live on the board.`
+              : "This job is live on the board."}
+            {posted?.everywhere
+              ? " It will show for every location and pincode search."
+              : ""}
+          </DialogDescription>
+          <button
+            type="button"
+            className="button button-primary"
+            onClick={() => setPosted(null)}
+          >
+            Done
+          </button>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
@@ -912,7 +945,10 @@ function AdminCompanies() {
     <div className="stack">
       <section className="panel stack">
         <h2>Add company</h2>
-        <form className="form-grid" onSubmit={create}>
+        <p className="muted">
+          Add the name and a square logo. It will show in the job posting list.
+        </p>
+        <form className="company-create" onSubmit={create}>
           <div className="form-field">
             <label htmlFor="admin-company-name">Company name</label>
             <input
@@ -923,58 +959,50 @@ function AdminCompanies() {
               placeholder="SwiftBox"
             />
           </div>
-          <div className="form-field">
+          <div className="form-field company-logo-field">
             <label htmlFor="admin-company-logo">Logo</label>
-            <input
-              id="admin-company-logo"
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                onPickLogo(e.target.files?.[0] || null);
-                e.target.value = "";
-              }}
-            />
-            {logoPreview ? (
-              <div className="row" style={{ marginTop: 8, gap: 10 }}>
-                <img
-                  src={logoPreview}
-                  alt="Logo preview"
-                  style={{
-                    width: 56,
-                    height: 56,
-                    objectFit: "cover",
-                    borderRadius: 8,
-                    border: "1px solid #e0e7f0",
-                    background: "#fff",
+            <div className="company-logo-row">
+              {logoPreview ? (
+                <span className="company-logo-preview-wrap">
+                  <img
+                    className="company-logo-preview"
+                    src={logoPreview}
+                    alt=""
+                  />
+                  <button
+                    type="button"
+                    className="company-logo-remove"
+                    aria-label="Remove logo"
+                    onClick={() => setLogoFile(null)}
+                  >
+                    ×
+                  </button>
+                </span>
+              ) : (
+                <span className="company-logo-placeholder" aria-hidden>
+                  1:1
+                </span>
+              )}
+              <div className="company-logo-controls">
+                <input
+                  id="admin-company-logo"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    onPickLogo(e.target.files?.[0] || null);
+                    e.target.value = "";
                   }}
                 />
-                <button
-                  type="button"
-                  className="text-link"
-                  onClick={() => {
-                    if (!logoFile) return;
-                    const url = URL.createObjectURL(logoFile);
-                    setCropSrc(url);
-                    setCropName(logoFile.name);
-                    setCropOpen(true);
-                  }}
-                >
-                  Recrop
-                </button>
               </div>
-            ) : (
-              <small>Choose an image, then crop to 1:1.</small>
-            )}
+            </div>
           </div>
-          <div className="form-field form-field-full">
-            <button
-              className="button button-primary"
-              type="submit"
-              disabled={saving}
-            >
-              {saving ? "Saving…" : "Add company"}
-            </button>
-          </div>
+          <button
+            className="button button-primary"
+            type="submit"
+            disabled={saving}
+          >
+            {saving ? "Saving…" : "Add company"}
+          </button>
         </form>
         {error && (
           <p className="field-error" role="alert">
@@ -997,6 +1025,7 @@ function AdminCompanies() {
           if (cropSrc.startsWith("blob:")) URL.revokeObjectURL(cropSrc);
           setCropSrc("");
           setLogoFile(file);
+          toast("Photo uploaded.");
         }}
       />
       <section className="panel stack">
@@ -1018,37 +1047,22 @@ function AdminCompanies() {
               {companies.map((c) => (
                 <tr key={c.id}>
                   <td>
-                    {c.logo ? (
-                      <img
-                        src={apiAssetUrl(c.logo)}
-                        alt=""
-                        style={{
-                          width: 28,
-                          height: 28,
-                          objectFit: "cover",
-                          marginRight: 8,
-                          verticalAlign: "middle",
-                          borderRadius: 6,
-                          border: "1px solid #e0e7f0",
-                          background: "#fff",
-                        }}
-                      />
-                    ) : (
-                      <span
-                        className={`company-avatar ${c.color}`}
-                        style={{
-                          display: "inline-flex",
-                          width: 28,
-                          height: 28,
-                          marginRight: 8,
-                          fontSize: 11,
-                          verticalAlign: "middle",
-                        }}
-                      >
-                        {c.initials}
-                      </span>
-                    )}
-                    {c.name}
+                    <span className="company-table-name">
+                      {c.logo ? (
+                        <img
+                          className="company-table-logo"
+                          src={apiAssetUrl(c.logo)}
+                          alt=""
+                        />
+                      ) : (
+                        <span
+                          className={`company-table-avatar ${c.color}`}
+                        >
+                          {c.initials.slice(0, 2)}
+                        </span>
+                      )}
+                      <span>{c.name}</span>
+                    </span>
                   </td>
                   <td>{c.key}</td>
                   <td>{c.activeJobs}</td>

@@ -1,11 +1,6 @@
 import type { NextConfig } from "next";
 const config: NextConfig = {
   trailingSlash: true,
-  async rewrites() {
-    return {
-      afterFiles: [{ source: "/job/:slug", destination: "/job/view" }],
-    };
-  },
   images: { unoptimized: true },
   poweredByHeader: false,
   turbopack: { root: process.cwd() },
