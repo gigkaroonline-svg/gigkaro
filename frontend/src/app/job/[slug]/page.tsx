@@ -1,22 +1,34 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { JobDetail } from "@/features/job-detail";
+import { JobPage } from "@/features/job-page";
 import { fetchPublicJob } from "@/lib/services/api-jobs";
 import {
   breadcrumbSchema,
   jobPostingSchema,
   pageMetadata,
 } from "@/lib/metadata";
+import type { Job } from "@/types";
 
 type PageProps = { params: Promise<{ slug: string }> };
+
+async function loadJob(slug: string): Promise<Job | null | undefined> {
+  try {
+    return await fetchPublicJob(slug);
+  } catch {
+    return undefined;
+  }
+}
 
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const job = await fetchPublicJob(slug);
+  const job = await loadJob(slug);
   if (!job) {
-    return { title: "Job not found", robots: { index: false, follow: false } };
+    return {
+      title: job === null ? "Job not found" : "Job",
+      robots: job === null ? { index: false, follow: false } : undefined,
+    };
   }
   const pay = `₹${Math.round(job.salaryMin / 1000)}k–₹${Math.round(job.salaryMax / 1000)}k`;
   return pageMetadata(
@@ -31,22 +43,27 @@ export async function generateMetadata({
 
 export default async function Page({ params }: PageProps) {
   const { slug } = await params;
-  const job = await fetchPublicJob(slug);
-  if (!job) notFound();
-  const structured = [jobPostingSchema(job), breadcrumbSchema([
-    { name: "Find jobs", path: "/jobs" },
-    { name: job.title, path: `/job/${job.slug}` },
-  ])];
+  const job = await loadJob(slug);
+  if (job === null) notFound();
+  const structured = job
+    ? [
+        jobPostingSchema(job),
+        breadcrumbSchema([
+          { name: "Find jobs", path: "/jobs" },
+          { name: job.title, path: `/job/${job.slug}` },
+        ]),
+      ]
+    : [];
   return (
     <>
       {structured.map((data) => (
         <script
-          key={data["@type"]}
+          key={String(data["@type"])}
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
         />
       ))}
-      <JobDetail job={job} />
+      <JobPage />
     </>
   );
 }

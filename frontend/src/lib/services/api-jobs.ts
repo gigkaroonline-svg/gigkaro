@@ -18,13 +18,18 @@ export async function fetchPublicJob(slug: string) {
   const base = (
     process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000/api"
   ).replace(/\/$/, "");
-  const res = await fetch(`${base}/jobs/${encodeURIComponent(slug)}`, {
-    next: { revalidate: 60 },
-  });
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error("Could not load job.");
-  const data = (await res.json()) as { job?: Job };
-  return data.job ?? null;
+  try {
+    const res = await fetch(`${base}/jobs/${encodeURIComponent(slug)}`, {
+      next: { revalidate: 60 },
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error("Could not load job.");
+    const data = (await res.json()) as { job?: Job };
+    return data.job ?? null;
+  } catch (err) {
+    if (err instanceof Error && err.message === "Could not load job.") throw err;
+    throw new Error("Could not load job.");
+  }
 }
 
 export async function fetchJobBySlug(slug: string) {
