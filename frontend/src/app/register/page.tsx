@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { AuthPage } from "@/features/auth";
-export const metadata = { title: "Register" };
+import { noindex } from "@/lib/metadata";
+
+export const metadata = { title: "Register", ...noindex };
 export default function Page() {
   return (
     <Suspense>

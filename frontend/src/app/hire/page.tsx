@@ -1,5 +1,11 @@
 import { HirePage } from "@/features/hire";
-export const metadata = { title: "Hire Gig Workers Near You" };
+import { pageMetadata } from "@/lib/metadata";
+
+export const metadata = pageMetadata(
+  "Hire Gig Workers Near You",
+  "Post a local gig job and reach people who can start work nearby.",
+  "/hire",
+);
 export default function Page() {
   return <HirePage />;
 }
