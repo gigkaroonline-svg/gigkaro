@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useDemoStore } from "@/hooks/use-demo-store";
 import { useAuth } from "@/hooks/use-auth";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, apiAssetUrl } from "@/lib/api";
 import type { Job } from "@/types";
 import { SalaryBadge } from "./primitives";
 
@@ -83,6 +83,29 @@ export function SaveJobButton({ id }: { id: string }) {
   );
 }
 
+export function CompanyMark({
+  job,
+  large = false,
+}: {
+  job: Pick<Job, "companyLogo" | "initials" | "color" | "company">;
+  large?: boolean;
+}) {
+  if (job.companyLogo) {
+    return (
+      <img
+        className={`company-logo${large ? " large" : ""}`}
+        src={apiAssetUrl(job.companyLogo)}
+        alt=""
+      />
+    );
+  }
+  return (
+    <div className={`company-avatar${large ? " large" : ""} ${job.color}`}>
+      {job.initials.slice(0, 2).toUpperCase()}
+    </div>
+  );
+}
+
 export function JobCard({
   job,
   compact = false,
@@ -101,9 +124,7 @@ export function JobCard({
   return (
     <article className={`job-card ${compact ? "job-card-compact" : ""}`}>
       <div className="job-card-top">
-        <div className={`company-avatar ${job.color}`}>
-          {job.initials.slice(0, 2).toUpperCase()}
-        </div>
+        <CompanyMark job={job} />
         <div className="job-heading">
           <h3>
             <Link href={jobHref(job)}>{job.title}</Link>

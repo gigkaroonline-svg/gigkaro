@@ -22,6 +22,7 @@ export type Job = {
   companyId: string;
   initials: string;
   color: string;
+  companyLogo?: string;
   category: string;
   city: string;
   locality: string;

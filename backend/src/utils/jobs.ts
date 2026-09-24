@@ -66,6 +66,7 @@ export function serializeJob(
     lat?: number;
     lng?: number;
     slug?: string;
+    logo?: string;
   },
 ) {
   return {
@@ -74,6 +75,7 @@ export function serializeJob(
     title: job.title,
     company: job.company,
     companyId: job.companyId,
+    companyLogo: extras?.logo ?? "",
     initials: job.initials,
     color: job.color,
     category: job.category,
