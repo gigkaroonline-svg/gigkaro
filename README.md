@@ -9,6 +9,8 @@ frontend/   Next.js 16 App Router (React, TypeScript, Tailwind)
 backend/    Express + Mongoose REST API
 ```
 
+kl
+
 ## Prerequisites
 
 - Node.js 20.9+
