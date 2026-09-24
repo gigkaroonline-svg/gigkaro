@@ -65,11 +65,12 @@ export function serializeJob(
     pincode?: string;
     lat?: number;
     lng?: number;
+    slug?: string;
   },
 ) {
   return {
     id: job._id.toString(),
-    slug: job.slug,
+    slug: extras?.slug ?? job.slug,
     title: job.title,
     company: job.company,
     companyId: job.companyId,
@@ -99,4 +100,12 @@ export function serializeJob(
     status: job.status ?? "Active",
     showEverywhere: !!job.showEverywhere,
   };
+}
+
+export function slugForPlace(slug: string, storedPin: string, placePin: string) {
+  if (!storedPin || !placePin || storedPin === placePin) return slug;
+  const needle = `-${storedPin}`;
+  const at = slug.indexOf(needle);
+  if (at < 0) return slug;
+  return `${slug.slice(0, at)}-${placePin}${slug.slice(at + needle.length)}`;
 }

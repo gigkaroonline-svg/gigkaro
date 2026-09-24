@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { Job } from "../models/Job.js";
-import { distanceKm, serializeJob } from "../utils/jobs.js";
+import { distanceKm, serializeJob, slugForPlace } from "../utils/jobs.js";
 import {
   getIndiaPincode,
   searchIndiaPincodes,
@@ -115,6 +115,7 @@ export async function listJobs(
         // Nationwide roles surface under the searched pin, not the seed locality.
         if (job.showEverywhere && origin) {
           return serializeJob(job as never, {
+            slug: slugForPlace(job.slug, job.pincode, origin.pincode),
             locality: origin.locality,
             city: origin.city,
             pincode: origin.pincode,
@@ -141,12 +142,42 @@ export async function getJobBySlug(
   next: NextFunction,
 ) {
   try {
-    const job = await Job.findOne({ slug: req.params.slug, status: "Active" });
+    const slug = String(req.params.slug || "");
+    let job = await Job.findOne({ slug, status: "Active" });
+    let placePin = "";
+    if (!job) {
+      const pin = slug.match(/-(\d{6})(?=-|$)/)?.[1] || "";
+      if (pin) {
+        const candidates = await Job.find({
+          status: "Active",
+          showEverywhere: true,
+        });
+        job =
+          candidates.find(
+            (item) => slugForPlace(item.slug, item.pincode, pin) === slug,
+          ) || null;
+        if (job) placePin = pin;
+      }
+    }
     if (!job) {
       res.status(404).json({ error: "Job not found." });
       return;
     }
-    res.json({ job: serializeJob(job) });
+    const place = placePin ? getIndiaPincode(placePin) : undefined;
+    res.json({
+      job: serializeJob(job, {
+        ...(placePin
+          ? {
+              slug,
+              pincode: placePin,
+              locality: place?.locality,
+              city: place?.city,
+              lat: place?.lat,
+              lng: place?.lng,
+            }
+          : {}),
+      }),
+    });
   } catch (err) {
     next(err);
   }
@@ -158,11 +189,26 @@ export async function getJobsByPincode(
   next: NextFunction,
 ) {
   try {
+    const pin = String(req.params.pincode || "");
     const jobs = await Job.find({
       status: "Active",
-      $or: [{ pincode: req.params.pincode }, { showEverywhere: true }],
+      $or: [{ pincode: pin }, { showEverywhere: true }],
     });
-    res.json({ jobs: jobs.map((j) => serializeJob(j)) });
+    const place = getIndiaPincode(pin);
+    res.json({
+      jobs: jobs.map((job) =>
+        job.showEverywhere
+          ? serializeJob(job, {
+              slug: slugForPlace(job.slug, job.pincode, pin),
+              pincode: pin,
+              locality: place?.locality,
+              city: place?.city,
+              lat: place?.lat,
+              lng: place?.lng,
+            })
+          : serializeJob(job),
+      ),
+    });
   } catch (err) {
     next(err);
   }
