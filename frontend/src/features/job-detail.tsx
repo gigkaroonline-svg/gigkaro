@@ -17,7 +17,7 @@ import {
   SalaryBadge,
   SectionHeading,
 } from "@/components/primitives";
-import { SaveJobButton, JobCard } from "@/components/job-card";
+import { SaveJobButton, JobCard, CompanyMark } from "@/components/job-card";
 import { ApplyButton } from "./application";
 import { getJobs } from "@/lib/services/jobs";
 import type { Job } from "@/types";
@@ -39,9 +39,7 @@ export function JobDetail({ job }: { job: Job }) {
             ]}
           />
           <div className="detail-heading">
-            <div className={`company-avatar large ${job.color}`}>
-              {job.initials}
-            </div>
+            <CompanyMark job={job} large />
             <div>
               <div className="row">
                 <VerifiedEmployerBadge />

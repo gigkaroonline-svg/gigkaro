@@ -1035,6 +1035,15 @@ textarea::placeholder {
   place-items: center;
   flex-shrink: 0;
 }
+.company-logo {
+  width: 41px;
+  height: 41px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid #e0e7f0;
+  background: #fff;
+  flex-shrink: 0;
+}
 .job-heading {
   min-width: 0;
   flex: 1;
@@ -3335,11 +3344,14 @@ details p {
   gap: 21px;
   align-items: center;
 }
-.company-avatar.large {
+.company-avatar.large,
+.company-logo.large {
   width: 72px;
   height: 72px;
-  font-size: 29px;
   border-radius: 16px;
+}
+.company-avatar.large {
+  font-size: 29px;
 }
 .detail-heading h1 {
   font-size: 35px;
@@ -3735,11 +3747,14 @@ details p {
     gap: 13px;
     align-items: flex-start;
   }
-  .company-avatar.large {
+  .company-avatar.large,
+  .company-logo.large {
     width: 47px;
     height: 47px;
-    font-size: 21px;
     border-radius: 10px;
+  }
+  .company-avatar.large {
+    font-size: 21px;
   }
   .detail-heading h1 {
     font-size: 25px;

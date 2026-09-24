@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { Job } from "../models/Job.js";
-import { distanceKm, serializeJob } from "../utils/jobs.js";
+import { Company } from "../models/Company.js";
+import { distanceKm, serializeJob, slugForPlace } from "../utils/jobs.js";
 import {
   getIndiaPincode,
   searchIndiaPincodes,
@@ -13,6 +14,15 @@ type LocationRef = {
   lat: number;
   lng: number;
 };
+
+async function logosFor(companyIds: string[]) {
+  const keys = [...new Set(companyIds.filter(Boolean))];
+  if (!keys.length) return new Map<string, string>();
+  const rows = await Company.find({ key: { $in: keys } })
+    .select("key logo")
+    .lean();
+  return new Map(rows.map((row) => [row.key, row.logo || ""]));
+}
 
 function findOrigin(location: string): LocationRef | undefined {
   const q = location.trim();
@@ -110,11 +120,15 @@ export async function listJobs(
       results = results.sort((a, b) => a.distanceKm - b.distanceKm);
     }
 
+    const logos = await logosFor(results.map(({ job }) => job.companyId));
+
     res.json({
       jobs: results.map(({ job, distanceKm: d, distanceFromSearch }) => {
+        const logo = logos.get(job.companyId) || "";
         // Nationwide roles surface under the searched pin, not the seed locality.
         if (job.showEverywhere && origin) {
           return serializeJob(job as never, {
+            slug: slugForPlace(job.slug, job.pincode, origin.pincode),
             locality: origin.locality,
             city: origin.city,
             pincode: origin.pincode,
@@ -122,11 +136,13 @@ export async function listJobs(
             lng: origin.lng,
             distanceKm: 0,
             distanceFromSearch: true,
+            logo,
           });
         }
         return serializeJob(job as never, {
           distanceKm: d,
           distanceFromSearch,
+          logo,
         });
       }),
     });
@@ -141,12 +157,44 @@ export async function getJobBySlug(
   next: NextFunction,
 ) {
   try {
-    const job = await Job.findOne({ slug: req.params.slug, status: "Active" });
+    const slug = String(req.params.slug || "");
+    let job = await Job.findOne({ slug, status: "Active" });
+    let placePin = "";
+    if (!job) {
+      const pin = slug.match(/-(\d{6})(?=-|$)/)?.[1] || "";
+      if (pin) {
+        const candidates = await Job.find({
+          status: "Active",
+          showEverywhere: true,
+        });
+        job =
+          candidates.find(
+            (item) => slugForPlace(item.slug, item.pincode, pin) === slug,
+          ) || null;
+        if (job) placePin = pin;
+      }
+    }
     if (!job) {
       res.status(404).json({ error: "Job not found." });
       return;
     }
-    res.json({ job: serializeJob(job) });
+    const place = placePin ? getIndiaPincode(placePin) : undefined;
+    const logos = await logosFor([job.companyId]);
+    res.json({
+      job: serializeJob(job, {
+        logo: logos.get(job.companyId) || "",
+        ...(placePin
+          ? {
+              slug,
+              pincode: placePin,
+              locality: place?.locality,
+              city: place?.city,
+              lat: place?.lat,
+              lng: place?.lng,
+            }
+          : {}),
+      }),
+    });
   } catch (err) {
     next(err);
   }
@@ -158,11 +206,28 @@ export async function getJobsByPincode(
   next: NextFunction,
 ) {
   try {
+    const pin = String(req.params.pincode || "");
     const jobs = await Job.find({
       status: "Active",
-      $or: [{ pincode: req.params.pincode }, { showEverywhere: true }],
+      $or: [{ pincode: pin }, { showEverywhere: true }],
     });
-    res.json({ jobs: jobs.map((j) => serializeJob(j)) });
+    const place = getIndiaPincode(pin);
+    const logos = await logosFor(jobs.map((job) => job.companyId));
+    res.json({
+      jobs: jobs.map((job) =>
+        job.showEverywhere
+          ? serializeJob(job, {
+              slug: slugForPlace(job.slug, job.pincode, pin),
+              pincode: pin,
+              locality: place?.locality,
+              city: place?.city,
+              lat: place?.lat,
+              lng: place?.lng,
+              logo: logos.get(job.companyId) || "",
+            })
+          : serializeJob(job, { logo: logos.get(job.companyId) || "" }),
+      ),
+    });
   } catch (err) {
     next(err);
   }
