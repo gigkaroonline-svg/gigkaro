@@ -7,6 +7,7 @@ import { env } from "./config/env.js";
 import { connectDb } from "./config/db.js";
 import { bootstrapAdmin } from "./config/bootstrap.js";
 import { authRouter } from "./routes/auth.js";
+import { contactRouter } from "./routes/contact.js";
 import { jobsRouter } from "./routes/jobs.js";
 import { locationsRouter } from "./routes/locations.js";
 import { adminRouter } from "./routes/admin.js";
@@ -19,27 +20,14 @@ import {
 async function main() {
   await connectDb();
 
-  const { Job } = await import("./models/Job.js");
-  const { Company } = await import("./models/Company.js");
   const { Category } = await import("./models/Category.js");
-  const { catalogJobs, catalogCompanies } = await import("./seed/catalog.js");
   const { catalogCategories } = await import("./data/taxonomy.js");
-  if ((await Company.countDocuments()) === 0) {
-    await Company.insertMany(catalogCompanies);
-    console.log(`Auto-seeded ${catalogCompanies.length} companies`);
-  }
   if ((await Category.countDocuments()) === 0) {
     await Category.insertMany(catalogCategories);
     console.log(`Auto-seeded ${catalogCategories.length} categories`);
   }
   const { seedPincodesIfEmpty } = await import("./utils/seedPincodes.js");
   await seedPincodesIfEmpty();
-  if ((await Job.countDocuments()) === 0) {
-    await Job.insertMany(
-      catalogJobs.map((j) => ({ ...j, status: "Active" as const })),
-    );
-    console.log(`Auto-seeded ${catalogJobs.length} jobs`);
-  }
 
   await bootstrapAdmin();
 
@@ -64,6 +52,7 @@ async function main() {
   });
 
   app.use("/api/auth", authRouter);
+  app.use("/api/contact", contactRouter);
   app.use("/api/jobs", jobsRouter);
   app.use("/api/locations", locationsRouter);
   app.use("/api/applications", applicationsRouter);

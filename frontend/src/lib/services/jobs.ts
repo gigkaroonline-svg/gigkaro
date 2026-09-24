@@ -4,6 +4,25 @@ import type { SearchFilters, Job } from "@/types";
 export function getJobs() {
   return jobs;
 }
+export async function getCategoryCounts() {
+  const base = (
+    process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000/api"
+  ).replace(/\/$/, "");
+  const counts: Record<string, number> = {};
+  try {
+    const res = await fetch(`${base}/jobs`, { next: { revalidate: 60 } });
+    if (!res.ok) return counts;
+    const data = (await res.json()) as { jobs?: { category?: string }[] };
+    for (const job of data.jobs || []) {
+      const id = job.category || "";
+      if (!id) continue;
+      counts[id] = (counts[id] || 0) + 1;
+    }
+  } catch {
+    return counts;
+  }
+  return counts;
+}
 export function getJobBySlug(slug: string) {
   return jobs.find((job) => job.slug === slug);
 }

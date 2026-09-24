@@ -1,20 +1,22 @@
 import "dotenv/config";
 import { connectDb } from "../config/db.js";
+import { Company } from "../models/Company.js";
 import { Job } from "../models/Job.js";
-import { catalogJobs } from "./catalog.js";
+import { catalogCompanies, catalogJobs } from "./catalog.js";
 
 async function seed() {
   await connectDb();
-  let upserted = 0;
-  for (const job of catalogJobs) {
-    await Job.findOneAndUpdate(
-      { jobKey: job.jobKey },
-      { ...job, status: "Active" },
-      { upsert: true, new: true },
-    );
-    upserted += 1;
+  for (const company of catalogCompanies) {
+    await Company.findOneAndUpdate({ key: company.key }, company, {
+      upsert: true,
+    });
   }
-  console.log(`Seeded ${upserted} jobs`);
+  for (const job of catalogJobs) {
+    await Job.findOneAndUpdate({ slug: job.slug }, job, { upsert: true });
+  }
+  console.log(
+    `Upserted ${catalogJobs.length} jobs and ${catalogCompanies.length} companies`,
+  );
   process.exit(0);
 }
 

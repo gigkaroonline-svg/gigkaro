@@ -1,7 +1,20 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import Cropper, { type Area } from "react-easy-crop";
+import { useCallback, useState, type ComponentType } from "react";
+import EasyCrop, { type Area } from "react-easy-crop";
+
+// Class component types from react-easy-crop fail JSX checks on Vercel's TypeScript.
+const Cropper = EasyCrop as unknown as ComponentType<{
+  image?: string;
+  crop: { x: number; y: number };
+  zoom: number;
+  aspect?: number;
+  cropShape?: "rect" | "round";
+  showGrid?: boolean;
+  onCropChange: (location: { x: number; y: number }) => void;
+  onZoomChange?: (zoom: number) => void;
+  onCropComplete?: (croppedArea: Area, croppedAreaPixels: Area) => void;
+}>;
 import {
   Dialog,
   DialogContent,

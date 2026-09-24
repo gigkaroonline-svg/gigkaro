@@ -6,7 +6,7 @@ import {
   getPopularLocations,
   getLocationByPincode,
 } from "@/lib/services/locations";
-import { getJobs, getJobsByPincode } from "@/lib/services/jobs";
+import { getCategoryCounts, getJobs, getJobsByPincode } from "@/lib/services/jobs";
 import { getCategories } from "@/lib/services/categories";
 import { CategoryCard } from "@/components/category-card";
 import { JobList } from "@/components/job-card";
@@ -121,7 +121,6 @@ export function PincodePage({ pincode }: { pincode: string }) {
                     {uiText("demoOpportunities")}
                   </p>
                 </div>
-                <span className="demo-label">{uiText("fictional")}</span>
               </div>
             ))}
           </div>
@@ -187,8 +186,14 @@ export function PincodePage({ pincode }: { pincode: string }) {
     </>
   );
 }
-export function DiscoveryPage({ kind }: { kind: "categories" | "locations" }) {
+export async function DiscoveryPage({
+  kind,
+}: {
+  kind: "categories" | "locations";
+}) {
   const jobs = getJobs();
+  const categoryCounts =
+    kind === "categories" ? await getCategoryCounts() : {};
   return (
     <>
       <div className="page-intro">
@@ -218,7 +223,7 @@ export function DiscoveryPage({ kind }: { kind: "categories" | "locations" }) {
               <CategoryCard
                 key={c.id}
                 category={c}
-                count={jobs.filter((j) => j.category === c.id).length}
+                count={categoryCounts[c.id] || 0}
               />
             ))}
           </div>

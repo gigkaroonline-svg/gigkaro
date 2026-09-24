@@ -16,7 +16,6 @@ jobs:
   deploy:
     name: Deploy PROD
     runs-on: ubuntu-latest
-    environment: production
     steps:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
@@ -27,7 +26,16 @@ jobs:
           script_stop: true
           script: |
             set -euo pipefail
-            APP_ROOT=/apps/gigkaro-prod
+            if [ -d "$HOME/prod/gigkaro/backend" ]; then
+              APP_ROOT="$HOME/prod/gigkaro"
+            elif [ -d "$HOME/prod/backend" ]; then
+              APP_ROOT="$HOME/prod"
+            else
+              echo "PROD app not found. Expected ~/prod/gigkaro or ~/prod"
+              ls -la "$HOME" "$HOME/prod" 2>/dev/null || true
+              exit 1
+            fi
+            echo "Using APP_ROOT=$APP_ROOT"
             cd "$APP_ROOT"
             git fetch origin prod
             git checkout prod
@@ -41,7 +49,17 @@ jobs:
               pm2 start npm --name gigkaro-api-prod --cwd "$APP_ROOT/backend" -- start
             fi
             pm2 save
-            sleep 2
-            curl -fsS http://127.0.0.1:5000/api/health
-            echo
-            echo "PROD deploy OK"
+            PORT=$(grep -E '^PORT=' .env | cut -d= -f2 | tr -d '"' | tr -d "'" || true)
+            PORT="${PORT:-5000}"
+            echo "Waiting for API on port ${PORT}..."
+            for i in $(seq 1 30); do
+              if curl -fsS "http://127.0.0.1:${PORT}/api/health"; then
+                echo
+                echo "PROD deploy OK"
+                exit 0
+              fi
+              sleep 2
+            done
+            echo "Health check failed"
+            pm2 logs gigkaro-api-prod --lines 50 --nostream || true
+            exit 1

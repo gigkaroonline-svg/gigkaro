@@ -2,9 +2,16 @@
 import { uiText } from "@/lib/i18n";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { Breadcrumb } from "@/components/primitives";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { api, ApiError } from "@/lib/api";
 const copy: Record<
   string,
   { title: string; intro: string; sections: [string, string][] }
@@ -89,7 +96,40 @@ const copy: Record<
   },
 };
 export function InfoPage({ kind }: { kind: string }) {
-  const [sent, setSent] = useState(false);
+  const [sent, setSent] = useState<{ name: string; email: string } | null>(
+    null,
+  );
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+
+  async function submitContact(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const name = String(data.get("name") || "").trim();
+    const email = String(data.get("email") || "").trim();
+    const message = String(data.get("message") || "").trim();
+    setSending(true);
+    setError("");
+    try {
+      await api("/contact", {
+        method: "POST",
+        auth: false,
+        body: JSON.stringify({ name, email, message }),
+      });
+      setSent({ name, email });
+      form.reset();
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not send your message. Try again.",
+      );
+    } finally {
+      setSending(false);
+    }
+  }
+
   if (kind === "contact")
     return (
       <div className="container section info-page">
@@ -102,15 +142,13 @@ export function InfoPage({ kind }: { kind: string }) {
         <form
           className="panel stack"
           style={{ marginTop: 30 }}
-          onSubmit={(e) => {
-            e.preventDefault();
-            setSent(true);
-          }}
+          onSubmit={submitContact}
         >
           <div className="form-field">
             <label htmlFor="contact-name">{uiText("yourName")}</label>
             <input
               id="contact-name"
+              name="name"
               required
               minLength={2}
               placeholder={uiText("sampleName")}
@@ -120,6 +158,7 @@ export function InfoPage({ kind }: { kind: string }) {
             <label htmlFor="contact-email">{uiText("email")}</label>
             <input
               id="contact-email"
+              name="email"
               type="email"
               required
               placeholder={uiText("youExampleCom")}
@@ -129,18 +168,37 @@ export function InfoPage({ kind }: { kind: string }) {
             <label htmlFor="contact-message">
               {uiText("whatWouldYouLikeToShare")}
             </label>
-            <textarea id="contact-message" required minLength={10} />
+            <textarea
+              id="contact-message"
+              name="message"
+              required
+              minLength={10}
+            />
           </div>
-          <button className="button button-primary">
-            {uiText("previewFeedbackSubmission")}
+          <button className="button button-primary" disabled={sending}>
+            {sending ? "Sending…" : uiText("previewFeedbackSubmission")}
             <ArrowRight size={16} />
           </button>
-          {sent && (
-            <p className="notice" role="status">
-              {uiText("thanksForTryingTheFormDemoSubmissionCompleteNoMessage")}
+          {error && (
+            <p className="field-error" role="alert">
+              {error}
             </p>
           )}
         </form>
+        <Dialog open={Boolean(sent)} onOpenChange={(open) => !open && setSent(null)}>
+          <DialogContent className="contact-sent-dialog" showCloseButton={false}>
+            <CheckCircle2 size={36} aria-hidden />
+            <DialogTitle>Thanks{sent?.name ? `, ${sent.name}` : ""}</DialogTitle>
+            <DialogDescription>Your message has been submitted.</DialogDescription>
+            <button
+              type="button"
+              className="button button-primary"
+              onClick={() => setSent(null)}
+            >
+              Done
+            </button>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   const c = copy[kind] || copy.about;

@@ -6,7 +6,6 @@ import {
   Clock3,
   Bike,
   Check,
-  Building2,
   FileText,
   ArrowRight,
   ShieldCheck,
@@ -46,9 +45,6 @@ export function JobDetail({ job }: { job: Job }) {
             <div>
               <div className="row">
                 <VerifiedEmployerBadge />
-                <span className="demo-label">
-                  {uiText("fictionalDemoCompany")}
-                </span>
               </div>
               <h1>{job.title}</h1>
               <p>
@@ -69,10 +65,12 @@ export function JobDetail({ job }: { job: Job }) {
             <h2>{uiText("goodWorkClearEarnings")}</h2>
             <div className="detail-earnings">
               <SalaryBadge min={job.salaryMin} max={job.salaryMax} />
+              {job.incentiveMax > 0 && (
               <p>
                 {uiText("potentialIncentivesUpTo")}
                 {job.incentiveMax.toLocaleString("en-IN")} {uiText("month")}
               </p>
+            )}
             </div>
             <div className="overview-grid">
               {[
@@ -112,7 +110,7 @@ export function JobDetail({ job }: { job: Job }) {
             </ul>
             <h3 className="subsection-title">{uiText("whatYouLlNeed")}</h3>
             <ul className="check-list">
-              {job.requirements.map((r) => (
+              {(job.requirements ?? []).map((r) => (
                 <li key={r}>
                   <Check />
                   {r}
@@ -170,17 +168,6 @@ export function JobDetail({ job }: { job: Job }) {
               {uiText("doNotShareDocumentNumbersHereDocumentCollectionWillUse")}
             </p>
           </section>
-          <section className="panel">
-            <h2>
-              {uiText("about")} {job.company}
-            </h2>
-            <p>
-              {job.company}{" "}
-              {uiText(
-                "isAFictionalEmployerCreatedToDemonstrateLocalHiringThis",
-              )}
-            </p>
-          </section>
         </div>
         <aside className="detail-apply panel">
           <VerifiedEmployerBadge />
@@ -199,30 +186,34 @@ export function JobDetail({ job }: { job: Job }) {
           </div>
         </aside>
       </div>
-      <section className="container section">
-        <SectionHeading
-          title="More work like this"
-          href={`/jobs?category=${job.category}`}
-          action="View all similar jobs"
-        />
-        <div className="job-grid">
-          {similar.map((j) => (
-            <JobCard job={j} key={j.id} />
-          ))}
-        </div>
-      </section>
-      <section className="container section">
-        <SectionHeading
-          title="More jobs in your neighbourhood"
-          href={`/jobs/${job.pincode}`}
-          action="Explore nearby jobs"
-        />
-        <div className="job-grid">
-          {nearby.map((j) => (
-            <JobCard job={j} key={j.id} />
-          ))}
-        </div>
-      </section>
+      {similar.length > 0 && (
+        <section className="container section">
+          <SectionHeading
+            title="More work like this"
+            href={`/jobs?category=${job.category}`}
+            action="View all similar jobs"
+          />
+          <div className="job-grid">
+            {similar.map((j) => (
+              <JobCard job={j} key={j.id} />
+            ))}
+          </div>
+        </section>
+      )}
+      {nearby.length > 0 && (
+        <section className="container section">
+          <SectionHeading
+            title="More jobs in your neighbourhood"
+            href={`/jobs/${job.pincode}`}
+            action="Explore nearby jobs"
+          />
+          <div className="job-grid">
+            {nearby.map((j) => (
+              <JobCard job={j} key={j.id} />
+            ))}
+          </div>
+        </section>
+      )}
       <div className="sticky-apply">
         <div>
           <strong>

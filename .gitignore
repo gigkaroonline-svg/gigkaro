@@ -10,3 +10,9 @@ out/
 backend/.env
 
 .DS_Store
+
+# Deploy SSH keys (never commit)
+gigkaro-deploy
+gigkaro-deploy.pub
+*_deploy
+*_deploy.pub

@@ -7,68 +7,18 @@ export function getEmployerJobs() {
     (j) => j.companyId === "swift" && j.city === "Bengaluru",
   );
 }
-export const demoApplicants = [
-  {
-    id: "candidate-1",
-    name: "Rahul Kumar",
-    location: "Koramangala",
-    pincode: "560034",
-    category: "delivery",
-    job: "Delivery Partner",
-    status: "Applied",
-    experience: "1 year",
-    vehicle: "Bike",
-    joined: "2026-09-15",
-  },
-  {
-    id: "candidate-2",
-    name: "Ayesha S.",
-    location: "BTM Layout",
-    pincode: "560029",
-    category: "warehouse",
-    job: "Warehouse Associate",
-    status: "Contacted",
-    experience: "Fresher",
-    vehicle: "No vehicle",
-    joined: "2026-09-14",
-  },
-  {
-    id: "candidate-3",
-    name: "Manoj P.",
-    location: "HSR Layout",
-    pincode: "560102",
-    category: "ev",
-    job: "EV Delivery Rider",
-    status: "Interview",
-    experience: "2 years",
-    vehicle: "EV",
-    joined: "2026-09-13",
-  },
-  {
-    id: "candidate-4",
-    name: "Kiran R.",
-    location: "Koramangala",
-    pincode: "560034",
-    category: "delivery",
-    job: "Delivery Partner",
-    status: "Selected",
-    experience: "1 year",
-    vehicle: "Bike",
-    joined: "2026-09-12",
-  },
-  {
-    id: "candidate-5",
-    name: "Priya M.",
-    location: "Bommanahalli",
-    pincode: "560068",
-    category: "field",
-    job: "Field Executive",
-    status: "Joined",
-    experience: "Fresher",
-    vehicle: "No vehicle",
-    joined: "2026-09-11",
-  },
-];
+export const demoApplicants: {
+  id: string;
+  name: string;
+  location: string;
+  pincode: string;
+  category: string;
+  job: string;
+  status: string;
+  experience: string;
+  vehicle: string;
+  joined: string;
+}[] = [];
 export const getDemoApplicants = () => demoApplicants;
 export function validatePostedJob(v: Partial<PostedJob>, step: number): string {
   if (

@@ -1,5 +1,11 @@
 import { InfoPage } from "@/features/info";
-export const metadata = { title: "Cookies" };
+import { pageMetadata } from "@/lib/metadata";
+
+export const metadata = pageMetadata(
+  "Cookies",
+  "How GigKaro uses cookies on this website.",
+  "/cookies",
+);
 export default function Page() {
   return <InfoPage kind="cookies" />;
 }

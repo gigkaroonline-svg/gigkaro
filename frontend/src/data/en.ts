@@ -21,13 +21,12 @@ export const english = {
   indiaSPincodeLevelGigHiringNetwork:
     "India’s pincode-level gig hiring network.",
   kaamKaroKamao: "Kaam Karo. Kamao.",
-  "2026GigkaroAllRightsReserved": "© 2026 GigKaro. All rights reserved.",
+  "2026GigkaroAllRightsReserved":
+    "© 2026 GigKaro. All rights reserved. GigKaro is operated by Victa EarlyJobs Technologies Private Limited.",
   privacy: "Privacy",
   terms: "Terms",
   cookies: "Cookies",
   madeForAWorkingIndia: "Made for a working India.",
-  demoExperienceAllEmployersOpportunitiesAndHiringFiguresAreFictional:
-    "Demo experience · All employers, opportunities and hiring figures are fictional. No real applications or SMS are sent.",
   candidateNavigation: "Candidate navigation",
   verified: "Verified",
   immediateJoining: "Immediate joining",
@@ -316,15 +315,15 @@ export const english = {
   letSMakeLocalWorkBetter: "LET’S MAKE LOCAL WORK BETTER",
   aLittleFeedbackGoesALongWay: "A little feedback goes a long way.",
   thisDemoFeedbackFormShowsTheIntendedContactExperienceIt:
-    "This demo feedback form shows the intended contact experience. It does not send a message.",
+    "Your message is delivered to info@gigkaro.in.",
   yourName: "Your name",
   sampleName: "Sample name",
   email: "Email",
   youExampleCom: "you@example.com",
   whatWouldYouLikeToShare: "What would you like to share?",
-  previewFeedbackSubmission: "Preview Feedback Submission",
+  previewFeedbackSubmission: "Send message",
   thanksForTryingTheFormDemoSubmissionCompleteNoMessage:
-    "Thanks for trying the form. Demo submission complete; no message was sent or stored.",
+    "Thanks. Your message was sent to info@gigkaro.in.",
   gigkaroKaamKaroKamao: "GIGKARO · KAAM KARO. KAMAO.",
   fictionalDemoCompany: "FICTIONAL DEMO COMPANY",
   goodWorkClearEarnings: "Good work. Clear earnings.",
