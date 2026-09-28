@@ -5,6 +5,8 @@ const title = "GigKaro — Find Gig Jobs Near You";
 const description =
   "Kaam Karo. Kamao. Find nearby delivery, warehouse, logistics and field jobs by pincode.";
 
+export const revalidate = 60;
+
 export const metadata = {
   ...pageMetadata(title, description, "/"),
   title: { absolute: title },
