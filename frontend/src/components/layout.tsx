@@ -164,6 +164,13 @@ export function Footer() {
               ["Mumbai", "/jobs?location=Mumbai"],
               ["Hyderabad", "/jobs?location=Hyderabad"],
             ],
+            [
+              "More locations",
+              ["Chennai", "/jobs?location=Chennai"],
+              ["Pune", "/jobs?location=Pune"],
+              ["Kolkata", "/jobs?location=Kolkata"],
+              ["Ahmedabad", "/jobs?location=Ahmedabad"],
+            ],
           ].map(([heading, ...items]) => (
             <div key={String(heading)}>
               <h3>{heading as string}</h3>
@@ -176,7 +183,17 @@ export function Footer() {
           ))}
         </div>
         <div className="footer-bottom">
-          <span>{uiText("2026GigkaroAllRightsReserved")}</span>
+          <span>
+            © 2026 GigKaro. All rights reserved. GigKaro is operated by Victa{" "}
+            <a
+              href="https://www.earlyjobs.ai"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              EarlyJobs
+            </a>{" "}
+            Technologies Private Limited.
+          </span>
           <div>
             <Link href="/privacy">{uiText("privacy")}</Link>
             <Link href="/terms">{uiText("terms")}</Link>
