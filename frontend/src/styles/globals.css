@@ -311,14 +311,6 @@ textarea::placeholder {
   color: var(--primary);
   line-height: 1;
 }
-.logo-dot {
-  color: #133c73;
-}
-.logo-in {
-  font-size: 14px;
-  letter-spacing: -0.5px;
-  margin-left: 1px;
-}
 .desktop-nav {
   display: flex;
   gap: 32px;

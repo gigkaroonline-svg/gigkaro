@@ -26,8 +26,6 @@ export function GigKaroLogo() {
   return (
     <Link href="/" className="logo" aria-label={uiText("gigkaroHome")}>
       {uiText("gigkaro")}
-      <span className="logo-dot">.</span>
-      <span className="logo-in">in</span>
     </Link>
   );
 }
