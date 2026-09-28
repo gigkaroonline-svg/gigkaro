@@ -11,6 +11,7 @@ import {
   Wallet,
   Settings,
   Layers,
+  Newspaper,
   ShieldCheck,
   LogOut,
 } from "lucide-react";
@@ -34,6 +35,7 @@ const adminNav = [
   ["candidates", "Candidates", Users],
   ["companies", "Companies", Building2],
   ["categories", "Categories", Layers],
+  ["blogs", "Blog", Newspaper],
 ] as const;
 
 export function DashboardShell({

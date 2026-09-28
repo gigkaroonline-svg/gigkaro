@@ -148,6 +148,7 @@ export function Footer() {
             [
               "GigKaro",
               ["About", "/about"],
+              ["Blog", "/blog"],
               ["How it works", "/#how-it-works"],
               ["Contact", "/contact"],
             ],

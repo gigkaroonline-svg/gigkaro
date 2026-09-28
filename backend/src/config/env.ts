@@ -15,6 +15,10 @@ export const env = {
   devOtp: process.env.DEV_OTP || "123456",
   adminIdentifiers: parseIdentifiers(process.env.ADMIN_IDENTIFIERS),
   contactTo: process.env.CONTACT_TO || "info@gigkaro.in",
+  gcsBucket: process.env.GCS_BUCKET || "",
+  gcsProjectId: process.env.GCS_PROJECT_ID || "",
+  gcsClientEmail: process.env.GCS_CLIENT_EMAIL || "",
+  gcsPrivateKey: (process.env.GCS_PRIVATE_KEY || "").replace(/\\n/g, "\n"),
 };
 
 export function isAdminIdentifier(mobile?: string, email?: string) {

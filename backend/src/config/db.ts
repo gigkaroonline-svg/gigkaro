@@ -4,6 +4,8 @@ import { env } from "./env.js";
 
 let memoryServer: MongoMemoryServer | null = null;
 
+export let usingMemoryDb = false;
+
 export async function connectDb() {
   mongoose.set("strictQuery", true);
 
@@ -14,6 +16,7 @@ export async function connectDb() {
     uri.startsWith("memory://");
 
   if (useMemory) {
+    usingMemoryDb = true;
     memoryServer = await MongoMemoryServer.create();
     uri = memoryServer.getUri("gigkaro");
     console.log("Using in-memory MongoDB (set MONGODB_URI to a real server for persistence)");
@@ -28,6 +31,7 @@ export async function connectDb() {
       "MongoDB connection failed; falling back to in-memory MongoDB.",
       err instanceof Error ? err.message : err,
     );
+    usingMemoryDb = true;
     memoryServer = await MongoMemoryServer.create();
     uri = memoryServer.getUri("gigkaro");
     await mongoose.connect(uri);

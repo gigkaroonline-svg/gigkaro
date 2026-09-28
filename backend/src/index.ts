@@ -9,8 +9,10 @@ import { bootstrapAdmin } from "./config/bootstrap.js";
 import { authRouter } from "./routes/auth.js";
 import { contactRouter } from "./routes/contact.js";
 import { jobsRouter } from "./routes/jobs.js";
+import { companiesRouter } from "./routes/companies.js";
 import { locationsRouter } from "./routes/locations.js";
 import { adminRouter } from "./routes/admin.js";
+import { blogsRouter } from "./routes/blogs.js";
 import {
   applicationsRouter,
   savedRouter,
@@ -28,6 +30,8 @@ async function main() {
   }
   const { seedPincodesIfEmpty } = await import("./utils/seedPincodes.js");
   await seedPincodesIfEmpty();
+  const { seedDummyBlogIfEmpty } = await import("./seed/dummyBlog.js");
+  await seedDummyBlogIfEmpty();
 
   await bootstrapAdmin();
 
@@ -54,10 +58,12 @@ async function main() {
   app.use("/api/auth", authRouter);
   app.use("/api/contact", contactRouter);
   app.use("/api/jobs", jobsRouter);
+  app.use("/api/companies", companiesRouter);
   app.use("/api/locations", locationsRouter);
   app.use("/api/applications", applicationsRouter);
   app.use("/api/saved", savedRouter);
   app.use("/api/candidates", candidatesRouter);
+  app.use("/api/blogs", blogsRouter);
   app.use("/api/admin", adminRouter);
 
   app.use(
