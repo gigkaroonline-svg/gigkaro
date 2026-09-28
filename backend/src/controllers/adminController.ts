@@ -6,6 +6,7 @@ import { User } from "../models/User.js";
 import { Company } from "../models/Company.js";
 import { Category } from "../models/Category.js";
 import { serializeJob } from "../utils/jobs.js";
+import { uploadCompanyLogo } from "../utils/gcs.js";
 import { locationCatalog } from "../data/taxonomy.js";
 import type { AuthRequest } from "../middleware/auth.js";
 
@@ -359,7 +360,7 @@ export async function createCompany(
       return;
     }
     const file = (req as AuthRequest & { file?: Express.Multer.File }).file;
-    const logo = file ? `/uploads/companies/${file.filename}` : "";
+    const logo = file ? await uploadCompanyLogo(file) : "";
     const company = await Company.create({
       key,
       name,

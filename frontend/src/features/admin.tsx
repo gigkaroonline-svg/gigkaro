@@ -10,6 +10,7 @@ import {
   Building2,
   MapPin,
   Layers,
+  Newspaper,
   ShieldCheck,
   LogOut,
   CheckCircle2,
@@ -35,6 +36,7 @@ import {
   SectionHeading,
 } from "@/components/primitives";
 import { jobHref } from "@/lib/services/demo-jobs";
+import { AdminBlogs } from "@/features/admin-blogs";
 
 const adminNav = [
   ["overview", "Dashboard", LayoutDashboard],
@@ -43,6 +45,7 @@ const adminNav = [
   ["candidates", "Candidates", Users],
   ["companies", "Companies", Building2],
   ["categories", "Categories", Layers],
+  ["blogs", "Blog", Newspaper],
 ] as const;
 
 const jobStatuses = [
@@ -1408,6 +1411,8 @@ export function AdminPage({ view = "overview" }: { view?: string }) {
         <AdminCompanies />
       ) : view === "categories" ? (
         <AdminCategories />
+      ) : view === "blogs" ? (
+        <AdminBlogs />
       ) : view === "locations" || view === "pincodes" ? (
         <AdminDirectory view={view} />
       ) : (

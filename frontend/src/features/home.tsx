@@ -25,6 +25,68 @@ import { SectionHeading } from "@/components/primitives";
 import { getCategoryCounts, getJobs } from "@/lib/services/jobs";
 import { getCategories } from "@/lib/services/categories";
 import { getPopularLocations } from "@/lib/services/locations";
+import {
+  companyLogoSrc,
+  fetchPublicCompanies,
+} from "@/lib/services/api-companies";
+function DeliveryRider({
+  className,
+  jacket,
+  helmet,
+}: {
+  className: string;
+  jacket: string;
+  helmet: string;
+}) {
+  return (
+    <span className={className} aria-hidden="true">
+      <span className="delivery-bob">
+        <svg viewBox="0 0 128 78" className="delivery-scooter">
+          <ellipse cx="64" cy="70" rx="38" ry="4" fill="#1d4e8a" opacity="0.16" />
+          <rect x="6" y="30" width="28" height="24" rx="4" fill="#005bd7" />
+          <rect x="10" y="34" width="20" height="7" rx="1.5" fill="#9cc7ff" />
+          <path d="M20 30v24" stroke="#0047ad" strokeWidth="1.4" />
+          <path
+            d="M30 56h48c6 0 10-3 14-12"
+            fill="none"
+            stroke="#17324d"
+            strokeWidth="4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M40 56c4-12 12-18 24-18h12"
+            fill="none"
+            stroke="#17324d"
+            strokeWidth="4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M74 34h18l10 14"
+            fill="none"
+            stroke="#17324d"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+          />
+          <rect x="42" y="40" width="26" height="8" rx="4" fill="#17324d" />
+          <path d="M50 42c2-14 8-20 16-18 6 1 10 6 13 12l8 12-12 3-6-10-8 6z" fill={jacket} />
+          <path d="M66 32l16 10" stroke={jacket} strokeWidth="5" strokeLinecap="round" />
+          <circle cx="74" cy="18" r="11" fill={helmet} />
+          <path d="M66 19h16" stroke="#fff" strokeOpacity="0.75" strokeWidth="2.2" strokeLinecap="round" />
+          <g className="scooter-wheel">
+            <circle cx="36" cy="60" r="11" fill="#17324d" />
+            <circle cx="36" cy="60" r="4.5" fill="#e7eef6" />
+            <path d="M36 51v18M27 60h18" stroke="#9aafc4" strokeWidth="1.4" />
+          </g>
+          <g className="scooter-wheel">
+            <circle cx="96" cy="60" r="11" fill="#17324d" />
+            <circle cx="96" cy="60" r="4.5" fill="#e7eef6" />
+            <path d="M96 51v18M87 60h18" stroke="#9aafc4" strokeWidth="1.4" />
+          </g>
+        </svg>
+      </span>
+    </span>
+  );
+}
 export function Hero() {
   return (
     <section className="hero">
@@ -83,6 +145,11 @@ export function Hero() {
             <span className="map-pin pin-two">
               <MapPin size={19} />
             </span>
+            <DeliveryRider
+              className="delivery-rider rider-a"
+              jacket="#f0b429"
+              helmet="#ff7a1a"
+            />
           </div>
           <div className="hero-visual-footer">
             <span className="mini-avatars">
@@ -108,10 +175,27 @@ export function Hero() {
 }
 export async function HomePage() {
   const jobs = getJobs();
-  const categoryCounts = await getCategoryCounts();
+  const [categoryCounts, companies] = await Promise.all([
+    getCategoryCounts(),
+    fetchPublicCompanies(),
+  ]);
   return (
     <>
       <Hero />
+      {companies.length > 0 && (
+        <section className="client-strip" aria-label="We are trusted by">
+          <div className="container">
+            <p>We are trusted by</p>
+            <ul>
+              {companies.map((company) => (
+                <li key={company.key}>
+                  <img src={companyLogoSrc(company.logo)} alt={company.name} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
       <section className="trust-strip">
         <div className="container">
           {[

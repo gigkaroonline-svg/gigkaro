@@ -162,9 +162,6 @@ export function JobDetail({ job }: { job: Job }) {
                 </span>
               )}
             </div>
-            <p className="privacy-note">
-              {uiText("doNotShareDocumentNumbersHereDocumentCollectionWillUse")}
-            </p>
           </section>
         </div>
         <aside className="detail-apply panel">
@@ -178,9 +175,6 @@ export function JobDetail({ job }: { job: Job }) {
           <div className="privacy-note">
             <ShieldCheck size={16} />
             {uiText("freeToApplyNoCvRequired")}
-          </div>
-          <div className="notice">
-            {uiText("neverPayARecruiterToApplyForAJobThis")}
           </div>
         </aside>
       </div>

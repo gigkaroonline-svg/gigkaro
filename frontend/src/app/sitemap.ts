@@ -10,6 +10,7 @@ const staticPaths = [
   "/locations",
   "/categories",
   "/about",
+  "/blog",
   "/contact",
   "/hire",
   "/privacy",
@@ -31,6 +32,23 @@ function entry(path: string, priority: number): MetadataRoute.Sitemap[number] {
     changeFrequency: priority >= 0.8 ? "daily" : "weekly",
     priority,
   };
+}
+
+async function blogPaths() {
+  const base = (
+    process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000/api"
+  ).replace(/\/$/, "");
+  try {
+    const res = await fetch(`${base}/blogs`, { next: { revalidate: 3600 } });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { posts?: { slug?: string }[] };
+    return (data.posts || [])
+      .map((post) => post.slug)
+      .filter((slug): slug is string => Boolean(slug))
+      .map((slug) => entry(`/blog/${slug}`, 0.6));
+  } catch {
+    return [];
+  }
 }
 
 async function jobPaths() {
@@ -57,6 +75,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...new Set(places.flatMap((place) => [place.slug, place.pincode])),
   ];
   const jobs = await jobPaths();
+  const posts = await blogPaths();
   return [
     ...staticPaths.map((path) => entry(path, path === "/" ? 1 : 0.8)),
     ...pins.map((pin) => entry(`/jobs/${pin}`, 0.7)),
@@ -64,5 +83,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       areas.map((area) => entry(`${path}/${area}`, 0.6)),
     ),
     ...jobs,
+    ...posts,
   ];
 }

@@ -120,11 +120,6 @@ export function JobFilters({
           {uiText("immediateJoining")}
         </label>
       </div>
-      <p className="filter-note">
-        {uiText(
-          "earningsFiltersIncludeJobsWhoseAdvertisedRangeOverlapsYourSelection",
-        )}
-      </p>
     </div>
   );
 }

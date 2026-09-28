@@ -1,20 +1,5 @@
-import fs from "fs";
-import path from "path";
 import multer from "multer";
 import type { RequestHandler } from "express";
-
-const uploadRoot = path.resolve(process.cwd(), "uploads", "companies");
-
-fs.mkdirSync(uploadRoot, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadRoot),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase() || ".png";
-    const safe = ext.replace(/[^.a-z0-9]/gi, "") || ".png";
-    cb(null, `logo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}${safe}`);
-  },
-});
 
 function fileFilter(
   _req: Express.Request,
@@ -29,7 +14,7 @@ function fileFilter(
 }
 
 export const companyLogoUpload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   fileFilter,
   limits: { fileSize: 2 * 1024 * 1024 },
 }).single("logo");
@@ -46,6 +31,27 @@ export const optionalCompanyLogo: RequestHandler = (req, res, next) => {
   });
 };
 
-export function companyLogoPublicPath(filename: string) {
-  return `/uploads/companies/${filename}`;
-}
+const blogCoverUpload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: (_req, file, cb) => {
+    if (!file.mimetype.startsWith("image/")) {
+      cb(new Error("Cover must be an image file."));
+      return;
+    }
+    cb(null, true);
+  },
+  limits: { fileSize: 2 * 1024 * 1024 },
+}).single("cover");
+
+export const optionalBlogCover: RequestHandler = (req, res, next) => {
+  blogCoverUpload(req, res, (err) => {
+    if (err) {
+      res.status(400).json({
+        error: err instanceof Error ? err.message : "Could not upload the image.",
+      });
+      return;
+    }
+    next();
+  });
+};
+

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAuth, requireRole } from "../middleware/auth.js";
-import { optionalCompanyLogo } from "../middleware/upload.js";
+import { optionalBlogCover, optionalCompanyLogo } from "../middleware/upload.js";
 import {
   analyticsSummary,
   listAdminJobs,
@@ -15,6 +15,12 @@ import {
   listCompanies,
   createCompany,
 } from "../controllers/adminController.js";
+import {
+  createAdminBlog,
+  deleteAdminBlog,
+  listAdminBlogs,
+  patchAdminBlog,
+} from "../controllers/blogsController.js";
 
 export const adminRouter = Router();
 
@@ -32,3 +38,7 @@ adminRouter.post("/companies", optionalCompanyLogo, createCompany);
 adminRouter.get("/taxonomy/categories", listCategories);
 adminRouter.post("/taxonomy/categories", createCategory);
 adminRouter.get("/taxonomy/locations", listLocations);
+adminRouter.get("/blogs", listAdminBlogs);
+adminRouter.post("/blogs", optionalBlogCover, createAdminBlog);
+adminRouter.patch("/blogs/:id", optionalBlogCover, patchAdminBlog);
+adminRouter.delete("/blogs/:id", deleteAdminBlog);
