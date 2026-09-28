@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { JobPage } from "@/features/job-page";
-import builtSlugs from "@/generated/job-slugs.json";
-import { fetchPublicJob } from "@/lib/services/api-jobs";
+import { fetchPublicJob, fetchPublicJobSlugs } from "@/lib/services/api-jobs";
 import {
   breadcrumbSchema,
   jobPostingSchema,
@@ -15,8 +14,9 @@ type PageProps = { params: Promise<{ slug: string }> };
 export const revalidate = 3600;
 export const dynamicParams = false;
 
-export function generateStaticParams() {
-  return builtSlugs.map((slug) => ({ slug }));
+export async function generateStaticParams() {
+  const slugs = await fetchPublicJobSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 async function loadJob(slug: string): Promise<Job | null | undefined> {
