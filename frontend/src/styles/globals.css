@@ -311,14 +311,6 @@ textarea::placeholder {
   color: var(--primary);
   line-height: 1;
 }
-.logo-dot {
-  color: #133c73;
-}
-.logo-in {
-  font-size: 14px;
-  letter-spacing: -0.5px;
-  margin-left: 1px;
-}
 .desktop-nav {
   display: flex;
   gap: 32px;
@@ -1552,7 +1544,7 @@ textarea::placeholder {
 }
 .footer-grid {
   display: grid;
-  grid-template-columns: 1.7fr 1fr 1.1fr 1.1fr;
+  grid-template-columns: 1.7fr 1fr 1.1fr 1.1fr 1.1fr;
   gap: 28px;
   padding-bottom: 37px;
 }
@@ -1667,6 +1659,11 @@ textarea::placeholder {
 }
 .footer-bottom > span {
   max-width: 640px;
+}
+.footer-bottom > span a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 .footer-bottom > div {
   display: flex;
