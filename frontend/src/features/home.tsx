@@ -13,7 +13,6 @@ import {
   SlidersHorizontal,
   Wallet,
   Layers,
-  LocateFixed,
   Users,
   Sparkles,
   Building2,
@@ -254,64 +253,6 @@ export async function HomePage() {
           {jobs.length > 0 && <JobList jobs={jobs.slice(0, 3)} />}
         </div>
       </section>
-      <section className="section container pincode-section">
-        <div>
-          <div className="eyebrow">
-            {uiText("yourPincodeYourPossibilities")}
-          </div>
-          <h2>
-            {uiText("aShorterCommute")}
-            <br />
-            {uiText("aBetterWorkday")}
-          </h2>
-          <p>
-            {uiText("goodWorkShouldnTBeFarAwayFindOpportunities")}
-            <br className="desktop-break" />{" "}
-            {uiText("inTheNeighbourhoodsYouAlreadyKnow")}
-          </p>
-          <LocationSearch compact initial="560034" />
-          <div className="nearby-chips">
-            <span>{uiText("exploreNearby")}</span>
-            {[
-              ["BTM Layout", "560029"],
-              ["HSR Layout", "560102"],
-              ["Bommanahalli", "560068"],
-            ].map(([name, pin]) => (
-              <Link key={pin} href={`/jobs/${pin}`}>
-                {name}
-                <ArrowRight size={12} />
-              </Link>
-            ))}
-          </div>
-        </div>
-        <div className="locality-panel">
-          <div className="locality-header">
-            <span className="icon-tile blue">
-              <LocateFixed />
-            </span>
-            <div>
-              <strong>{uiText("findWorkNearYourPincode")}</strong>
-              <p>{uiText("smallRadiusBigPossibilities")}</p>
-            </div>
-          </div>
-          {[
-            ["560034", "Koramangala", "8"],
-            ["560029", "BTM Layout", "8"],
-            ["560102", "HSR Layout", "8"],
-          ].map(([pin, area, count]) => (
-            <Link key={pin} href={`/jobs/${pin}`} className="locality-row">
-              <span>
-                <b>{pin}</b>
-                <small>{area}</small>
-              </span>
-              <span>
-                {count} {uiText("opportunities")}
-                <ArrowUpRightIcon />
-              </span>
-            </Link>
-          ))}
-        </div>
-      </section>
       <section className="section container" id="how-it-works">
         <SectionHeading
           eyebrow="LESS FUSS. MORE POSSIBILITIES."
@@ -427,7 +368,4 @@ export async function HomePage() {
       </section>
     </>
   );
-}
-function ArrowUpRightIcon() {
-  return <ArrowRight size={15} style={{ transform: "rotate(-35deg)" }} />;
 }
