@@ -189,7 +189,7 @@ export function AuthPage({
                 maxLength={6}
                 value={otp}
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                placeholder={uiText("123456")}
+                placeholder="000000"
               />
             ) : (
               <div className={!emailMode ? "phone-field" : ""}>

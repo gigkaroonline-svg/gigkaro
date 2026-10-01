@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Breadcrumb } from "@/components/primitives";
 import { apiAssetUrl } from "@/lib/api";
+import { looksLikeBlogHtml, sanitizeBlogHtml } from "@/lib/blog-html";
 import {
   formatBlogDate,
   type BlogPost,
@@ -59,10 +60,15 @@ export function BlogIndex({ posts }: { posts: BlogPost[] }) {
 }
 
 export function BlogArticle({ post }: { post: BlogPost }) {
-  const paragraphs = post.body
-    .split(/\n\s*\n/)
-    .map((part) => part.trim())
-    .filter(Boolean);
+  const htmlBody = looksLikeBlogHtml(post.body)
+    ? sanitizeBlogHtml(post.body)
+    : null;
+  const paragraphs = htmlBody
+    ? []
+    : post.body
+        .split(/\n\s*\n/)
+        .map((part) => part.trim())
+        .filter(Boolean);
   return (
     <>
       <div className="page-intro">
@@ -89,11 +95,18 @@ export function BlogArticle({ post }: { post: BlogPost }) {
             className="blog-cover"
           />
         ) : null}
-        <div className="blog-prose">
-          {paragraphs.map((paragraph, index) => (
-            <p key={index}>{paragraph}</p>
-          ))}
-        </div>
+        {htmlBody ? (
+          <div
+            className="blog-prose"
+            dangerouslySetInnerHTML={{ __html: htmlBody }}
+          />
+        ) : (
+          <div className="blog-prose">
+            {paragraphs.map((paragraph, index) => (
+              <p key={index}>{paragraph}</p>
+            ))}
+          </div>
+        )}
         <Link className="text-link" href="/blog">
           All stories
         </Link>

@@ -114,6 +114,10 @@ export async function createAdminBlog(req: AuthRequest, res: Response) {
     });
     return;
   }
+  if (!uploadedCover) {
+    res.status(400).json({ error: "Add a cover image for this story." });
+    return;
+  }
   const post = await BlogPost.create({
     title: parsed.data.title,
     slug: await uniqueSlug(parsed.data.title),
@@ -156,8 +160,16 @@ export async function patchAdminBlog(req: AuthRequest, res: Response) {
     return;
   }
   if (uploadedCover !== undefined && uploadedCover !== post.coverUrl) {
+    if (!uploadedCover) {
+      res.status(400).json({ error: "A cover image is required." });
+      return;
+    }
     await deleteStoredCover(post.coverUrl || "").catch(() => undefined);
     post.coverUrl = uploadedCover;
+  }
+  if (!post.coverUrl) {
+    res.status(400).json({ error: "A cover image is required." });
+    return;
   }
   if (parsed.data.status) {
     post.status = parsed.data.status;
