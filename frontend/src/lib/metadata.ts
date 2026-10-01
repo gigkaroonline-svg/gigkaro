@@ -7,6 +7,13 @@ export const siteOrigin = (
 
 export const siteName = "GigKaro";
 
+export const ogImage = {
+  url: "/og-image.png",
+  width: 1733,
+  height: 907,
+  alt: "GigKaro — Find Gig Jobs Near You",
+};
+
 export function canonicalUrl(path: string) {
   if (!path || path === "/") return `${siteOrigin}/`;
   const withSlash = path.endsWith("/") ? path : `${path}/`;
@@ -33,8 +40,14 @@ export function pageMetadata(
       url,
       type: "website",
       siteName,
+      images: [ogImage],
     },
-    twitter: { card: "summary", title, description },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage.url],
+    },
     robots: { index: true, follow: true },
   };
 }
