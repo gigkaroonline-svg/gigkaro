@@ -1,8 +1,12 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { BlogBodyEditor } from "@/components/blog-body-editor";
 import { api, ApiError, apiAssetUrl } from "@/lib/api";
+import { blogHtmlTextLength, sanitizeBlogHtml } from "@/lib/blog-html";
 import { formatBlogDate, type BlogPost } from "@/lib/services/api-blogs";
+
+const BODY_MAX = 20000;
 
 function CoverPreview({
   file,
@@ -40,7 +44,7 @@ const emptyForm = {
   excerpt: "",
   body: "",
   coverUrl: "",
-  status: "draft" as "draft" | "published",
+  status: "published" as "draft" | "published",
 };
 
 export function AdminBlogs() {
@@ -90,6 +94,21 @@ export function AdminBlogs() {
 
   async function save(event: FormEvent) {
     event.preventDefault();
+    const cleanBody = sanitizeBlogHtml(form.body);
+    const textLength = blogHtmlTextLength(cleanBody);
+    if (textLength < 40) {
+      setError("Write at least 40 characters in the story.");
+      return;
+    }
+    if (cleanBody.length > BODY_MAX) {
+      setError("The story is too long. Keep it under 20,000 characters.");
+      return;
+    }
+    const hasCover = Boolean(coverFile) || (Boolean(form.coverUrl) && !removeCover);
+    if (!hasCover) {
+      setError("Add a cover image for this story.");
+      return;
+    }
     setSaving(true);
     setError("");
     setNotice("");
@@ -97,7 +116,7 @@ export function AdminBlogs() {
       const body = new FormData();
       body.set("title", form.title);
       body.set("excerpt", form.excerpt);
-      body.set("body", form.body);
+      body.set("body", cleanBody);
       body.set("status", form.status);
       if (coverFile) body.set("cover", coverFile);
       else if (removeCover) body.set("removeCover", "1");
@@ -174,39 +193,39 @@ export function AdminBlogs() {
           </div>
           <div className="form-field form-field-full">
             <label htmlFor="blog-body">Story</label>
-            <textarea
+            <BlogBodyEditor
               id="blog-body"
-              className="blog-body"
               value={form.body}
-              onChange={(event) => setForm({ ...form, body: event.target.value })}
-              required
-              minLength={40}
-              placeholder="Separate paragraphs with a blank line."
+              resetKey={editing || "new"}
+              onChange={(body) => setForm({ ...form, body })}
             />
           </div>
-          <div className="form-field">
+          <div className="form-field form-field-full blog-cover-field">
             <label htmlFor="blog-cover">Cover image</label>
-            <input
-              id="blog-cover"
-              key={coverInputKey}
-              type="file"
-              accept="image/*"
-              onChange={(event) => {
-                setCoverFile(event.target.files?.[0] || null);
-                setRemoveCover(false);
-              }}
-            />
-            <CoverPreview
-              file={coverFile}
-              stored={removeCover ? "" : form.coverUrl}
-              onRemove={() => {
-                setCoverFile(null);
-                setRemoveCover(true);
-                setCoverInputKey((key) => key + 1);
-              }}
-            />
+            <div className="blog-cover-row">
+              <input
+                id="blog-cover"
+                key={coverInputKey}
+                type="file"
+                accept="image/*"
+                required={!coverFile && (removeCover || !form.coverUrl)}
+                onChange={(event) => {
+                  setCoverFile(event.target.files?.[0] || null);
+                  setRemoveCover(false);
+                }}
+              />
+              <CoverPreview
+                file={coverFile}
+                stored={removeCover ? "" : form.coverUrl}
+                onRemove={() => {
+                  setCoverFile(null);
+                  setRemoveCover(true);
+                  setCoverInputKey((key) => key + 1);
+                }}
+              />
+            </div>
           </div>
-          <div className="form-field">
+          <div className="form-field blog-status-field">
             <label htmlFor="blog-status">Status</label>
             <select
               id="blog-status"
