@@ -280,7 +280,9 @@ export async function HomePage() {
             action="Browse jobs by pincode"
           />
           <div className="location-grid">
-            {getPopularLocations().map((l) => (
+            {getPopularLocations()
+              .slice(0, 8)
+              .map((l) => (
               <Link key={l.slug} href={`/jobs?location=${l.city}`}>
                 <Building2 size={24} />
                 <div>
