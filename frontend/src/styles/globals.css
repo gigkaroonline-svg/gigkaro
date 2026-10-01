@@ -1636,6 +1636,13 @@ textarea::placeholder {
   font-weight: 600;
   margin: 4px 0 18px;
 }
+.footer-grid h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+.footer-grid h3 a:hover {
+  color: var(--primary);
+}
 .footer-grid > div:not(:first-child) > a {
   display: block;
   font-size: 10px;
