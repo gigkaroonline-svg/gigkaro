@@ -6,7 +6,7 @@ import {
   getPopularLocations,
   getLocationByPincode,
 } from "@/lib/services/locations";
-import { getCategoryCounts, getJobs, getJobsByPincode } from "@/lib/services/jobs";
+import { getCategoryCounts, getJobsByPincode } from "@/lib/services/jobs";
 import { getCategories } from "@/lib/services/categories";
 import { CategoryCard } from "@/components/category-card";
 import { JobList } from "@/components/job-card";
@@ -191,7 +191,6 @@ export async function DiscoveryPage({
 }: {
   kind: "categories" | "locations";
 }) {
-  const jobs = getJobs();
   const categoryCounts =
     kind === "categories" ? await getCategoryCounts() : {};
   return (
@@ -236,10 +235,7 @@ export async function DiscoveryPage({
                   <Building2 />
                   <div>
                     <h3>{l.city}</h3>
-                    <p>
-                      {jobs.filter((j) => j.city === l.city).length}{" "}
-                      {uiText("demoOpportunities")}
-                    </p>
+                    <p>{l.state}</p>
                   </div>
                   <ArrowRight size={17} />
                 </Link>

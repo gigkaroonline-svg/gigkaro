@@ -142,39 +142,61 @@ export function Footer() {
               </a>
             </div>
           </div>
-          {[
+          {(
             [
-              "GigKaro",
-              ["About", "/about"],
-              ["Blog", "/blog"],
-              ["How it works", "/#how-it-works"],
-              ["Contact", "/contact"],
-            ],
-            [
-              "Find work",
-              ["Delivery jobs", "/delivery-jobs/bengaluru"],
-              ["Warehouse jobs", "/warehouse-jobs/bengaluru"],
-              ["EV rider jobs", "/jobs?category=ev"],
-              ["Field jobs", "/jobs?category=field"],
-            ],
-            [
-              "Popular locations",
-              ["Bengaluru", "/jobs?location=Bengaluru"],
-              ["Delhi NCR", "/jobs?location=Delhi"],
-              ["Mumbai", "/jobs?location=Mumbai"],
-              ["Hyderabad", "/jobs?location=Hyderabad"],
-            ],
-            [
-              "More locations",
-              ["Chennai", "/jobs?location=Chennai"],
-              ["Pune", "/jobs?location=Pune"],
-              ["Kolkata", "/jobs?location=Kolkata"],
-              ["Ahmedabad", "/jobs?location=Ahmedabad"],
-            ],
-          ].map(([heading, ...items]) => (
-            <div key={String(heading)}>
-              <h3>{heading as string}</h3>
-              {(items as string[][]).map(([label, href]) => (
+              {
+                heading: "GigKaro",
+                items: [
+                  ["About", "/about"],
+                  ["Blog", "/blog"],
+                  ["How it works", "/#how-it-works"],
+                  ["Contact", "/contact"],
+                ],
+              },
+              {
+                heading: "Find work",
+                items: [
+                  ["Delivery jobs", "/delivery-jobs/bengaluru"],
+                  ["Warehouse jobs", "/warehouse-jobs/bengaluru"],
+                  ["EV rider jobs", "/jobs?category=ev"],
+                  ["Field jobs", "/jobs?category=field"],
+                ],
+              },
+              {
+                heading: "Popular locations",
+                headingHref: "/locations",
+                items: [
+                  ["Bengaluru", "/jobs?location=Bengaluru"],
+                  ["Delhi NCR", "/jobs?location=Delhi"],
+                  ["Mumbai", "/jobs?location=Mumbai"],
+                  ["Hyderabad", "/jobs?location=Hyderabad"],
+                ],
+              },
+              {
+                heading: "More locations",
+                headingHref: "/locations",
+                items: [
+                  ["Chennai", "/jobs?location=Chennai"],
+                  ["Pune", "/jobs?location=Pune"],
+                  ["Kolkata", "/jobs?location=Kolkata"],
+                  ["Ahmedabad", "/jobs?location=Ahmedabad"],
+                ],
+              },
+            ] as {
+              heading: string;
+              headingHref?: string;
+              items: string[][];
+            }[]
+          ).map(({ heading, headingHref, items }) => (
+            <div key={heading}>
+              <h3>
+                {headingHref ? (
+                  <Link href={headingHref}>{heading}</Link>
+                ) : (
+                  heading
+                )}
+              </h3>
+              {items.map(([label, href]) => (
                 <Link key={label} href={href}>
                   {label}
                 </Link>
