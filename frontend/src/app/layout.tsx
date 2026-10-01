@@ -9,7 +9,7 @@ import { MainHeader, Footer, MobileNav } from "@/components/layout";
 import { WebMCP } from "@/components/webmcp";
 import { DemoProvider } from "@/hooks/use-demo-store";
 import { AuthProvider } from "@/hooks/use-auth";
-import { siteOrigin, siteSchema } from "@/lib/metadata";
+import { ogImage, siteOrigin, siteSchema } from "@/lib/metadata";
 
 const description =
   "Kaam Karo. Kamao. Find nearby delivery, warehouse, logistics and field opportunities by pincode.";
@@ -29,8 +29,13 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "GigKaro",
     url: siteOrigin,
+    images: [ogImage],
   },
-  twitter: { card: "summary", title: "GigKaro — Find Gig Jobs Near You" },
+  twitter: {
+    card: "summary_large_image",
+    title: "GigKaro — Find Gig Jobs Near You",
+    images: [ogImage.url],
+  },
 };
 export default function RootLayout({
   children,
