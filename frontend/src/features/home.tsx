@@ -19,9 +19,8 @@ import {
 } from "lucide-react";
 import { LocationSearch } from "@/components/search";
 import { CategoryCard } from "@/components/category-card";
-import { JobList } from "@/components/job-card";
 import { SectionHeading } from "@/components/primitives";
-import { getCategoryCounts, getJobs } from "@/lib/services/jobs";
+import { getCategoryCounts } from "@/lib/services/jobs";
 import { getCategories } from "@/lib/services/categories";
 import { getPopularLocations } from "@/lib/services/locations";
 import {
@@ -173,7 +172,6 @@ export function Hero() {
   );
 }
 export async function HomePage() {
-  const jobs = getJobs();
   const [categoryCounts, companies] = await Promise.all([
     getCategoryCounts(),
     fetchPublicCompanies(),
@@ -229,28 +227,6 @@ export async function HomePage() {
               count={categoryCounts[c.id] || 0}
             />
           ))}
-        </div>
-      </section>
-      <section className="section jobs-section">
-        <div className="container">
-          <SectionHeading
-            eyebrow="GOOD WORK, RIGHT AROUND THE CORNER"
-            title="Your next job could be here."
-            description="Fresh opportunities from employers in your neighbourhood."
-            href="/jobs?location=560034"
-            action="View all jobs"
-          />
-          <div className="jobs-location-bar">
-            <span>
-              <MapPin size={16} />
-              <strong>{uiText("nearKoramangalaBengaluru")}</strong>
-              <span className="location-pin">560034</span>
-            </span>
-            <Link href="/jobs" className="text-link">
-              {uiText("changeLocation")}
-            </Link>
-          </div>
-          {jobs.length > 0 && <JobList jobs={jobs.slice(0, 3)} />}
         </div>
       </section>
       <section className="section container" id="how-it-works">
