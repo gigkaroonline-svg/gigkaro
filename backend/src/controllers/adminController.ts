@@ -280,7 +280,7 @@ export async function createAdminJob(
       verified: true,
       employmentType: data.employmentType,
       shift: data.shift,
-      postedAt: "Today",
+      postedAt: new Date().toISOString().slice(0, 10),
       description: data.description,
       requirements: data.requirements,
       status: data.status,

@@ -9,6 +9,7 @@ import {
   FileText,
   ArrowRight,
   ShieldCheck,
+  CalendarDays,
 } from "lucide-react";
 import {
   Breadcrumb,
@@ -17,11 +18,13 @@ import {
   SalaryBadge,
   SectionHeading,
 } from "@/components/primitives";
-import { SaveJobButton, JobCard, CompanyMark } from "@/components/job-card";
+import { JobCard, CompanyMark } from "@/components/job-card";
 import { ApplyButton } from "./application";
 import { getJobs } from "@/lib/services/jobs";
+import { resolvePostedAt } from "@/lib/posted-at";
 import type { Job } from "@/types";
 export function JobDetail({ job }: { job: Job }) {
+  const posted = resolvePostedAt(job.id, job.postedAt);
   const similar = getJobs()
     .filter((j) => j.id !== job.id && j.category === job.category)
     .slice(0, 3);
@@ -51,9 +54,12 @@ export function JobDetail({ job }: { job: Job }) {
                   <MapPin size={15} />
                   {job.locality}, {job.city} · {job.pincode}
                 </span>
+                <span className="inline-meta">
+                  <CalendarDays size={15} />
+                  Posted {posted.label}
+                </span>
               </p>
             </div>
-            <SaveJobButton id={job.id} />
           </div>
         </div>
       </div>
@@ -76,6 +82,7 @@ export function JobDetail({ job }: { job: Job }) {
                 [Clock3, job.employmentType],
                 [Bike, job.vehicle],
                 [Clock3, `${job.shift} shift`],
+                [CalendarDays, `Posted ${posted.label}`],
               ].map(([Icon, value]) => {
                 const I = Icon as typeof Users;
                 return (

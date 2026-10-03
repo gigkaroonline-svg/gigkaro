@@ -6,6 +6,7 @@ import {
   getIndiaPincode,
   searchIndiaPincodes,
 } from "../utils/indiaPincodes.js";
+import { maybeRefreshPostedDates } from "../utils/refreshPostedAt.js";
 
 type LocationRef = {
   pincode: string;
@@ -59,6 +60,7 @@ export async function listJobs(
   next: NextFunction,
 ) {
   try {
+    maybeRefreshPostedDates();
     const f = {
       location: String(req.query.location || ""),
       category: String(req.query.category || ""),
@@ -157,6 +159,7 @@ export async function getJobBySlug(
   next: NextFunction,
 ) {
   try {
+    maybeRefreshPostedDates();
     const slug = String(req.params.slug || "");
     let job = await Job.findOne({ slug, status: "Active" });
     let placePin = "";

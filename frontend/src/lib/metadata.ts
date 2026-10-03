@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { Job } from "@/types";
+import { resolvePostedAt } from "@/lib/posted-at";
 
 export const siteOrigin = (
   process.env.NEXT_PUBLIC_SITE_URL || "https://gigkaro.in"
@@ -58,7 +59,7 @@ const employmentTypeMap: Record<string, string> = {
 };
 
 export function jobPostingSchema(job: Job) {
-  const posted = /^\d{4}-\d{2}-\d{2}/.test(job.postedAt) ? job.postedAt : undefined;
+  const posted = resolvePostedAt(job.id, job.postedAt).iso;
   return {
     "@context": "https://schema.org",
     "@type": "JobPosting",
@@ -66,7 +67,7 @@ export function jobPostingSchema(job: Job) {
     description: job.description,
     url: canonicalUrl(`/job/${job.slug}`),
     directApply: true,
-    ...(posted ? { datePosted: posted } : {}),
+    datePosted: posted,
     employmentType: employmentTypeMap[job.employmentType] || "OTHER",
     identifier: {
       "@type": "PropertyValue",
