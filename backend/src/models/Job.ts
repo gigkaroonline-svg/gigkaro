@@ -38,7 +38,10 @@ const jobSchema = new Schema(
       enum: ["Morning", "Evening", "Night", "Flexible"],
       required: true,
     },
-    postedAt: { type: String, default: "Today" },
+    postedAt: {
+      type: String,
+      default: () => new Date().toISOString().slice(0, 10),
+    },
     description: { type: String, required: true },
     requirements: { type: [String], default: [] },
     status: {

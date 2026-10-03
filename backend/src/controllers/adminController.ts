@@ -8,7 +8,24 @@ import { Category } from "../models/Category.js";
 import { serializeJob } from "../utils/jobs.js";
 import { uploadCompanyLogo } from "../utils/gcs.js";
 import { locationCatalog } from "../data/taxonomy.js";
+import { getIndiaPincode } from "../utils/indiaPincodes.js";
 import type { AuthRequest } from "../middleware/auth.js";
+
+function locationLabelForPincode(pincode: string) {
+  const pin = String(pincode || "").trim();
+  if (!pin) return "";
+  const catalog = locationCatalog.find((l) => l.pincode === pin);
+  if (catalog) return `${catalog.locality}, ${catalog.city}`;
+  const india = getIndiaPincode(pin);
+  if (india) {
+    const locality = india.locality || india.city;
+    if (locality && india.city && locality !== india.city) {
+      return `${locality}, ${india.city}`;
+    }
+    return locality || india.city || "";
+  }
+  return "";
+}
 
 const jobStatuses = [
   "Active",
@@ -280,7 +297,7 @@ export async function createAdminJob(
       verified: true,
       employmentType: data.employmentType,
       shift: data.shift,
-      postedAt: "Today",
+      postedAt: new Date().toISOString().slice(0, 10),
       description: data.description,
       requirements: data.requirements,
       status: data.status,
@@ -454,6 +471,7 @@ export async function listAdminApplications(
           name: a.name,
           mobile: a.mobile,
           pincode: a.pincode,
+          location: locationLabelForPincode(a.pincode),
           bike: a.bike,
           licence: a.licence,
           joining: a.joining,

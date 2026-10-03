@@ -73,6 +73,7 @@ type AdminApplication = {
   name: string;
   mobile: string;
   pincode: string;
+  location?: string;
   status: string;
   createdAt: string;
   joining?: string;
@@ -817,6 +818,7 @@ function AdminApplications({ mode }: { mode: "applications" | "candidates" }) {
           <thead>
             <tr>
               <th>Candidate</th>
+              <th>Mobile</th>
               <th>Job</th>
               <th>{mode === "candidates" ? "Joining" : "Applied"}</th>
               <th>Status</th>
@@ -828,9 +830,12 @@ function AdminApplications({ mode }: { mode: "applications" | "candidates" }) {
                 <td>
                   <strong>{a.name}</strong>
                   <div className="muted">
-                    {a.mobile} · {a.pincode}
+                    {a.location
+                      ? `${a.location} (${a.pincode})`
+                      : a.pincode}
                   </div>
                 </td>
+                <td>{a.mobile || "—"}</td>
                 <td>
                   {a.job ? (
                     <Link href={jobHref(a.job)}>{a.job.title}</Link>
@@ -841,7 +846,13 @@ function AdminApplications({ mode }: { mode: "applications" | "candidates" }) {
                 <td>
                   {mode === "candidates"
                     ? a.joining || "—"
-                    : new Date(a.createdAt).toLocaleDateString("en-IN")}
+                    : new Date(a.createdAt).toLocaleString("en-IN", {
+                        day: "numeric",
+                        month: "numeric",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                 </td>
                 <td>
                   <select

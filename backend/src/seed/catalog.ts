@@ -230,7 +230,11 @@ export const catalogJobs = locations.flatMap((location, li) =>
           : ri % 3 === 1
             ? ("Night" as const)
             : ("Flexible" as const),
-      postedAt: ri < 3 ? "Today" : "2 days ago",
+      postedAt: new Date(
+        Date.now() - (ri < 3 ? 0 : 2) * 24 * 60 * 60 * 1000,
+      )
+        .toISOString()
+        .slice(0, 10),
       description: `Join ${company.name}'s ${location.locality} team. Work close to home with clear earnings, supportive local coordinators and a simple joining process. This is a fictional opportunity for exploring GigKaro.`,
       requirements: [
         "Must be at least 18 years old",

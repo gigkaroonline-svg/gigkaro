@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { api, ApiError, apiAssetUrl } from "@/lib/api";
 import type { Job } from "@/types";
 import { SalaryBadge } from "./primitives";
+import { resolvePostedAt } from "@/lib/posted-at";
 
 export function SaveJobButton({ id }: { id: string }) {
   const { user } = useAuth();
@@ -169,7 +170,7 @@ export function JobCard({
         {!active && <span>Unavailable</span>}
       </div>
       <div className="job-card-bottom">
-        <span>{job.postedAt}</span>
+        <span>Posted {resolvePostedAt(job.id, job.postedAt).label}</span>
         <Link className="apply-link" href={jobHref(job)}>
           View job
           <ArrowUpRight size={14} />

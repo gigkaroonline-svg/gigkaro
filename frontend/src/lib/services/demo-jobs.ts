@@ -50,7 +50,7 @@ export function postedJobToJob(p: PostedJob): Job {
     verified: true,
     employmentType: p.employmentType as Job["employmentType"],
     shift: p.shift as Job["shift"],
-    postedAt: "Today",
+    postedAt: new Date().toISOString().slice(0, 10),
     description: p.description,
     requirements: [
       `Experience: ${p.experience}`,

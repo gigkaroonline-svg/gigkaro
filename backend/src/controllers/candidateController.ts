@@ -7,6 +7,7 @@ import { User } from "../models/User.js";
 import type { AuthRequest } from "../middleware/auth.js";
 import { serializeUser } from "../middleware/auth.js";
 import { serializeJob } from "../utils/jobs.js";
+import { sendApplicationSms } from "../utils/gupshup.js";
 
 const applicationBody = z.object({
   jobId: z.string().min(1),
@@ -146,6 +147,13 @@ export async function createApplication(
         },
       });
     }
+
+    void sendApplicationSms({
+      jobTitle: job.title,
+      locality: job.locality || job.city,
+      candidateName: parsed.data.name,
+      candidateMobile: parsed.data.mobile,
+    });
 
     res.status(201).json({
       application: serializeApplication(app, serializeJob(job)),

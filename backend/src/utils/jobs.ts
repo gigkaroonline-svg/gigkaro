@@ -1,3 +1,5 @@
+import { resolvePostedAt } from "./postedAt.js";
+
 export function distanceKm(
   a: { lat: number; lng: number },
   b: { lat: number; lng: number },
@@ -96,7 +98,10 @@ export function serializeJob(
     verified: job.verified,
     employmentType: job.employmentType,
     shift: job.shift,
-    postedAt: job.postedAt,
+    postedAt: resolvePostedAt(
+      job._id.toString(),
+      job.postedAt,
+    ).iso,
     description: job.description,
     requirements: job.requirements,
     status: job.status ?? "Active",
