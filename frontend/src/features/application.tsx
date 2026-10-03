@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { api, ApiError } from "@/lib/api";
+import { trackEvent } from "@/lib/first-party-analytics";
 import type { Job } from "@/types";
 
 export const applicationSchema = z.object({
@@ -127,6 +128,12 @@ export function ApplyButton({
       markAppliedLocally(job.id);
       setApplied(true);
       setStep(3);
+      trackEvent("apply_submit", {
+        jobId: job.id,
+        jobTitle: job.title,
+        locality: job.locality,
+        pincode: job.pincode,
+      });
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         markAppliedLocally(job.id);
@@ -158,6 +165,14 @@ export function ApplyButton({
       open={open}
       onOpenChange={(nextOpen) => {
         setOpen(nextOpen);
+        if (nextOpen && !applied) {
+          trackEvent("apply_start", {
+            jobId: job.id,
+            jobTitle: job.title,
+            locality: job.locality,
+            pincode: job.pincode,
+          });
+        }
         if (!nextOpen) {
           setStep(applied ? 3 : 1);
           setSubmitError("");

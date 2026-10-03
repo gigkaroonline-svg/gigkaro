@@ -14,6 +14,9 @@ import {
   ShieldCheck,
   LogOut,
   CheckCircle2,
+  Eye,
+  Activity,
+  BarChart3,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { LogoCropDialog } from "@/components/logo-crop-dialog";
@@ -40,6 +43,7 @@ import { AdminBlogs } from "@/features/admin-blogs";
 
 const adminNav = [
   ["overview", "Dashboard", LayoutDashboard],
+  ["traffic", "Traffic", BarChart3],
   ["jobs", "Jobs", BriefcaseBusiness],
   ["applications", "Applications", FileCheck2],
   ["candidates", "Candidates", Users],
@@ -67,6 +71,32 @@ type Summary = {
   funnel: Record<string, number>;
   cities: { city: string; count: number }[];
 };
+
+type TrafficSummary = {
+  rangeDays: number;
+  from: string;
+  to: string;
+  pageviews: number;
+  visitors: number;
+  sessions: number;
+  events: number;
+  topPages: { path: string; count: number }[];
+  topSources: { source: string; medium: string; count: number }[];
+  topEvents: { name: string; count: number }[];
+};
+
+function isoDay(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function daysAgoIso(days: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return isoDay(d);
+}
 
 type AdminApplication = {
   id: string;
@@ -1305,6 +1335,172 @@ function AdminDirectory({
   );
 }
 
+function AdminTraffic() {
+  const [preset, setPreset] = useState("30d");
+  const [from, setFrom] = useState(daysAgoIso(29));
+  const [to, setTo] = useState(isoDay());
+  const [traffic, setTraffic] = useState<TrafficSummary | null>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  function applyPreset(value: string) {
+    setPreset(value);
+    if (value === "custom") return;
+    const today = isoDay();
+    setTo(today);
+    if (value === "today") setFrom(today);
+    else if (value === "7d") setFrom(daysAgoIso(6));
+    else if (value === "90d") setFrom(daysAgoIso(89));
+    else setFrom(daysAgoIso(29));
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    const params = new URLSearchParams({ from, to, preset });
+    api<TrafficSummary>(`/admin/analytics/traffic?${params.toString()}`)
+      .then((data) => {
+        if (!cancelled) {
+          setTraffic(data);
+          setError("");
+        }
+      })
+      .catch((err) => {
+        if (!cancelled)
+          setError(
+            err instanceof ApiError
+              ? err.message
+              : "Could not load traffic analytics.",
+          );
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [from, to, preset]);
+
+  return (
+    <section className="panel stack">
+      <div className="traffic-heading">
+        <div>
+          <h2>Traffic{loading ? "…" : ""}</h2>
+        </div>
+        <div className="traffic-filters">
+          <select
+            value={preset}
+            onChange={(e) => applyPreset(e.target.value)}
+            aria-label="Date range preset"
+          >
+            <option value="today">Today</option>
+            <option value="7d">Last 7 days</option>
+            <option value="30d">Last 30 days</option>
+            <option value="90d">Last 90 days</option>
+            <option value="custom">Custom</option>
+          </select>
+          <input
+            type="date"
+            value={from}
+            max={to}
+            onChange={(e) => {
+              setPreset("custom");
+              setFrom(e.target.value);
+            }}
+            aria-label="From date"
+          />
+          <input
+            type="date"
+            value={to}
+            min={from}
+            max={isoDay()}
+            onChange={(e) => {
+              setPreset("custom");
+              setTo(e.target.value);
+            }}
+            aria-label="To date"
+          />
+        </div>
+      </div>
+      {error && (
+        <p className="field-error" role="alert">
+          {error}
+        </p>
+      )}
+      <div className="stat-grid">
+        <DashboardStatCard
+          label="Pageviews"
+          value={traffic?.pageviews ?? "—"}
+          icon={<Eye />}
+        />
+        <DashboardStatCard
+          label="Visitors"
+          value={traffic?.visitors ?? "—"}
+          icon={<Users />}
+        />
+        <DashboardStatCard
+          label="Sessions"
+          value={traffic?.sessions ?? "—"}
+          icon={<Activity />}
+        />
+        <DashboardStatCard
+          label="Events"
+          value={traffic?.events ?? "—"}
+          icon={<BarChart3 />}
+        />
+      </div>
+      <div className="dashboard-split">
+        <section className="panel">
+          <SectionHeading title="Top pages" />
+          <div className="stack">
+            {(traffic?.topPages || []).map((p) => (
+              <div className="row spread" key={p.path}>
+                <span className="muted" style={{ wordBreak: "break-all" }}>
+                  {p.path}
+                </span>
+                <strong>{p.count}</strong>
+              </div>
+            ))}
+            {!traffic?.topPages?.length && !error && (
+              <p className="muted">No pageviews yet.</p>
+            )}
+          </div>
+        </section>
+        <section className="panel">
+          <SectionHeading title="Traffic sources" />
+          <div className="stack">
+            {(traffic?.topSources || []).map((s) => (
+              <div className="row spread" key={`${s.source}-${s.medium}`}>
+                <span>
+                  {s.source} / {s.medium}
+                </span>
+                <strong>{s.count}</strong>
+              </div>
+            ))}
+            {!traffic?.topSources?.length && !error && (
+              <p className="muted">No source data yet.</p>
+            )}
+          </div>
+        </section>
+      </div>
+      <section className="panel">
+        <SectionHeading title="Top events" />
+        <div className="stack">
+          {(traffic?.topEvents || []).map((e) => (
+            <div className="row spread" key={e.name}>
+              <span>{e.name}</span>
+              <strong>{e.count}</strong>
+            </div>
+          ))}
+          {!traffic?.topEvents?.length && !error && (
+            <p className="muted">No events yet.</p>
+          )}
+        </div>
+      </section>
+    </section>
+  );
+}
+
 export function AdminPage({ view = "overview" }: { view?: string }) {
   const { user, ready } = useAuth();
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -1410,10 +1606,15 @@ export function AdminPage({ view = "overview" }: { view?: string }) {
                 <Link className="text-link" href="/admin/applications">
                   View applications
                 </Link>
+                <Link className="text-link" href="/admin/traffic">
+                  View traffic
+                </Link>
               </div>
             </section>
           </div>
         </>
+      ) : view === "traffic" ? (
+        <AdminTraffic />
       ) : view === "jobs" ? (
         <AdminModeration />
       ) : view === "applications" || view === "candidates" ? (
