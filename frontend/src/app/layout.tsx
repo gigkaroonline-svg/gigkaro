@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { Suspense } from "react";
 import "@fontsource/inter/latin-400.css";
 import "@fontsource/inter/latin-500.css";
 import "@fontsource/inter/latin-600.css";
@@ -7,6 +8,7 @@ import "@fontsource/inter/latin-700.css";
 import "@/styles/globals.css";
 import { MainHeader, Footer, MobileNav } from "@/components/layout";
 import { WebMCP } from "@/components/webmcp";
+import { FirstPartyAnalytics } from "@/components/first-party-analytics";
 import { DemoProvider } from "@/hooks/use-demo-store";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ogImage, siteOrigin, siteSchema } from "@/lib/metadata";
@@ -65,6 +67,9 @@ export default function RootLayout({
         />
         <DemoProvider>
           <AuthProvider>
+            <Suspense fallback={null}>
+              <FirstPartyAnalytics />
+            </Suspense>
             <WebMCP />
             <a className="skip-link" href="#main">
               Skip to content

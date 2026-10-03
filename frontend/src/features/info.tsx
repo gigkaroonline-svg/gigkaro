@@ -90,7 +90,7 @@ const copy: Record<
       ],
       [
         "Analytics",
-        "This frontend does not include advertising trackers or an analytics integration. The preview hosting service may manage its own access session.",
+        "We use Google Analytics and first-party analytics on our servers to understand visits, traffic sources, and key actions such as applications. We do not sell this data.",
       ],
     ],
   },

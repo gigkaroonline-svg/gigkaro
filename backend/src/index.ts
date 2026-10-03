@@ -13,6 +13,7 @@ import { companiesRouter } from "./routes/companies.js";
 import { locationsRouter } from "./routes/locations.js";
 import { adminRouter } from "./routes/admin.js";
 import { blogsRouter } from "./routes/blogs.js";
+import { analyticsRouter } from "./routes/analytics.js";
 import {
   applicationsRouter,
   savedRouter,
@@ -67,6 +68,7 @@ async function main() {
   app.use("/api/saved", savedRouter);
   app.use("/api/candidates", candidatesRouter);
   app.use("/api/blogs", blogsRouter);
+  app.use("/api/analytics", analyticsRouter);
   app.use("/api/admin", adminRouter);
 
   app.use(

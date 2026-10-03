@@ -15,6 +15,7 @@ import {
   listCompanies,
   createCompany,
 } from "../controllers/adminController.js";
+import { analyticsTraffic } from "../controllers/analyticsController.js";
 import {
   createAdminBlog,
   deleteAdminBlog,
@@ -27,6 +28,7 @@ export const adminRouter = Router();
 adminRouter.use(requireAuth, requireRole("admin"));
 
 adminRouter.get("/analytics/summary", analyticsSummary);
+adminRouter.get("/analytics/traffic", analyticsTraffic);
 adminRouter.get("/jobs", listAdminJobs);
 adminRouter.post("/jobs", createAdminJob);
 adminRouter.patch("/jobs/:id", patchAdminJob);
