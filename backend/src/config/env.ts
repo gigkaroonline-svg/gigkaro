@@ -19,6 +19,9 @@ export const env = {
   gcsProjectId: process.env.GCS_PROJECT_ID || "",
   gcsClientEmail: process.env.GCS_CLIENT_EMAIL || "",
   gcsPrivateKey: (process.env.GCS_PRIVATE_KEY || "").replace(/\\n/g, "\n"),
+  gupshupUserId: process.env.GUPSHUP_USERID || "",
+  gupshupPassword: process.env.GUPSHUP_PASSWORD || "",
+  gupshupNotifyTo: process.env.GUPSHUP_NOTIFY_TO || "",
 };
 
 export function isAdminIdentifier(mobile?: string, email?: string) {
