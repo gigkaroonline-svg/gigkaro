@@ -22,6 +22,9 @@ import {
 async function main() {
   await connectDb();
 
+  const { ensureApplicationIndexes } = await import("./models/Application.js");
+  await ensureApplicationIndexes();
+
   const { Category } = await import("./models/Category.js");
   const { catalogCategories } = await import("./data/taxonomy.js");
   if ((await Category.countDocuments()) === 0) {

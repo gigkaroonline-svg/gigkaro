@@ -129,35 +129,70 @@ export async function createApplication(
       return;
     }
 
-    const app = await Application.create({
-      ...parsed.data,
-      ...(req.userId ? { userId: req.userId } : {}),
-      jobId: job._id,
-      status: "Applied",
-    });
-
-    if (req.userId) {
-      await User.findByIdAndUpdate(req.userId, {
-        $set: {
-          name: parsed.data.name,
-          "profile.name": parsed.data.name,
-          "profile.mobile": parsed.data.mobile,
-          "profile.pincode": parsed.data.pincode,
-          mobile: parsed.data.mobile,
-        },
+    try {
+      const app = await Application.create({
+        name: parsed.data.name,
+        mobile: parsed.data.mobile,
+        pincode: parsed.data.pincode,
+        bike: parsed.data.bike,
+        licence: parsed.data.licence,
+        joining: parsed.data.joining,
+        ...(req.userId ? { userId: req.userId } : {}),
+        jobId: job._id,
+        status: "Applied",
       });
+
+      if (req.userId) {
+        await User.findByIdAndUpdate(req.userId, {
+          $set: {
+            name: parsed.data.name,
+            "profile.name": parsed.data.name,
+            "profile.mobile": parsed.data.mobile,
+            "profile.pincode": parsed.data.pincode,
+            mobile: parsed.data.mobile,
+          },
+        });
+      }
+
+      void sendApplicationSms({
+        jobTitle: job.title,
+        locality: job.locality || job.city,
+        candidateName: parsed.data.name,
+        candidateMobile: parsed.data.mobile,
+      });
+
+      res.status(201).json({
+        application: serializeApplication(app, serializeJob(job)),
+      });
+    } catch (err) {
+      const code =
+        err && typeof err === "object" && "code" in err
+          ? (err as { code?: number }).code
+          : undefined;
+      if (code === 11000) {
+        const existing = await Application.findOne({
+          $or: [
+            ...(req.userId
+              ? [{ userId: req.userId, jobId: job._id }]
+              : []),
+            { mobile: parsed.data.mobile, jobId: job._id },
+          ],
+        });
+        res.status(409).json({
+          error: "You already applied to this job.",
+          ...(existing
+            ? {
+                application: serializeApplication(
+                  existing,
+                  serializeJob(job),
+                ),
+              }
+            : {}),
+        });
+        return;
+      }
+      throw err;
     }
-
-    void sendApplicationSms({
-      jobTitle: job.title,
-      locality: job.locality || job.city,
-      candidateName: parsed.data.name,
-      candidateMobile: parsed.data.mobile,
-    });
-
-    res.status(201).json({
-      application: serializeApplication(app, serializeJob(job)),
-    });
   } catch (err) {
     next(err);
   }
