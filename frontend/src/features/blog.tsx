@@ -1,13 +1,34 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Breadcrumb } from "@/components/primitives";
-import { apiAssetUrl } from "@/lib/api";
+import { API_URL, apiAssetUrl } from "@/lib/api";
 import { looksLikeBlogHtml, sanitizeBlogHtml } from "@/lib/blog-html";
 import {
   formatBlogDate,
   type BlogPost,
 } from "@/lib/services/api-blogs";
 
-export function BlogIndex({ posts }: { posts: BlogPost[] }) {
+export function BlogIndex({ posts: initialPosts }: { posts: BlogPost[] }) {
+  const [posts, setPosts] = useState(initialPosts);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_URL}/blogs`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { posts?: BlogPost[] } | null) => {
+        if (cancelled || !data?.posts?.length) return;
+        setPosts(data.posts);
+      })
+      .catch(() => {
+        // keep server-rendered posts
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <>
       <div className="page-intro">
@@ -65,7 +86,7 @@ export function BlogArticle({ post }: { post: BlogPost }) {
     : null;
   const paragraphs = htmlBody
     ? []
-    : post.body
+    : (post.body || "")
         .split(/\n\s*\n/)
         .map((part) => part.trim())
         .filter(Boolean);

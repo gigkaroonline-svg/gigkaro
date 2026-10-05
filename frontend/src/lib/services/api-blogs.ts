@@ -19,13 +19,14 @@ function apiBase() {
 
 export async function fetchPublishedPosts() {
   try {
-    // Always hit the API so admin publishes appear without waiting on ISR cache.
     const res = await fetch(`${apiBase()}/blogs`, {
-      cache: "no-store",
+      // Short ISR window so new admin publishes show up quickly without
+      // force-dynamic (which was 500'ing on Vercel for /blog).
+      next: { revalidate: 30, tags: ["blogs"] },
     });
     if (!res.ok) return [];
     const data = (await res.json()) as { posts?: BlogPost[] };
-    return data.posts || [];
+    return Array.isArray(data.posts) ? data.posts : [];
   } catch {
     return [];
   }
@@ -35,7 +36,7 @@ export async function fetchPublishedPost(slug: string) {
   try {
     const res = await fetch(
       `${apiBase()}/blogs/${encodeURIComponent(slug)}`,
-      { cache: "no-store" },
+      { next: { revalidate: 30, tags: ["blogs", `blog:${slug}`] } },
     );
     if (res.status === 404) return null;
     if (!res.ok) return undefined;
