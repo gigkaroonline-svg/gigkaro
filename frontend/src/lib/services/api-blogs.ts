@@ -19,8 +19,9 @@ function apiBase() {
 
 export async function fetchPublishedPosts() {
   try {
+    // Always hit the API so admin publishes appear without waiting on ISR cache.
     const res = await fetch(`${apiBase()}/blogs`, {
-      next: { revalidate: 60 },
+      cache: "no-store",
     });
     if (!res.ok) return [];
     const data = (await res.json()) as { posts?: BlogPost[] };
@@ -34,7 +35,7 @@ export async function fetchPublishedPost(slug: string) {
   try {
     const res = await fetch(
       `${apiBase()}/blogs/${encodeURIComponent(slug)}`,
-      { next: { revalidate: 60 } },
+      { cache: "no-store" },
     );
     if (res.status === 404) return null;
     if (!res.ok) return undefined;

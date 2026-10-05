@@ -8,11 +8,10 @@ import {
   fetchPublishedPosts,
 } from "@/lib/services/api-blogs";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export async function generateStaticParams() {
-  const posts = await fetchPublishedPosts();
-  return posts.map((post) => ({ slug: post.slug }));
+  return [];
 }
 
 export async function generateMetadata({

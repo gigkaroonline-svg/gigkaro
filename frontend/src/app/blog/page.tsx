@@ -2,7 +2,7 @@ import { BlogIndex } from "@/features/blog";
 import { pageMetadata } from "@/lib/metadata";
 import { fetchPublishedPosts } from "@/lib/services/api-blogs";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export const metadata = pageMetadata(
   "Blog",
