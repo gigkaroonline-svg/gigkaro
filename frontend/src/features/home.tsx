@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { uiText } from "@/lib/i18n";
 import Link from "next/link";
 import {
@@ -27,6 +28,7 @@ import {
   companyLogoSrc,
   fetchPublicCompanies,
 } from "@/lib/services/api-companies";
+import { homeFaqs } from "@/lib/metadata";
 function DeliveryRider({
   className,
   jacket,
@@ -343,6 +345,15 @@ export async function HomePage() {
         </h2>
         <LocationSearch compact />
         <p>{uiText("noRegistrationRequiredToBrowseJobs")}</p>
+      </section>
+      <section className="container section faq-section">
+        <h2>Frequently Asked Questions About Gig Jobs</h2>
+        {homeFaqs.map((item) => (
+          <Fragment key={item.question}>
+            <h3>{item.question}</h3>
+            <p>{item.answer}</p>
+          </Fragment>
+        ))}
       </section>
     </>
   );

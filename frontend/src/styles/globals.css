@@ -3980,6 +3980,25 @@ details p {
 .faq-section {
   max-width: 850px;
 }
+.faq-section > h2 {
+  margin-bottom: 8px;
+}
+.faq-section > h3 {
+  font-weight: 600;
+  font-size: 14px;
+  border-top: 1px solid #e4eaf2;
+  padding-top: 17px;
+  margin-top: 17px;
+}
+.faq-section > h3:first-of-type {
+  margin-top: 12px;
+}
+.faq-section > p {
+  font-size: 13px;
+  margin-top: 12px;
+  line-height: 1.8;
+  padding-bottom: 4px;
+}
 .pincode-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -5713,6 +5732,167 @@ details p {
   }
   .application-dialog {
     max-height: 92dvh;
+  }
+}
+.about-page {
+  padding-bottom: 40px;
+}
+.about-hero,
+.about-block,
+.about-cta,
+.about-footer-note {
+  max-width: 860px;
+}
+.about-hero > h1 {
+  font-size: 42px;
+  line-height: 1.15;
+  font-weight: 650;
+  letter-spacing: -1.7px;
+}
+.about-lead {
+  font-size: 22px;
+  font-weight: 600;
+  margin-top: 18px;
+  color: #17324d;
+}
+.about-hero p,
+.about-block p {
+  font-size: 15px;
+  line-height: 1.9;
+  margin-top: 14px;
+}
+.about-block > h2 {
+  font-size: 28px;
+  line-height: 1.25;
+  letter-spacing: -0.8px;
+  margin-bottom: 8px;
+}
+.about-emphasis {
+  font-weight: 600;
+  color: #17324d;
+}
+.about-flow {
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: #1d4e8a;
+}
+.about-trio,
+.about-steps,
+.about-categories,
+.about-cta-grid {
+  display: grid;
+  gap: 16px;
+  margin-top: 22px;
+}
+.about-trio,
+.about-cta-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.about-steps,
+.about-categories {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.about-trio > div,
+.about-steps > div,
+.about-categories > div,
+.about-cta-grid > div,
+.about-compare > div {
+  padding: 18px 0;
+  border-top: 1px solid #e3eaf4;
+}
+.about-trio strong,
+.about-steps strong,
+.about-categories strong,
+.about-cta-grid h3,
+.about-compare h3 {
+  display: block;
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+.about-sublabel {
+  font-size: 13px !important;
+  font-weight: 600;
+  color: #5b83b7;
+  margin-top: 0 !important;
+}
+.about-list {
+  margin: 16px 0 0;
+  padding-left: 18px;
+}
+.about-list li {
+  font-size: 15px;
+  line-height: 1.8;
+  margin-top: 4px;
+}
+.about-compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+  margin-top: 22px;
+}
+.about-compare ul {
+  margin: 12px 0;
+  padding-left: 18px;
+}
+.about-compare li {
+  font-size: 14px;
+  line-height: 1.7;
+  margin-top: 4px;
+}
+.about-table {
+  margin-top: 22px;
+  border-top: 1px solid #e3eaf4;
+}
+.about-table-head,
+.about-table-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 14px 0;
+  border-bottom: 1px solid #e3eaf4;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.about-table-head {
+  font-weight: 650;
+  color: #17324d;
+}
+.about-cta-grid .button {
+  margin-top: 14px;
+}
+.about-footer-note {
+  border-top: 1px solid #e3eaf4;
+  padding-top: 36px;
+}
+.about-brand {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.8px;
+  margin: 0;
+}
+.about-tags {
+  font-size: 13px;
+  color: #5b6b7c;
+  margin-top: 10px;
+}
+@media (max-width: 800px) {
+  .about-trio,
+  .about-cta-grid,
+  .about-compare,
+  .about-steps,
+  .about-categories {
+    grid-template-columns: 1fr;
+  }
+  .about-hero > h1 {
+    font-size: 32px;
+  }
+  .about-block > h2 {
+    font-size: 24px;
+  }
+  .about-table-head,
+  .about-table-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 }
 .info-page {

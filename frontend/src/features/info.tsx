@@ -1,8 +1,6 @@
 "use client";
-import { uiText } from "@/lib/i18n";
-
+import { Fragment, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { Breadcrumb } from "@/components/primitives";
 import {
@@ -12,29 +10,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { api, ApiError } from "@/lib/api";
+import { uiText } from "@/lib/i18n";
+import { contactFaqs } from "@/lib/metadata";
 const copy: Record<
   string,
   { title: string; intro: string; sections: [string, string][] }
 > = {
-  about: {
-    title: "Good work. Closer to home.",
-    intro:
-      "GigKaro is a pincode-first way to discover gig work and build local teams.",
-    sections: [
-      [
-        "Kaam Karo. Kamao.",
-        "Our product starts with a simple idea: where you live should help you find where you work. Explore delivery, warehouse, logistics, EV and field opportunities with clear earnings and straightforward applications.",
-      ],
-      [
-        "Designed around your day",
-        "Choose a neighbourhood, find work that fits and apply with your basic details. Employers can target local areas and follow candidates through a clear hiring process.",
-      ],
-      [
-        "About this preview",
-        "This is a frontend demonstration. All employers, jobs and hiring activity are fictional. Nothing here represents an offer of employment.",
-      ],
-    ],
-  },
   privacy: {
     title: "Your privacy in this demo.",
     intro: "A clear look at what this frontend stores and how it works.",
@@ -136,9 +117,6 @@ export function InfoPage({ kind }: { kind: string }) {
         <Breadcrumb items={[{ label: "Contact" }]} />
         <div className="eyebrow">{uiText("letSMakeLocalWorkBetter")}</div>
         <h1>{uiText("aLittleFeedbackGoesALongWay")}</h1>
-        <p>
-          {uiText("thisDemoFeedbackFormShowsTheIntendedContactExperienceIt")}
-        </p>
         <form
           className="panel stack"
           style={{ marginTop: 30 }}
@@ -199,9 +177,18 @@ export function InfoPage({ kind }: { kind: string }) {
             </button>
           </DialogContent>
         </Dialog>
+        <section className="section faq-section" style={{ marginTop: 48 }}>
+          <h2>Frequently Asked Questions</h2>
+          {contactFaqs.map((item) => (
+            <Fragment key={item.question}>
+              <h3>{item.question}</h3>
+              <p>{item.answer}</p>
+            </Fragment>
+          ))}
+        </section>
       </div>
     );
-  const c = copy[kind] || copy.about;
+  const c = copy[kind] || copy.privacy;
   return (
     <section className="container section info-page">
       <Breadcrumb
