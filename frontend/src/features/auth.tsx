@@ -164,7 +164,7 @@ export function AuthPage({
         </h2>
         <p>
           {mode === "otp"
-            ? "Use 123456 to explore the account experience. No SMS or email is sent."
+            ? "Enter the 6-digit code to continue."
             : role === "employer"
               ? "Hire great workers near you."
               : role === "admin"
@@ -233,9 +233,48 @@ export function AuthPage({
             <button
               className="text-link"
               type="button"
-              onClick={() =>
-                toast("Your code is 123456. No message was sent.")
-              }
+              disabled={pending}
+              onClick={async () => {
+                let context: {
+                  value?: string;
+                  email?: boolean;
+                  role?: string;
+                } = {};
+                try {
+                  context = JSON.parse(
+                    sessionStorage.getItem("gigkaro-auth") || "{}",
+                  );
+                } catch {}
+                if (!context.value) {
+                  setError("Start with your mobile number or email first.");
+                  return;
+                }
+                const nextRole =
+                  context.role === "employer"
+                    ? "employer"
+                    : context.role === "admin"
+                      ? "admin"
+                      : "candidate";
+                setPending(true);
+                setError("");
+                try {
+                  await requestOtp({
+                    role: nextRole,
+                    ...(context.email
+                      ? { email: context.value }
+                      : { mobile: context.value }),
+                  });
+                  toast("A new code is ready.");
+                } catch (err) {
+                  setError(
+                    err instanceof ApiError
+                      ? err.message
+                      : "Could not resend the code.",
+                  );
+                } finally {
+                  setPending(false);
+                }
+              }}
             >
               {uiText("resendDemoCode")}
             </button>
@@ -267,9 +306,6 @@ export function AuthPage({
             </p>
           </>
         )}
-        <div className="notice">
-          {uiText("demoAccessOnlyUseSampleDetailsYourInformationStaysIn")}
-        </div>
         <Link className="text-link" href="/jobs">
           <ArrowLeft size={15} />
           {uiText("keepBrowsingJobs")}

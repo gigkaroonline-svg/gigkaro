@@ -96,14 +96,11 @@ export async function requestOtp(
     }
     await user.save();
 
-    console.log(
-      `[OTP] ${mobile || email} (${user.role}) → ${env.devOtp} (dev only; not sent via SMS)`,
-    );
+    console.log(`[OTP] ${mobile || email} (${user.role})`);
 
     res.json({
       ok: true,
-      message: "OTP ready. Use the code for this environment.",
-      otp: env.devOtp,
+      message: "Enter the 6-digit code to continue.",
     });
   } catch (err) {
     next(err);

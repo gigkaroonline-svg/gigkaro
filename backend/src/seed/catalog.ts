@@ -235,7 +235,7 @@ export const catalogJobs = locations.flatMap((location, li) =>
       )
         .toISOString()
         .slice(0, 10),
-      description: `Join ${company.name}'s ${location.locality} team. Work close to home with clear earnings, supportive local coordinators and a simple joining process. This is a fictional opportunity for exploring GigKaro.`,
+      description: `Join ${company.name}'s ${location.locality} team. Work close to home with clear earnings, supportive local coordinators and a simple joining process.`,
       requirements: [
         "Must be at least 18 years old",
         "A smartphone with an active mobile number",

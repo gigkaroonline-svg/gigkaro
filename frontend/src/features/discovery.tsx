@@ -148,10 +148,6 @@ export async function PincodePage({ pincode }: { pincode: string }) {
             "What if there are no jobs in my pincode?",
             "The local guide stays available. Search nearby pincodes or widen your radius to discover other opportunities.",
           ],
-          [
-            "Are these real vacancies?",
-            "No. All listings and employers in this preview are fictional. Applications stay on this device.",
-          ],
         ].map(([q, a]) => (
           <details key={q}>
             <summary>{q}</summary>

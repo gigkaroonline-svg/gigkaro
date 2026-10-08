@@ -4,8 +4,7 @@ export const english = {
   jobsNearby: "jobs nearby",
   demo: "",
   demoWorkspace: "",
-  fictionalDataChangesStayInThisBrowser:
-    "Fictional data. Changes stay in this browser.",
+  fictionalDataChangesStayInThisBrowser: "",
   explore: "Explore",
   demo2: "",
   postAJob: "Post a Job",
@@ -56,9 +55,9 @@ export const english = {
   status: "STATUS",
   moderate: "MODERATE",
   requirementsChangesAreSharedWithTheEmployerDemoOnThis:
-    "requirements · Changes are shared with the employer on this device.",
+    "requirements",
   illustrativeDemandScoresAndActivityTheseFiguresAreMockHiring:
-    "Illustrative demand scores and activity. These figures are mock hiring intelligence, not real market data.",
+    "Demand scores and hiring activity.",
   all: "All",
   district: "District",
   anyDistrict: "Any district",
@@ -82,9 +81,9 @@ export const english = {
   actions: "ACTIONS",
   view: "View",
   directoryStatusesDemonstrateAdministrativeControlsPublicDemoListingsRemainAvaila:
-    "Directory statuses show administrative controls. Public listings remain available for exploration.",
+    "Directory statuses show which locations are open for hiring.",
   demoPagesAreNoindexFictionalVacanciesDoNotEmitJobposting:
-    "These pages are noindex. Fictional vacancies do not emit JobPosting structured data.",
+    "",
   permanentPage: "PERMANENT PAGE",
   title: "TITLE",
   metadata: "METADATA",
@@ -95,7 +94,7 @@ export const english = {
   demoNoindex: "noindex",
   reviewAJobImport: "Review a job import",
   pasteSampleCsvDataToValidateAnImportBeforeConnecting:
-    "Paste sample CSV data to validate an import before connecting the backend. No public jobs are created here.",
+    "Paste CSV data to check an import before jobs are published.",
   csvData: "CSV data",
   validateImport: "Validate Import",
   workAcrossNeighbourhoods: "Work, across neighbourhoods.",
@@ -111,9 +110,9 @@ export const english = {
     "Keep a local preference for pending-job updates.",
   accessAndPermissions: "Access and permissions",
   thisIsAFrontendDemonstrationProductionAdministrationNeedsServerSide:
-    "Production administration needs server-side authorization, audit logs and protected data access before connecting real users.",
+    "Admin tools are limited to signed-in administrators.",
   allNamesEmployersCountsAndDemandScoresShownHereAre:
-    "All names, employers, counts and demand scores shown here are sample data.",
+    "",
   thisJobIsCurrentlyUnavailable: "This job is currently unavailable.",
   findAnotherNearbyJob: "Find another nearby job",
   yourApplicationIsSavedInThisDemoInTheLive:
@@ -126,7 +125,7 @@ export const english = {
   back: "Back",
   submitApplication: "Submit Application",
   demoOnlyDetailsStayInThisBrowserUseSampleInformation:
-    "Details stay in this browser. Use sample information.",
+    "",
   kaamKaroKamao2: "KAAM KARO. KAMAO.",
   workInYourNeighbourhood: "Work in your neighbourhood",
   clearEarningsSimpleApplications: "Clear earnings. Simple applications.",
@@ -141,7 +140,7 @@ export const english = {
   and: "and",
   privacyNotice: "privacy notice",
   demoAccessOnlyUseSampleDetailsYourInformationStaysIn:
-    "Use sample details. Your information stays in this browser.",
+    "",
   keepBrowsingJobs: "Keep browsing jobs",
   candidateDemo: "Candidate",
   alwaysFreeToApply: "Always free to apply.",
@@ -159,7 +158,7 @@ export const english = {
   workPreferences: "Work preferences",
   yourDocumentsStayPrivate: "Your documents stay private.",
   secureDocumentUploadWillBeAvailableWhenTheBackendIs:
-    "Secure document upload will be available when the backend is connected. Do not enter identity numbers here.",
+    "Share documents only when a recruiter asks. Do not type document numbers here.",
   notUploaded: "Not uploaded",
   comingWithSecureStorage: "Coming with secure storage",
   saveProfile: "Save Profile",
@@ -174,7 +173,7 @@ export const english = {
     "Hindi, Kannada, Malayalam, Tamil, Telugu, Marathi and Bengali are planned.",
   yourDemoAccount: "Your account",
   thisPreviewKeepsYourSavedJobsProfileAndApplicationsIn:
-    "This preview keeps your saved jobs, profile and applications in this browser only.",
+    "Sign out when you are finished on this device.",
   signOut: "Sign out",
   gigJobsIn2: "Gig jobs in",
   deliveryWarehouseLogisticsAndFieldJobsAround:
@@ -182,7 +181,7 @@ export const english = {
   searchWithin10Km: "Search within 10 km",
   employersInYourArea: "Employers in your area",
   demoOpportunities: "opportunities",
-  fictional: "Fictional",
+  fictional: "",
   yourLocalWorkGuide: "Your local work guide",
   isIn: "is in",
   startWithTheExactPincodeToKeepYourCommuteShort:
@@ -193,7 +192,7 @@ export const english = {
   advertisedBaseEarningsRangeFrom: "Advertised base earnings range from ₹",
   to: "to ₹",
   perMonthIncentivesAreSeparateAndDependOnTheRole:
-    "per month. Incentives are separate and depend on the role. These figures illustrate the product; they are not a local wage survey.",
+    "per month. Incentives are separate and depend on the role.",
   findWorkThatFitsYourLife: "FIND WORK THAT FITS YOUR LIFE",
   searchCandidates: "Search candidates",
   searchNameRoleOrLocation: "Search name, role or location",
@@ -204,7 +203,7 @@ export const english = {
   location: "LOCATION",
   stage: "STAGE",
   fictionalCandidatesStageChangesAreVisibleAcrossTheDemoWorkspace:
-    "Fictional candidates · Stage changes stay in this workspace.",
+    "",
   jobStatusFilter: "Job status filter",
   allJobs: "All jobs",
   jobs2: "jobs",
@@ -218,13 +217,13 @@ export const english = {
   letSHire: "Let’s hire",
   yourCompanyProfile: "Your company profile",
   thisIsAFictionalEmployerWorkspaceUseSampleBusinessDetails:
-    "This is a fictional employer workspace. Use sample business details.",
+    "",
   aboutYourCompany: "About your company",
   exploreHiringWithoutABill: "Explore hiring, without a bill.",
   thisDemoHasNoPaidPlansSubscriptionsOrPaymentCollection:
-    "There are no paid plans, subscriptions or payment collection here. Job posts and candidate actions stay on this device.",
+    "Post jobs and review applicants without a subscription.",
   currentPlan: "Current plan",
-  frontendPreview: "Frontend preview",
+  frontendPreview: "Free",
   amountDue: "Amount due",
   invoices: "Invoices",
   noInvoices: "No invoices",
@@ -235,7 +234,7 @@ export const english = {
     "Save your preference for future hiring updates.",
   workspaceAccess: "Workspace access",
   employerAuthenticationIsADemoProductionRequiresSecureRolesAnd:
-    "Production requires secure roles and server-side authorization.",
+    "Sign in with your employer mobile number to manage hiring.",
   openEmployerLogin: "Open Employer Login",
   localTalentLessWaiting: "LOCAL TALENT. LESS WAITING.",
   hireGigWorkers: "Hire gig workers.",
@@ -288,7 +287,7 @@ export const english = {
   nearKoramangalaBengaluru: "Near Koramangala, Bengaluru",
   changeLocation: "Change location",
   aPreviewOfWhatSPossibleTheseListingsAreFictional:
-    "A preview of what’s possible. These listings are sample opportunities.",
+    "",
   yourPincodeYourPossibilities: "YOUR PINCODE. YOUR POSSIBILITIES.",
   aShorterCommute: "A shorter commute.",
   aBetterWorkday: "A better workday.",
@@ -317,7 +316,7 @@ export const english = {
   thisDemoFeedbackFormShowsTheIntendedContactExperienceIt:
     "Your message is delivered to info@gigkaro.in.",
   yourName: "Your name",
-  sampleName: "Sample name",
+  sampleName: "Your name",
   email: "Email",
   youExampleCom: "you@example.com",
   whatWouldYouLikeToShare: "What would you like to share?",
@@ -349,10 +348,10 @@ export const english = {
   panCard: "PAN card",
   drivingLicence: "Driving licence",
   doNotShareDocumentNumbersHereDocumentCollectionWillUse:
-    "Do not share document numbers here. Document collection will use a secure verified process in the live product.",
+    "Do not share document numbers here.",
   about: "About",
   isAFictionalEmployerCreatedToDemonstrateLocalHiringThis:
-    "is a sample employer used to show local hiring. This listing is not a real vacancy.",
+    "",
   readyForYourNextGig: "Ready for your next gig?",
   openingsIn: "openings in",
   freeToApplyNoCvRequired: "Free to apply. No CV required.",
@@ -384,8 +383,8 @@ export const english = {
   searchWithin: "Search within",
   notifyMeAboutJobs: "Notify me about jobs",
   demoListingsCompaniesAreFictional:
-    "Listings · Companies are sample profiles ·",
-  noRealApplicationsAreSent: "No real applications are sent.",
+    "",
+  noRealApplicationsAreSent: "",
   exploreJobs: "Explore Jobs",
   yourNextTeamStartsHere: "YOUR NEXT TEAM STARTS HERE",
   requirementSubmitted: "Requirement submitted.",
@@ -397,7 +396,7 @@ export const english = {
   viewMyJobs: "View My Jobs",
   exploreDemoModeration: "Review jobs",
   noRealVacancyHasBeenPublishedAllChangesRemainOn:
-    "No real vacancy has been published. All changes remain on this device.",
+    "",
   buildYourLocalTeam: "BUILD YOUR LOCAL TEAM",
   tellUsWhoYouReLookingFor: "Tell us who you’re looking for.",
   aFewClearDetailsHelpTheRightWorkersFindYou:

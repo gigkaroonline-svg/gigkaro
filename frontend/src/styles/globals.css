@@ -1144,15 +1144,6 @@ textarea::placeholder {
   margin-top: 4px;
   color: #718096;
 }
-.demo-label {
-  font-size: 8px;
-  letter-spacing: 0.02em;
-  background: #f1f3f6;
-  border-radius: 3px;
-  padding: 2px 4px;
-  margin-left: 3px;
-  color: #667085;
-}
 .save-button {
   align-self: flex-start;
   width: 30px;
@@ -1273,11 +1264,6 @@ textarea::placeholder {
 .apply-link:hover {
   background: var(--primary);
   color: white;
-}
-.jobs-demo-note {
-  margin-top: 18px;
-  font-size: 10px;
-  color: #8390a3;
 }
 .pincode-section {
   display: grid;
@@ -2932,10 +2918,6 @@ details p {
     min-height: 44px;
     padding-inline: 14px;
   }
-  .jobs-demo-note {
-    font-size: 10px;
-    line-height: 1.7;
-  }
   .pincode-section {
     grid-template-columns: 1fr;
     gap: 27px;
@@ -3978,9 +3960,6 @@ details p {
 }
 .employer-list p {
   font-size: 12px;
-}
-.employer-list .demo-label {
-  margin-left: auto;
 }
 .faq-section {
   max-width: 850px;

@@ -530,7 +530,7 @@ export function SearchResults({
                 onClick={() => {
                   update((s) => ({ ...s, notices: true }));
                   toast(
-                    "Job alert preference saved. Wire push notifications in a later phase.",
+                    "Job alert preference saved.",
                   );
                 }}
               >

@@ -122,7 +122,7 @@ export function ensureIndiaPincodesLoaded(): LocationRow[] {
     }
   }
 
-  // Curated demo localities win (Koramangala etc.)
+  // Curated localities win (Koramangala etc.)
   for (const loc of locationCatalog) {
     map.set(loc.pincode, {
       lat: loc.lat,

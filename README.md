@@ -14,7 +14,7 @@ kl
 ## Prerequisites
 
 - Node.js 20.9+
-- MongoDB optional for local demo: set `backend/.env` `MONGODB_URI=memory` (default) to use an in-memory server. For persistence use `mongodb://127.0.0.1:27017/gigkaro`.
+- MongoDB is optional locally: set `backend/.env` `MONGODB_URI=memory` (default) to use an in-memory server. For persistence use `mongodb://127.0.0.1:27017/gigkaro`.
 
 ## Run
 
@@ -35,7 +35,7 @@ npm run dev:backend
 npm run dev:frontend
 ```
 
-Demo OTP is `123456` (logged on the API; not sent via SMS).
+Sign-in uses a one-time code. The API logs it for local development when SMS is not configured.
 
 ### Admin access
 
@@ -45,11 +45,11 @@ Admin OTP is only allowed for identifiers listed in `ADMIN_IDENTIFIERS` (comma-s
 ADMIN_IDENTIFIERS=9999999999,admin@gigkaro.local
 ```
 
-Sign in at `/login?role=admin` with an allowlisted identifier and OTP `123456`. On startup the API bootstraps an admin user for the first identifier if none exists.
+Sign in at `/login?role=admin` with an allowlisted identifier. On startup the API bootstraps an admin user for the first identifier if none exists.
 
 ### India pincodes
 
-On startup the API loads ~19,000 India pincodes (locality/city/state + coordinates) from `indian-pincode-utils`, with curated demo localities (e.g. Koramangala 560034) overlaid from the taxonomy catalog. Location search, nearest, and job radius filters all use this catalog.
+On startup the API loads ~19,000 India pincodes (locality/city/state + coordinates) from `indian-pincode-utils`, with curated localities (e.g. Koramangala 560034) overlaid from the taxonomy catalog. Location search, nearest, and job radius filters all use this catalog.
 
 Public endpoints:
 
@@ -59,7 +59,7 @@ Public endpoints:
 | GET | `/api/locations/nearest?lat=&lng=` | Nearest pincode for “use my location” |
 | GET | `/api/locations/:pincode` | Exact pincode lookup |
 
-Home search uses autocomplete against this directory (not the old 11-demo list).
+Home search uses autocomplete against this directory.
 
 ## API
 
@@ -75,7 +75,7 @@ Admin-posted jobs default to `showEverywhere: true`, so they appear in public se
 
 ## Frontend notes
 
-Candidate and admin portals talk to the API (`NEXT_PUBLIC_API_URL`). Employer workspace remains on the local demo store for now.
+Candidate and admin portals talk to the API (`NEXT_PUBLIC_API_URL`).
 
 ## Verification
 

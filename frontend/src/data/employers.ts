@@ -4,8 +4,7 @@ export const employers = [
     name: "SwiftBox",
     initials: "sb",
     color: "blue",
-    about:
-      "A sample neighbourhood delivery company used to show the GigKaro experience.",
+    about: "Neighbourhood delivery hiring across local pincodes.",
   },
   {
     id: "fresh",
@@ -13,34 +12,34 @@ export const employers = [
     initials: "fb",
     color: "green",
     about:
-      "A fictional quick-commerce company connecting local stores and neighbourhoods.",
+      "Quick-commerce hiring that connects local stores and neighbourhoods.",
   },
   {
     id: "pack",
     name: "PackPoint",
     initials: "pp",
     color: "orange",
-    about: "A fictional warehousing and fulfilment company.",
+    about: "Warehousing and fulfilment teams.",
   },
   {
     id: "volt",
     name: "VoltGo",
     initials: "vg",
     color: "violet",
-    about: "A fictional electric last-mile delivery company.",
+    about: "Electric last-mile delivery.",
   },
   {
     id: "meal",
     name: "MealDash",
     initials: "md",
     color: "rose",
-    about: "A fictional food delivery network.",
+    about: "Food delivery across local neighbourhoods.",
   },
   {
     id: "local",
     name: "LocalLink",
     initials: "ll",
     color: "teal",
-    about: "A fictional local field-services company.",
+    about: "Local field-service hiring.",
   },
 ];

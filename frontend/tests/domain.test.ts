@@ -124,7 +124,7 @@ test("approved posted requirements become searchable and have a stable local rou
     experience: "Fresher welcome",
     shift: "Morning",
     joining: "Immediately",
-    description: "A fictional requirement with a clear local work description.",
+    description: "A local requirement with a clear work description.",
     status: "Pending approval" as const,
     createdAt: "2026-09-18",
   };

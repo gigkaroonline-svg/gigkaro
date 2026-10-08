@@ -18,42 +18,42 @@ const copy: Record<
 > = {
   privacy: {
     title: "Your privacy.",
-    intro: "A clear look at what this frontend stores and how it works.",
+    intro: "How GigKaro handles the information you share.",
     sections: [
       [
-        "What stays on your device",
-        "Saved jobs, applications, profile details and employer requirements are stored in this browser’s local storage. Login context is held in session storage.",
+        "What we keep",
+        "Your account, applications and profile are stored so you can return to them. Some preferences stay in this browser.",
       ],
       [
-        "Use sample details",
-        "Please use fictional contact information when exploring forms. Do not enter Aadhaar, PAN, licence numbers or other sensitive documents. Document upload is intentionally unavailable in this preview.",
+        "Documents",
+        "Do not enter Aadhaar, PAN, licence numbers or other identity numbers in free-text fields. Share documents only when a recruiter asks.",
       ],
       [
         "Location permission",
         "Location is requested only when you tap “Use my current location”. Coordinates are used in your browser to find a nearby area; they are not saved by this application.",
       ],
       [
-        "Future live service",
-        "A production privacy policy, retention settings, consent controls and secure backend must be reviewed before this product processes real users’ personal information.",
+        "Contact",
+        "Questions about your information can be sent to info@gigkaro.in.",
       ],
     ],
   },
   terms: {
-    title: "About using this preview.",
+    title: "Using GigKaro.",
     intro:
       "GigKaro connects people with gig and frontline jobs and helps employers hire locally.",
     sections: [
       [
         "Opportunities",
-        "Listings do not represent actual vacancies or guaranteed earnings. The application and hiring flows simulate the intended product experience.",
+        "Job listings and advertised earnings come from employers. A listing is not a guarantee of work or pay.",
       ],
       [
-        "No charges or commitments",
-        "This preview does not collect payment, create employment agreements or submit details to a recruiter. Browse and test the experience using sample information.",
+        "No charges to apply",
+        "Applying on GigKaro is free. Do not pay a recruiter to submit an application.",
       ],
       [
-        "Before a live launch",
-        "Production terms, employer verification standards and candidate protections must be finalized before real hiring begins.",
+        "Employer posts",
+        "New requirements can be reviewed before they are shown to candidates.",
       ],
     ],
   },
@@ -67,7 +67,7 @@ const copy: Record<
       ],
       [
         "Session storage",
-        "Temporary login context is kept for the current browser session. No real authentication tokens are issued.",
+        "Your login stays active for the current browser session.",
       ],
       [
         "Analytics",
@@ -129,7 +129,7 @@ export function InfoPage({ kind }: { kind: string }) {
               name="name"
               required
               minLength={2}
-              placeholder={uiText("sampleName")}
+              placeholder="Your name"
             />
           </div>
           <div className="form-field">

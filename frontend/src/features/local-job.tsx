@@ -21,8 +21,8 @@ export function LocalJob() {
     return (
       <div className="container section">
         <EmptyState
-          title="This job isn’t available here."
-          description="New requirements are stored in the browser where they were created."
+          title="This job isn’t available."
+          description="It may have been removed or is no longer open."
         >
           <Link className="button button-primary" href="/jobs">
             {uiText("exploreJobs")}
