@@ -40,6 +40,13 @@ function findOrigin(location: string): LocationRef | undefined {
         lng: pin.lng || 0,
       };
     }
+    return {
+      pincode: q,
+      locality: "",
+      city: "",
+      lat: 0,
+      lng: 0,
+    };
   }
 
   const hits = searchIndiaPincodes(q, 1);
@@ -190,8 +197,8 @@ export async function getJobBySlug(
           ? {
               slug,
               pincode: placePin,
-              locality: place?.locality,
-              city: place?.city,
+              locality: place?.locality ?? "",
+              city: place?.city ?? "",
               lat: place?.lat,
               lng: place?.lng,
             }
@@ -222,8 +229,8 @@ export async function getJobsByPincode(
           ? serializeJob(job, {
               slug: slugForPlace(job.slug, job.pincode, pin),
               pincode: pin,
-              locality: place?.locality,
-              city: place?.city,
+              locality: place?.locality ?? "",
+              city: place?.city ?? "",
               lat: place?.lat,
               lng: place?.lng,
               logo: logos.get(job.companyId) || "",

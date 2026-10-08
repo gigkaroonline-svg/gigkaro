@@ -278,8 +278,7 @@ export function CandidatePage({ view = "overview" }: { view?: string }) {
                       <ApplicationStatus status={app.status} />
                       <p className="application-date">
                         {uiText("applied")}{" "}
-                        {new Date(app.createdAt).toLocaleDateString("en-IN")}{" "}
-                        {uiText("demoApplication")}
+                        {new Date(app.createdAt).toLocaleDateString("en-IN")}
                       </p>
                     </article>
                   );

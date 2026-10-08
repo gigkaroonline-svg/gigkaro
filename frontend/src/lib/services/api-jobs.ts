@@ -62,3 +62,20 @@ export async function fetchJobsByPincode(pincode: string) {
   );
   return data.jobs;
 }
+
+export async function fetchPublicJobsByPincode(pincode: string) {
+  const base = (
+    process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000/api"
+  ).replace(/\/$/, "");
+  try {
+    const res = await fetch(
+      `${base}/jobs/pincode/${encodeURIComponent(pincode)}`,
+      { next: { revalidate: 60 } },
+    );
+    if (!res.ok) return [];
+    const data = (await res.json()) as { jobs?: Job[] };
+    return data.jobs ?? [];
+  } catch {
+    return [];
+  }
+}

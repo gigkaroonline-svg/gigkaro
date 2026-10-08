@@ -52,7 +52,10 @@ export function JobDetail({ job }: { job: Job }) {
                 {job.company}{" "}
                 <span className="inline-meta">
                   <MapPin size={15} />
-                  {job.locality}, {job.city} · {job.pincode}
+                  {[job.locality, job.city].filter(Boolean).join(", ") ||
+                    job.pincode}
+                  {[job.locality, job.city].some(Boolean) &&
+                    ` · ${job.pincode}`}
                 </span>
                 <span className="inline-meta">
                   <CalendarDays size={15} />
@@ -131,7 +134,8 @@ export function JobDetail({ job }: { job: Job }) {
               </span>
               <div>
                 <h3>
-                  {job.locality}, {job.city}
+                  {[job.locality, job.city].filter(Boolean).join(", ") ||
+                    job.pincode}
                 </h3>
                 <p>
                   {uiText("pincode2")} {job.pincode}{" "}
@@ -139,7 +143,10 @@ export function JobDetail({ job }: { job: Job }) {
                 </p>
               </div>
             </div>
-            <Link className="text-link" href={`/jobs/${job.pincode}`}>
+            <Link
+              className="text-link"
+              href={`/jobs?location=${encodeURIComponent(job.pincode)}`}
+            >
               {uiText("exploreMoreJobsIn")} {job.pincode}
               <ArrowRight size={16} />
             </Link>
@@ -203,7 +210,7 @@ export function JobDetail({ job }: { job: Job }) {
         <section className="container section">
           <SectionHeading
             title="More jobs in your neighbourhood"
-            href={`/jobs/${job.pincode}`}
+            href={`/jobs?location=${encodeURIComponent(job.pincode)}`}
             action="Explore nearby jobs"
           />
           <div className="job-grid">

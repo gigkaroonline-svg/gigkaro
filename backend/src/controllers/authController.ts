@@ -102,7 +102,7 @@ export async function requestOtp(
 
     res.json({
       ok: true,
-      message: "OTP ready. Use the demo code for this environment.",
+      message: "OTP ready. Use the code for this environment.",
       otp: env.devOtp,
     });
   } catch (err) {

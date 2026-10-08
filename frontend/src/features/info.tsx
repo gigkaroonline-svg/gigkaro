@@ -17,12 +17,12 @@ const copy: Record<
   { title: string; intro: string; sections: [string, string][] }
 > = {
   privacy: {
-    title: "Your privacy in this demo.",
+    title: "Your privacy.",
     intro: "A clear look at what this frontend stores and how it works.",
     sections: [
       [
         "What stays on your device",
-        "Saved jobs, demo applications, profile details and employer requirements are stored in this browser’s local storage. Login context is held in session storage. This demo does not send applications, SMS messages or emails.",
+        "Saved jobs, applications, profile details and employer requirements are stored in this browser’s local storage. Login context is held in session storage.",
       ],
       [
         "Use sample details",
@@ -30,7 +30,7 @@ const copy: Record<
       ],
       [
         "Location permission",
-        "Location is requested only when you tap “Use my current location”. Coordinates are used in your browser to find a nearby demo area; they are not saved by this application.",
+        "Location is requested only when you tap “Use my current location”. Coordinates are used in your browser to find a nearby area; they are not saved by this application.",
       ],
       [
         "Future live service",
@@ -41,10 +41,10 @@ const copy: Record<
   terms: {
     title: "About using this preview.",
     intro:
-      "GigKaro is currently a frontend demonstration, with fictional jobs and companies.",
+      "GigKaro connects people with gig and frontline jobs and helps employers hire locally.",
     sections: [
       [
-        "Demo opportunities",
+        "Opportunities",
         "Listings do not represent actual vacancies or guaranteed earnings. The application and hiring flows simulate the intended product experience.",
       ],
       [
@@ -59,11 +59,11 @@ const copy: Record<
   },
   cookies: {
     title: "A simple storage notice.",
-    intro: "This demo uses browser storage to keep your experience consistent.",
+    intro: "This site uses browser storage to keep your experience consistent.",
     sections: [
       [
         "Local storage",
-        "Your saved jobs, applications, profile, posted jobs and demo settings remain on this device between visits. You can clear this information using your browser’s site-data controls.",
+        "Your saved jobs, applications, profile, posted jobs and settings remain on this device between visits. You can clear this information using your browser’s site-data controls.",
       ],
       [
         "Session storage",

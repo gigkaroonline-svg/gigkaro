@@ -21,7 +21,7 @@ export function LocalJob() {
     return (
       <div className="container section">
         <EmptyState
-          title="This local demo job isn’t available here."
+          title="This job isn’t available here."
           description="New requirements are stored in the browser where they were created."
         >
           <Link className="button button-primary" href="/jobs">

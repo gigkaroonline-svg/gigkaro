@@ -404,7 +404,7 @@ export function SearchResults({
           ) : (
             <EmptyState
               title={`No matching jobs ${nearLabel ? "near " + nearLabel : "yet"}`}
-              description="Try a wider radius or remove a filter. We’re adding more neighbourhoods to the demo."
+              description="Try a wider radius or remove a filter. We’re adding more neighbourhoods."
             >
               <button
                 className="button button-primary"

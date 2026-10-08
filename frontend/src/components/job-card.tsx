@@ -140,8 +140,10 @@ export function JobCard({
       <p className="job-location">
         <MapPin size={14} />
         <span>
-          {job.locality}, {job.city}
-          <span className="job-pin"> · {job.pincode}</span>
+          {[job.locality, job.city].filter(Boolean).join(", ") || job.pincode}
+          {[job.locality, job.city].some(Boolean) && (
+            <span className="job-pin"> · {job.pincode}</span>
+          )}
         </span>
       </p>
       {nearby && <p className="job-distance">{nearby}</p>}

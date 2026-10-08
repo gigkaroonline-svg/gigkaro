@@ -1630,7 +1630,7 @@ export function AdminPage({ view = "overview" }: { view?: string }) {
       ) : (
         <EmptyState
           title="Page removed"
-          description="This admin demo surface was cleaned up. Use Dashboard, Jobs or Applications."
+          description="Use Dashboard, Jobs or Applications."
         >
           <Link className="button button-primary" href="/admin">
             Go to dashboard

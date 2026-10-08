@@ -5,7 +5,7 @@ export const employers = [
     initials: "sb",
     color: "blue",
     about:
-      "A fictional neighbourhood delivery company used to demonstrate the GigKaro experience.",
+      "A sample neighbourhood delivery company used to show the GigKaro experience.",
   },
   {
     id: "fresh",
