@@ -92,7 +92,17 @@ export function LocationSearch({
   }
 
   function pick(hit: LocationHit) {
-    setLocation(hit.pincode);
+    const q = location.trim().toLowerCase();
+    const city = hit.city.toLowerCase();
+    const locality = hit.locality.toLowerCase();
+    const next = /^\d/.test(q)
+      ? hit.pincode
+      : locality === q || locality.startsWith(q)
+        ? hit.locality
+        : city === q || city.startsWith(q) || city.includes(q)
+          ? hit.city
+          : hit.locality || hit.pincode;
+    setLocation(next);
     setError("");
     setOpen(false);
   }

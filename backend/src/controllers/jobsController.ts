@@ -3,8 +3,9 @@ import { Job } from "../models/Job.js";
 import { Company } from "../models/Company.js";
 import { distanceKm, serializeJob, slugForPlace } from "../utils/jobs.js";
 import {
+  bestPlaceMatch,
   getIndiaPincode,
-  searchIndiaPincodes,
+  normalizePlaceQuery,
 } from "../utils/indiaPincodes.js";
 import { maybeRefreshPostedDates } from "../utils/refreshPostedAt.js";
 
@@ -14,6 +15,9 @@ type LocationRef = {
   city: string;
   lat: number;
   lng: number;
+  scope: "pin" | "city" | "area";
+  /** Normalized place text, so "New Delhi" and "Bangalore" match stored cities. */
+  query: string;
 };
 
 async function logosFor(companyIds: string[]) {
@@ -38,6 +42,8 @@ function findOrigin(location: string): LocationRef | undefined {
         city: pin.city,
         lat: pin.lat || 0,
         lng: pin.lng || 0,
+        scope: "pin",
+        query: q,
       };
     }
     return {
@@ -46,18 +52,21 @@ function findOrigin(location: string): LocationRef | undefined {
       city: "",
       lat: 0,
       lng: 0,
+      scope: "pin",
+      query: q,
     };
   }
 
-  const hits = searchIndiaPincodes(q, 1);
-  const hit = hits[0];
+  const hit = bestPlaceMatch(q);
   if (!hit) return undefined;
   return {
     pincode: hit.pincode,
-    locality: hit.locality,
+    locality: hit.scope === "city" ? "" : hit.locality,
     city: hit.city,
     lat: hit.lat || 0,
     lng: hit.lng || 0,
+    scope: hit.scope,
+    query: normalizePlaceQuery(q),
   };
 }
 
@@ -99,7 +108,29 @@ export async function listJobs(
       })
       .filter(({ job: j, distanceKm: d }) => {
         if (q && !j.showEverywhere) {
-          if (origin) {
+          if (origin?.scope === "city") {
+            const needles = [origin.city, origin.query, q]
+              .map((value) => value.toLowerCase())
+              .filter((value) => value.length >= 3);
+            const city = (j.city || "").toLowerCase();
+            const locality = (j.locality || "").toLowerCase();
+            const named = needles.some(
+              (needle) =>
+                (city && (city.includes(needle) || needle.includes(city))) ||
+                (locality.length >= 3 && locality.includes(needle)),
+            );
+            if (!named) return false;
+          } else if (origin?.scope === "area") {
+            const locality = (j.locality || "").toLowerCase();
+            const inArea =
+              locality.length >= 3 &&
+              (locality.includes(q) || q.includes(locality));
+            const inRadius =
+              f.radius === "0"
+                ? j.pincode === origin.pincode
+                : d <= Number(f.radius || 10);
+            if (!inArea && !inRadius) return false;
+          } else if (origin) {
             if (f.radius === "0" ? j.pincode !== origin.pincode : d > Number(f.radius || 10))
               return false;
           } else if (
@@ -136,11 +167,14 @@ export async function listJobs(
         const logo = logos.get(job.companyId) || "";
         // Nationwide roles surface under the searched pin, not the seed locality.
         if (job.showEverywhere && origin) {
+          const cityWide = origin.scope === "city";
           return serializeJob(job as never, {
-            slug: slugForPlace(job.slug, job.pincode, origin.pincode),
-            locality: origin.locality,
+            slug: cityWide
+              ? job.slug
+              : slugForPlace(job.slug, job.pincode, origin.pincode),
+            locality: cityWide ? "" : origin.locality,
             city: origin.city,
-            pincode: origin.pincode,
+            pincode: cityWide ? "" : origin.pincode,
             lat: origin.lat,
             lng: origin.lng,
             distanceKm: 0,

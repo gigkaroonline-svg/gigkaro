@@ -160,6 +160,61 @@ export function getIndiaPincode(pin: string) {
   return byPin!.get(pin);
 }
 
+const CITY_ALIASES: Record<string, string> = {
+  bangalore: "bengaluru",
+  bengalore: "bengaluru",
+  bombay: "mumbai",
+  calcutta: "kolkata",
+  madras: "chennai",
+  gurgaon: "gurugram",
+  trivandrum: "thiruvananthapuram",
+  baroda: "vadodara",
+  mysore: "mysuru",
+  mangalore: "mangaluru",
+  calicut: "kozhikode",
+  cochin: "kochi",
+  vizag: "visakhapatnam",
+  trichy: "tiruchirappalli",
+  poona: "pune",
+  banaras: "varanasi",
+  benares: "varanasi",
+  newdelhi: "delhi",
+};
+
+export function normalizePlaceQuery(q: string) {
+  const compact = q.trim().toLowerCase().replace(/\s+/g, " ");
+  return CITY_ALIASES[compact.replace(/\s+/g, "")] || compact;
+}
+
+/** Best city or locality for a free-text search. City matches cover the whole city. */
+export function bestPlaceMatch(
+  q: string,
+): (LocationRow & { scope: "city" | "area" }) | undefined {
+  ensureIndiaPincodesLoaded();
+  const query = normalizePlaceQuery(q);
+  if (query.length < 2 || /^\d+$/.test(query)) return undefined;
+
+  const withCoords = (row: LocationRow) => Boolean(row.lat || row.lng);
+  const all = rows!.filter(withCoords);
+  const exactCity = all.filter((row) => row.city.toLowerCase() === query);
+  if (exactCity.length) return { ...exactCity[0], scope: "city" };
+
+  const cityIncludes = all.filter((row) => row.city.toLowerCase().includes(query));
+  if (cityIncludes.length >= 3) {
+    cityIncludes.sort((a, b) => a.city.length - b.city.length);
+    return { ...cityIncludes[0], scope: "city" };
+  }
+
+  const exactArea = all.find((row) => row.locality.toLowerCase() === query);
+  if (exactArea) return { ...exactArea, scope: "area" };
+
+  const areaIncludes = all.find((row) => row.locality.toLowerCase().includes(query));
+  if (areaIncludes) return { ...areaIncludes, scope: "area" };
+
+  if (cityIncludes.length) return { ...cityIncludes[0], scope: "city" };
+  return undefined;
+}
+
 export function searchIndiaPincodes(q: string, limit = 12): LocationRow[] {
   ensureIndiaPincodesLoaded();
   const query = q.trim();

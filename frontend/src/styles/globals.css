@@ -3253,6 +3253,7 @@ details p {
   max-width: 920px;
 }
 .results-search > div {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -3262,6 +3263,10 @@ details p {
   padding: 0 14px;
   min-width: 0;
   color: var(--primary);
+}
+.results-search .location-suggest {
+  left: 0;
+  right: 0;
 }
 .results-search input {
   border: 0;
