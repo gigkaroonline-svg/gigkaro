@@ -12,6 +12,10 @@ export function JobPage() {
 
   useEffect(() => {
     const slug = window.location.pathname.split("/").filter(Boolean).at(-1);
+    if (slug && /^\d{6}$/.test(slug)) {
+      window.location.replace(`/jobs/${slug}/`);
+      return;
+    }
     if (!slug || slug === "view") {
       setJob(null);
       return;
