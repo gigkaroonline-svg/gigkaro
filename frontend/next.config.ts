@@ -5,7 +5,12 @@ const config: NextConfig = {
     return [
       {
         source: "/job/:pin(\\d{6})",
-        destination: "/jobs/:pin/",
+        destination: "/jobs/?location=:pin",
+        permanent: false,
+      },
+      {
+        source: "/jobs/:pin(\\d{6})",
+        destination: "/jobs/?location=:pin",
         permanent: false,
       },
     ];
