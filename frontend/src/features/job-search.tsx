@@ -1,7 +1,7 @@
 "use client";
 import { uiText } from "@/lib/i18n";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Search,
@@ -28,6 +28,22 @@ import {
 import { useDemoStore } from "@/hooks/use-demo-store";
 import { fetchJobs } from "@/lib/services/api-jobs";
 import type { Job, SearchFilters } from "@/types";
+
+type LocationHit = {
+  pincode: string;
+  locality: string;
+  city: string;
+};
+
+function placeQuery(hit: LocationHit, typed: string) {
+  const q = typed.trim().toLowerCase();
+  if (/^\d/.test(q)) return hit.pincode;
+  const city = hit.city.toLowerCase();
+  const locality = hit.locality.toLowerCase();
+  if (locality === q || locality.startsWith(q)) return hit.locality;
+  if (city === q || city.startsWith(q) || city.includes(q)) return hit.city;
+  return hit.locality || hit.pincode;
+}
 const filterGroups = [
   {
     key: "radius",
@@ -135,8 +151,14 @@ export function SearchResults({
   const params = useSearchParams();
   const router = useRouter();
   const path = usePathname();
+  const suggestId = useId();
+  const fieldRef = useRef<HTMLDivElement>(null);
+  const typedLocation = useRef(false);
   const { toast, update } = useDemoStore();
   const [text, setText] = useState(params.get("location") || initialLocation);
+  const [hits, setHits] = useState<LocationHit[]>([]);
+  const [open, setOpen] = useState(false);
+  const [searchingPlaces, setSearchingPlaces] = useState(false);
   const [sort, setSort] = useState("recommended");
   const [limit, setLimit] = useState(12);
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -183,7 +205,48 @@ export function SearchResults({
   }, [filters.location]);
   const nearLabel = placeName || filters.location;
   useEffect(() => {
+    const q = text.trim();
+    if (q.length < 2) {
+      setHits([]);
+      setOpen(false);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      setSearchingPlaces(true);
+      api<{ locations: LocationHit[] }>(
+        `/locations/search?q=${encodeURIComponent(q)}&limit=8`,
+        { auth: false },
+      )
+        .then((data) => {
+          if (cancelled) return;
+          const next = data.locations || [];
+          setHits(next);
+          setOpen(typedLocation.current && next.length > 0);
+        })
+        .catch(() => {
+          if (!cancelled) setHits([]);
+        })
+        .finally(() => {
+          if (!cancelled) setSearchingPlaces(false);
+        });
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [text]);
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (!fieldRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+  useEffect(() => {
+    typedLocation.current = false;
     setText(params.get("location") || initialLocation);
+    setOpen(false);
     setLimit(12);
   }, [params.get("location"), initialLocation]);
   useEffect(() => {
@@ -225,7 +288,8 @@ export function SearchResults({
       next.set("category", initialCategory);
     if (value) next.set(key, String(value));
     else next.delete(key);
-    const destination = initialCategory ? "/jobs" : path;
+    const destination =
+      key === "location" || initialCategory ? "/jobs/" : path;
     router.replace(`${destination}?${next}`, { scroll: false });
   }
   function submit(e: React.FormEvent) {
@@ -235,7 +299,15 @@ export function SearchResults({
       return;
     }
     setError("");
+    setOpen(false);
     change("location", text.trim());
+  }
+  function pick(hit: LocationHit) {
+    const next = placeQuery(hit, text);
+    setText(next);
+    setError("");
+    setOpen(false);
+    change("location", next);
   }
   return (
     <>
@@ -249,14 +321,52 @@ export function SearchResults({
           </h1>
           <p>{uiText("findYourFitKnowYourEarningsMakeYourNextMove")}</p>
           <form className="results-search" onSubmit={submit}>
-            <div>
+            <div ref={fieldRef}>
               <MapPin size={19} />
               <input
                 aria-label={uiText("searchPincodeCityOrArea")}
                 placeholder={uiText("pincodeCityOrArea")}
                 value={text}
-                onChange={(e) => setText(e.target.value)}
+                autoComplete="off"
+                role="combobox"
+                aria-expanded={open}
+                aria-controls={suggestId}
+                onChange={(e) => {
+                  typedLocation.current = true;
+                  setText(e.target.value);
+                  setError("");
+                }}
+                onFocus={() => {
+                  if (hits.length && typedLocation.current) setOpen(true);
+                }}
               />
+              {open && (hits.length > 0 || searchingPlaces) && (
+                <ul id={suggestId} className="location-suggest" role="listbox">
+                  {searchingPlaces && !hits.length && (
+                    <li className="location-suggest-empty">Searching…</li>
+                  )}
+                  {hits.map((hit) => (
+                    <li key={`${hit.pincode}-${hit.locality}`}>
+                      <button
+                        type="button"
+                        role="option"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => pick(hit)}
+                      >
+                        <strong>
+                          {/^\d/.test(text.trim())
+                            ? hit.pincode
+                            : placeQuery(hit, text)}
+                        </strong>
+                        <span>
+                          {hit.locality}, {hit.city}
+                          {hit.pincode ? ` · ${hit.pincode}` : ""}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             <select
               aria-label={uiText("searchCategory")}
