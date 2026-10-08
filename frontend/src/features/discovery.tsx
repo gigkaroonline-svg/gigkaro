@@ -4,10 +4,13 @@ import { MapPin, ArrowRight, Building2 } from "lucide-react";
 import {
   getLocations,
   getPopularLocations,
-  getLocationByPincode,
 } from "@/lib/services/locations";
 import { getCategoryCounts } from "@/lib/services/jobs";
 import { fetchPublicJobsByPincode } from "@/lib/services/api-jobs";
+import {
+  fetchNearbyLocations,
+  fetchPublicLocation,
+} from "@/lib/services/api-locations";
 import { getCategories } from "@/lib/services/categories";
 import { CategoryCard } from "@/components/category-card";
 import { JobList } from "@/components/job-card";
@@ -17,15 +20,18 @@ import {
   EmptyState,
 } from "@/components/primitives";
 import { LocationSearch } from "@/components/search";
-import { notFound } from "next/navigation";
 export async function PincodePage({ pincode }: { pincode: string }) {
-  const location = getLocationByPincode(pincode);
-  if (!location) notFound();
+  const place = await fetchPublicLocation(pincode);
+  const location = place ?? {
+    pincode,
+    locality: "",
+    city: "",
+    state: "",
+  };
+  const area = location.locality || location.city || pincode;
   const jobs = await fetchPublicJobsByPincode(pincode);
   const companies = [...new Set(jobs.map((j) => j.company))];
-  const nearby = getLocations().filter(
-    (l) => l.city === location.city && l.pincode !== pincode,
-  );
+  const nearby = await fetchNearbyLocations(location.city, pincode);
   const min = jobs.length ? Math.min(...jobs.map((j) => j.salaryMin)) : 0,
     max = jobs.length ? Math.max(...jobs.map((j) => j.salaryMax)) : 0;
   return (
@@ -39,20 +45,22 @@ export async function PincodePage({ pincode }: { pincode: string }) {
             ]}
           />
           <div className="eyebrow">
-            {location.locality.toUpperCase()} · {location.city.toUpperCase()}
+            {[location.locality, location.city]
+              .filter(Boolean)
+              .join(" · ")
+              .toUpperCase() || pincode}
           </div>
           <h1>
             {uiText("gigJobsIn2")} {pincode}
           </h1>
           <p>
-            {uiText("deliveryWarehouseLogisticsAndFieldJobsAround")}{" "}
-            {location.locality}.
+            {uiText("deliveryWarehouseLogisticsAndFieldJobsAround")} {area}.
           </p>
         </div>
       </section>
       <div className="container section">
         <SectionHeading
-          title={`Current jobs in ${location.locality}`}
+          title={`Current jobs in ${area}`}
           href={`/jobs?location=${pincode}&radius=0`}
           action="See all jobs"
         />
@@ -93,8 +101,11 @@ export async function PincodePage({ pincode }: { pincode: string }) {
         <section className="panel">
           <h2>{uiText("yourLocalWorkGuide")}</h2>
           <p>
-            {location.locality} {uiText("isIn")} {location.city},{" "}
-            {location.state}
+            {location.locality && location.city
+              ? `${location.locality} ${uiText("isIn")} ${location.city}${
+                  location.state ? `, ${location.state}` : ""
+                }`
+              : `Jobs around ${pincode}.`}
             {uiText("startWithTheExactPincodeToKeepYourCommuteShort")}
           </p>
           <h3 className="subsection-title">{uiText("nearbyAreasPincodes")}</h3>
