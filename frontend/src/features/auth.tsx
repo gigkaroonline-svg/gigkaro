@@ -153,7 +153,7 @@ export function AuthPage({
         <div className="icon-tile blue">{emailMode ? <Mail /> : <Phone />}</div>
         <h2>
           {mode === "otp"
-            ? "Enter your demo code"
+            ? "Enter your code"
             : mode === "register"
               ? "Let’s get you started."
               : role === "employer"
@@ -175,7 +175,7 @@ export function AuthPage({
           <div className="form-field">
             <label htmlFor="auth-value">
               {mode === "otp"
-                ? "6-digit demo code"
+                ? "6-digit code"
                 : emailMode
                   ? "Email address"
                   : "Mobile number"}
@@ -234,7 +234,7 @@ export function AuthPage({
               className="text-link"
               type="button"
               onClick={() =>
-                toast("Your demo code is 123456. No message was sent.")
+                toast("Your code is 123456. No message was sent.")
               }
             >
               {uiText("resendDemoCode")}

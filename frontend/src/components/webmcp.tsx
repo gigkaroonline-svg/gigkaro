@@ -47,8 +47,8 @@ export function WebMCP() {
       void Promise.resolve(
         context.registerTool(
           {
-            name: "search_gigkaro_demo_jobs",
-            title: "Search local demo jobs",
+            name: "search_gigkaro_jobs",
+            title: "Search local jobs",
             description:
               "Read fictional GigKaro listings using the same pincode, category and distance filters as the visible search page. Does not apply or change saved jobs.",
             inputSchema: {
@@ -77,7 +77,6 @@ export function WebMCP() {
               const filters = schema.parse(input);
               const results = searchJobs(filters, getEffectiveJobs(state));
               return {
-                demo: true,
                 count: results.length,
                 jobs: results.slice(0, 20).map((j) => ({
                   id: j.id,

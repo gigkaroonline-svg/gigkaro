@@ -6,22 +6,22 @@ import {
   getPopularLocations,
   getLocationByPincode,
 } from "@/lib/services/locations";
-import { getCategoryCounts, getJobsByPincode } from "@/lib/services/jobs";
+import { getCategoryCounts } from "@/lib/services/jobs";
+import { fetchPublicJobsByPincode } from "@/lib/services/api-jobs";
 import { getCategories } from "@/lib/services/categories";
 import { CategoryCard } from "@/components/category-card";
 import { JobList } from "@/components/job-card";
 import {
   Breadcrumb,
-  DashboardStatCard,
   SectionHeading,
   EmptyState,
 } from "@/components/primitives";
 import { LocationSearch } from "@/components/search";
 import { notFound } from "next/navigation";
-export function PincodePage({ pincode }: { pincode: string }) {
+export async function PincodePage({ pincode }: { pincode: string }) {
   const location = getLocationByPincode(pincode);
   if (!location) notFound();
-  const jobs = getJobsByPincode(pincode);
+  const jobs = await fetchPublicJobsByPincode(pincode);
   const companies = [...new Set(jobs.map((j) => j.company))];
   const nearby = getLocations().filter(
     (l) => l.city === location.city && l.pincode !== pincode,
@@ -48,44 +48,9 @@ export function PincodePage({ pincode }: { pincode: string }) {
             {uiText("deliveryWarehouseLogisticsAndFieldJobsAround")}{" "}
             {location.locality}.
           </p>
-          <div className="stat-grid local-stats">
-            <DashboardStatCard label="Active demo jobs" value={jobs.length} />
-            <DashboardStatCard
-              label="Companies hiring"
-              value={companies.length}
-            />
-            <DashboardStatCard
-              label="Advertised earnings"
-              value={
-                jobs.length
-                  ? `₹${min / 1000}k–₹${max / 1000}k`
-                  : "Not available"
-              }
-            />
-            <DashboardStatCard
-              label="Immediate openings"
-              value={jobs
-                .filter((j) => j.immediateJoining)
-                .reduce((s, j) => s + j.openings, 0)}
-            />
-          </div>
         </div>
       </section>
       <div className="container section">
-        <SectionHeading title="Find your kind of work" />
-        <div className="category-pills">
-          {getCategories()
-            .filter((c) => jobs.some((j) => j.category === c.id))
-            .map((c) => (
-              <Link
-                key={c.id}
-                href={`/jobs?location=${pincode}&category=${c.id}&radius=0`}
-              >
-                {c.title}
-                <ArrowRight size={15} />
-              </Link>
-            ))}
-        </div>
         <SectionHeading
           title={`Current jobs in ${location.locality}`}
           href={`/jobs?location=${pincode}&radius=0`}
@@ -162,7 +127,7 @@ export function PincodePage({ pincode }: { pincode: string }) {
         {[
           [
             "Can I apply without a resume?",
-            "Yes. The demo application asks for your name, mobile, pincode and a few work preferences. A CV is not required.",
+            "Yes. The application asks for your name, mobile, pincode and a few work preferences. A CV is not required.",
           ],
           [
             "Do I need my own bike?",

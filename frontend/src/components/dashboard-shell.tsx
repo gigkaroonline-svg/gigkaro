@@ -87,7 +87,6 @@ export function DashboardShell({
           <div className="dashboard-sidebar-bottom">
             {role === "employer" ? (
               <>
-                <span className="badge badge-blue">{uiText("demoWorkspace")}</span>
                 <p>{uiText("fictionalDataChangesStayInThisBrowser")}</p>
                 {showAdminLink && (
                   <Link className="text-link" href="/admin">

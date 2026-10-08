@@ -56,7 +56,7 @@ export function ApplicantTable({
         a.id === id ? { ...a, status: value as typeof a.status } : a,
       ),
     }));
-    toast("Candidate stage updated in the demo.");
+    toast("Candidate stage updated.");
   }
   return (
     <section className="panel data-panel">
@@ -98,7 +98,7 @@ export function ApplicantTable({
                   <td>
                     <strong>{a.name}</strong>
                     <small>
-                      {a.vehicle} {uiText("demo")}
+                      {a.vehicle}
                     </small>
                   </td>
                   <td>{a.job}</td>

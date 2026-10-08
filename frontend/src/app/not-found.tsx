@@ -5,7 +5,7 @@ export default function NotFound() {
     <div className="container page-content">
       <EmptyState
         title="This opportunity has moved on."
-        description="The link may have expired, or this location isn’t available in the demo yet. There’s more work to explore."
+        description="The link may have expired, or this location isn’t available yet. There’s more work to explore."
       >
         <Link className="button button-primary" href="/jobs">
           Find Nearby Jobs

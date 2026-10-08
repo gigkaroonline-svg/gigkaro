@@ -1,4 +1,5 @@
-import { getLocations } from "@/lib/services/locations";
+import { redirect } from "next/navigation";
+import { getLocationByPincode, getLocations } from "@/lib/services/locations";
 import { PincodePage } from "@/features/discovery";
 import { pageMetadata } from "@/lib/metadata";
 export function generateStaticParams() {
@@ -22,5 +23,8 @@ export default async function Page({
   params: Promise<{ pincode: string }>;
 }) {
   const { pincode } = await params;
+  if (!getLocationByPincode(pincode)) {
+    redirect(`/jobs?location=${encodeURIComponent(pincode)}`);
+  }
   return <PincodePage pincode={pincode} />;
 }
