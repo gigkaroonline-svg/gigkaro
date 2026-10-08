@@ -1,6 +1,15 @@
 import type { NextConfig } from "next";
 const config: NextConfig = {
   trailingSlash: true,
+  async redirects() {
+    return [
+      {
+        source: "/job/:pin(\\d{6})",
+        destination: "/jobs/:pin/",
+        permanent: false,
+      },
+    ];
+  },
   async rewrites() {
     return {
       fallback: [{ source: "/job/:slug", destination: "/job/view" }],
