@@ -50,7 +50,7 @@ export function WebMCP() {
             name: "search_gigkaro_jobs",
             title: "Search local jobs",
             description:
-              "Read fictional GigKaro listings using the same pincode, category and distance filters as the visible search page. Does not apply or change saved jobs.",
+              "Search GigKaro jobs by pincode, city, category and distance.",
             inputSchema: {
               type: "object",
               properties: {

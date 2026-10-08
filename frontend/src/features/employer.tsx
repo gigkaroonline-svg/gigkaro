@@ -130,11 +130,6 @@ export function ApplicantTable({
           description="Try another name or application stage."
         />
       )}
-      <p className="table-footnote">
-        {uiText(
-          "fictionalCandidatesStageChangesAreVisibleAcrossTheDemoWorkspace",
-        )}
-      </p>
     </section>
   );
 }
@@ -208,7 +203,6 @@ export function EmployerJobsTable({ limit }: { limit?: number }) {
                       <Link href={`/employer/jobs/${j.id}`}>{j.title}</Link>
                     )}
                   </strong>
-                  <small>{uiText("demoRequirement")}</small>
                 </td>
                 <td>
                   {j.locality}
@@ -285,7 +279,7 @@ export function EmployerPage({ view = "overview" }: { view?: string }) {
     name: "SwiftBox",
     website: "",
     city: "Bengaluru",
-    about: "A fictional local delivery company.",
+    about: "Local delivery and last-mile hiring.",
   });
   const [saved, setSaved] = useState(false);
   useEffect(() => {
@@ -369,15 +363,10 @@ export function EmployerPage({ view = "overview" }: { view?: string }) {
               localStorage.setItem("gigkaro-company", JSON.stringify(company));
             } catch {}
             setSaved(true);
-            toast("Company profile saved on this device.");
+            toast("Company profile saved.");
           }}
         >
           <h2>{uiText("yourCompanyProfile")}</h2>
-          <p className="notice">
-            {uiText(
-              "thisIsAFictionalEmployerWorkspaceUseSampleBusinessDetails",
-            )}
-          </p>
           <div className="form-grid" style={{ marginTop: 24 }}>
             {[
               ["name", "Company name"],
@@ -421,13 +410,11 @@ export function EmployerPage({ view = "overview" }: { view?: string }) {
             <Building2 />
           </span>
           <h2>{uiText("exploreHiringWithoutABill")}</h2>
-          <p>
-            {uiText("thisDemoHasNoPaidPlansSubscriptionsOrPaymentCollection")}
-          </p>
+          <p>Post jobs and review applicants without a subscription.</p>
           <div className="billing-summary">
             <span>
               {uiText("currentPlan")}
-              <strong>{uiText("frontendPreview")}</strong>
+              <strong>Free</strong>
             </span>
             <span>
               {uiText("amountDue")}
@@ -459,11 +446,7 @@ export function EmployerPage({ view = "overview" }: { view?: string }) {
           </section>
           <section className="panel">
             <h2>{uiText("workspaceAccess")}</h2>
-            <p>
-              {uiText(
-                "employerAuthenticationIsADemoProductionRequiresSecureRolesAnd",
-              )}
-            </p>
+            <p>Sign in with your employer mobile number to manage hiring.</p>
             <Link className="text-link" href="/login?role=employer">
               {uiText("openEmployerLogin")}
               <ArrowRight size={16} />

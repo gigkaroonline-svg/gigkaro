@@ -87,7 +87,6 @@ export function DashboardShell({
           <div className="dashboard-sidebar-bottom">
             {role === "employer" ? (
               <>
-                <p>{uiText("fictionalDataChangesStayInThisBrowser")}</p>
                 {showAdminLink && (
                   <Link className="text-link" href="/admin">
                     Open admin

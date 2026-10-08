@@ -139,7 +139,7 @@ export function HirePage() {
         {[
           [
             "How does pincode-level hiring work?",
-            "Choose the work location and your hiring radius. The frontend shows how local matching and applicant management will work.",
+            "Choose the work location and your hiring radius. Candidates near that pincode can find the role.",
           ],
           [
             "Can I hire multiple workers?",
@@ -148,10 +148,6 @@ export function HirePage() {
           [
             "Are jobs published immediately?",
             "New requirements enter Pending approval. An admin reviews the role before it becomes active.",
-          ],
-          [
-            "Is this connected to real candidates?",
-            "No. This preview uses fictional listings and candidates. All changes are saved only in this browser.",
           ],
         ].map(([q, a]) => (
           <details key={q}>

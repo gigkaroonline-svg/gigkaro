@@ -412,9 +412,8 @@ export function CandidatePage({ view = "overview" }: { view?: string }) {
               <section className="panel">
                 <h2>{uiText("yourDocumentsStayPrivate")}</h2>
                 <p className="muted">
-                  {uiText(
-                    "secureDocumentUploadWillBeAvailableWhenTheBackendIs",
-                  )}
+                  Share documents only when a recruiter asks. Do not type
+                  document numbers here.
                 </p>
                 <div className="document-grid">
                   {["Aadhaar", "PAN", "Driving licence", "Resume"].map((d) => (
@@ -422,7 +421,6 @@ export function CandidatePage({ view = "overview" }: { view?: string }) {
                       <FileText size={23} />
                       <strong>{d}</strong>
                       <span>{uiText("notUploaded")}</span>
-                      <Badge>{uiText("comingWithSecureStorage")}</Badge>
                     </div>
                   ))}
                 </div>
@@ -478,11 +476,7 @@ export function CandidatePage({ view = "overview" }: { view?: string }) {
               </section>
               <section className="panel">
                 <h2>{uiText("yourDemoAccount")}</h2>
-                <p>
-                  {uiText(
-                    "thisPreviewKeepsYourSavedJobsProfileAndApplicationsIn",
-                  )}
-                </p>
+                <p>Sign out when you are finished on this device.</p>
                 <button
                   type="button"
                   className="button button-outline"
