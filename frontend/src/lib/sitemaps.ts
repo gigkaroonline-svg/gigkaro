@@ -1,8 +1,6 @@
 import { getLocations } from "@/lib/services/locations";
 import { canonicalUrl, siteOrigin } from "@/lib/metadata";
 
-export const sitemapRevalidate = 3600;
-
 const staticPaths = [
   "/",
   "/jobs",
@@ -33,9 +31,16 @@ export type SitemapEntry = {
 };
 
 function apiBase() {
-  return (
-    process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000/api"
-  ).replace(/\/$/, "");
+  const configured = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+  if (configured) return configured;
+  if (process.env.NODE_ENV === "production") return "https://api.gigkaro.in/api";
+  return "http://127.0.0.1:5000/api";
+}
+
+/** Google fetches the address in the index. The apex host only redirects, so publish the www file URL. */
+function sitemapFileOrigin() {
+  if (siteOrigin === "https://gigkaro.in") return "https://www.gigkaro.in";
+  return siteOrigin;
 }
 
 function entry(
@@ -91,7 +96,7 @@ export function toSitemapIndexXml(
 ) {
   const body = files
     .map((file) => {
-      const loc = `${siteOrigin}${file.path.startsWith("/") ? file.path : `/${file.path}`}`;
+      const loc = `${sitemapFileOrigin()}${file.path.startsWith("/") ? file.path : `/${file.path}`}`;
       const parts = [`    <loc>${escapeXml(loc)}</loc>`];
       if (file.lastModified) {
         parts.push(`    <lastmod>${escapeXml(file.lastModified)}</lastmod>`);
@@ -107,11 +112,11 @@ ${body}
 `;
 }
 
-export function xmlResponse(xml: string, revalidate = sitemapRevalidate) {
+export function xmlResponse(xml: string) {
   return new Response(xml, {
     headers: {
       "Content-Type": "application/xml; charset=utf-8",
-      "Cache-Control": `public, s-maxage=${revalidate}, stale-while-revalidate=${revalidate}`,
+      "Cache-Control": "public, max-age=0, must-revalidate",
     },
   });
 }
@@ -143,9 +148,7 @@ export function buildPincodesSitemap(): SitemapEntry[] {
 
 export async function buildJobsSitemap(): Promise<SitemapEntry[]> {
   try {
-    const res = await fetch(`${apiBase()}/jobs`, {
-      next: { revalidate: sitemapRevalidate },
-    });
+    const res = await fetch(`${apiBase()}/jobs`, { cache: "force-cache" });
     if (!res.ok) return [];
     const data = (await res.json()) as {
       jobs?: { slug?: string; postedAt?: string; status?: string }[];
@@ -164,9 +167,7 @@ export async function buildJobsSitemap(): Promise<SitemapEntry[]> {
 
 export async function buildBlogSitemap(): Promise<SitemapEntry[]> {
   try {
-    const res = await fetch(`${apiBase()}/blogs`, {
-      next: { revalidate: sitemapRevalidate },
-    });
+    const res = await fetch(`${apiBase()}/blogs`, { cache: "force-cache" });
     if (!res.ok) return [];
     const data = (await res.json()) as {
       posts?: {
