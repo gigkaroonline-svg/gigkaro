@@ -1,20 +1,46 @@
-export const categoryCatalog = [
-  { id: "delivery", title: "Delivery Partner" },
-  { id: "food", title: "Food Delivery" },
-  { id: "commerce", title: "Quick Commerce" },
-  { id: "warehouse", title: "Warehouse & Packer" },
-  { id: "logistics", title: "Logistics" },
-  { id: "ev", title: "EV Rider" },
-  { id: "field", title: "Field Executive" },
-  { id: "other", title: "Other Gig Jobs" },
-] as const;
+type CatalogColor = "blue" | "green" | "orange" | "violet" | "rose" | "teal" | "slate";
+
+/** Keep in step with frontend/src/data/categories.ts; jobs match cards by `id`. */
+export const categoryCatalog: {
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: string;
+  color: CatalogColor;
+}[] = [
+  { id: "delivery", title: "Delivery Partners", subtitle: "Deliver packages, earn more", icon: "Bike", color: "blue" },
+  { id: "warehouse", title: "Warehouse & Packers", subtitle: "Pick, pack and keep things moving", icon: "Boxes", color: "orange" },
+  { id: "logistics", title: "Drivers & Logistics", subtitle: "Drive routes, connect the last mile", icon: "Truck", color: "teal" },
+  { id: "technician", title: "Technicians", subtitle: "Install, repair and service equipment", icon: "Wrench", color: "violet" },
+  { id: "electrician-plumber", title: "Electricians & Plumbers", subtitle: "Wiring, fittings and repairs", icon: "PlugZap", color: "orange" },
+  { id: "maintenance", title: "Service & Maintenance Workers", subtitle: "Keep sites and facilities running", icon: "Settings", color: "green" },
+  { id: "machine-operator", title: "Machine Operators", subtitle: "Run machines on the shop floor", icon: "Cog", color: "slate" },
+  { id: "factory", title: "Production & Factory Workers", subtitle: "Steady shifts on production lines", icon: "Factory", color: "rose" },
+  { id: "fitter-welder", title: "Fitters & Welders", subtitle: "Fabrication, fitting and welding", icon: "Flame", color: "orange" },
+  { id: "field", title: "Field Service Workers", subtitle: "On-site visits across your area", icon: "MapPinned", color: "rose" },
+  { id: "telecaller", title: "Telecallers", subtitle: "Call customers, support and sell", icon: "Headset", color: "blue" },
+  { id: "construction", title: "Construction Workers", subtitle: "Build sites, daily and contract work", icon: "HardHat", color: "orange" },
+];
+
+/** Retired category keys that existing jobs still use; they list under Delivery Partners. */
+const categoryAliases: Record<string, string> = {
+  food: "delivery",
+  commerce: "delivery",
+  ev: "delivery",
+};
+
+export const retiredCategoryKeys = [...Object.keys(categoryAliases), "other"];
+
+export function categoryGroupId(id: string) {
+  return categoryAliases[id] || id;
+}
 
 export const catalogCategories = categoryCatalog.map((c) => ({
   key: c.id,
   title: c.title,
-  subtitle: "",
-  icon: "briefcase",
-  color: "blue" as const,
+  subtitle: c.subtitle,
+  icon: c.icon,
+  color: c.color,
   active: true,
 }));
 

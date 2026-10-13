@@ -31,6 +31,7 @@ export function JobDetail({ job }: { job: Job }) {
   const nearby = getJobs()
     .filter((j) => j.id !== job.id && j.pincode === job.pincode)
     .slice(0, 3);
+  const place = job.pincode || job.city;
   return (
     <>
       <div className="page-intro">
@@ -54,7 +55,8 @@ export function JobDetail({ job }: { job: Job }) {
                   <MapPin size={15} />
                   {[job.locality, job.city].filter(Boolean).join(", ") ||
                     job.pincode}
-                  {[job.locality, job.city].some(Boolean) &&
+                  {job.pincode &&
+                    [job.locality, job.city].some(Boolean) &&
                     ` · ${job.pincode}`}
                 </span>
                 <span className="inline-meta">
@@ -138,16 +140,17 @@ export function JobDetail({ job }: { job: Job }) {
                     job.pincode}
                 </h3>
                 <p>
-                  {uiText("pincode2")} {job.pincode}{" "}
-                  {uiText("localAreaAssignments")}
+                  {job.pincode
+                    ? `${uiText("pincode2")} ${job.pincode} ${uiText("localAreaAssignments")}`
+                    : `Openings across ${job.city}`}
                 </p>
               </div>
             </div>
             <Link
               className="text-link"
-              href={`/jobs?location=${encodeURIComponent(job.pincode)}`}
+              href={`/jobs?location=${encodeURIComponent(place)}`}
             >
-              {uiText("exploreMoreJobsIn")} {job.pincode}
+              {uiText("exploreMoreJobsIn")} {place}
               <ArrowRight size={16} />
             </Link>
           </section>
@@ -183,7 +186,7 @@ export function JobDetail({ job }: { job: Job }) {
           <h2>{uiText("readyForYourNextGig")}</h2>
           <SalaryBadge min={job.salaryMin} max={job.salaryMax} />
           <p>
-            {job.openings} {uiText("openingsIn")} {job.locality}
+            {job.openings} {uiText("openingsIn")} {job.locality || job.city}
           </p>
           <ApplyButton job={job} />
           <div className="privacy-note">
@@ -210,7 +213,7 @@ export function JobDetail({ job }: { job: Job }) {
         <section className="container section">
           <SectionHeading
             title="More jobs in your neighbourhood"
-            href={`/jobs?location=${encodeURIComponent(job.pincode)}`}
+            href={`/jobs?location=${encodeURIComponent(place)}`}
             action="Explore nearby jobs"
           />
           <div className="job-grid">

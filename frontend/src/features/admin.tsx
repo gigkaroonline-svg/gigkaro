@@ -257,7 +257,7 @@ function AdminPostJob({ onCreated }: { onCreated: () => void }) {
     Promise.all([
       api<{ locations: typeof locations }>("/admin/taxonomy/locations"),
       api<{ categories: { id: string; title: string }[] }>(
-        "/admin/taxonomy/categories",
+        "/admin/taxonomy/categories?active=1",
       ),
       api<{ companies: AdminCompany[] }>("/admin/companies?active=1"),
     ])

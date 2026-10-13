@@ -8,6 +8,7 @@ import {
   normalizePlaceQuery,
 } from "../utils/indiaPincodes.js";
 import { maybeRefreshPostedDates } from "../utils/refreshPostedAt.js";
+import { categoryGroupId } from "../data/taxonomy.js";
 
 type LocationRef = {
   pincode: string;
@@ -141,7 +142,11 @@ export async function listJobs(
           )
             return false;
         }
-        if (f.category && j.category !== f.category) return false;
+        if (
+          f.category &&
+          categoryGroupId(j.category) !== categoryGroupId(f.category)
+        )
+          return false;
         if (f.salary) {
           const [min, max] = f.salary.split("-").map(Number);
           if (j.salaryMax < min || (max && j.salaryMin > max)) return false;
