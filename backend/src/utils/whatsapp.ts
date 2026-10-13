@@ -24,14 +24,16 @@ function templateText(value: string) {
  */
 export async function sendApplicationWhatsApp(input: ApplicationAlertInput) {
   const recipients = env.whatsappNotifyTo.map(toWhatsAppNumber).filter(Boolean);
-  if (
-    !env.whatsappPhoneNumberId ||
-    !env.whatsappAccessToken ||
-    !env.whatsappApplicationTemplate ||
-    !recipients.length
-  ) {
+  const missing = [
+    !env.whatsappPhoneNumberId && "WHATSAPP_PHONE_NUMBER_ID",
+    !env.whatsappAccessToken && "WHATSAPP_ACCESS_TOKEN",
+    !env.whatsappApplicationTemplate && "WHATSAPP_APPLICATION_TEMPLATE",
+    !recipients.length && "WHATSAPP_NOTIFY_TO",
+  ].filter(Boolean);
+  if (missing.length) {
     console.warn(
-      "WhatsApp alert skipped: set WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_ACCESS_TOKEN, WHATSAPP_APPLICATION_TEMPLATE, WHATSAPP_NOTIFY_TO.",
+      "[WhatsApp] skipped application alert. Missing:",
+      missing.join(", "),
     );
     return;
   }
@@ -46,6 +48,23 @@ export async function sendApplicationWhatsApp(input: ApplicationAlertInput) {
 
   await Promise.all(
     recipients.map(async (to) => {
+      const payload = {
+        messaging_product: "whatsapp",
+        to,
+        type: "template",
+        template: {
+          name: env.whatsappApplicationTemplate,
+          language: { code: env.whatsappTemplateLanguage },
+          components: [{ type: "body", parameters }],
+        },
+      };
+      console.log("[WhatsApp] sending", {
+        to,
+        template: env.whatsappApplicationTemplate,
+        language: env.whatsappTemplateLanguage,
+        parameters: parameters.map((item) => item.text),
+        candidateMobile: input.candidateMobile,
+      });
       try {
         const res = await fetch(url, {
           method: "POST",
@@ -53,25 +72,32 @@ export async function sendApplicationWhatsApp(input: ApplicationAlertInput) {
             Authorization: `Bearer ${env.whatsappAccessToken}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            messaging_product: "whatsapp",
-            to,
-            type: "template",
-            template: {
-              name: env.whatsappApplicationTemplate,
-              language: { code: env.whatsappTemplateLanguage },
-              components: [{ type: "body", parameters }],
-            },
-          }),
+          body: JSON.stringify(payload),
         });
         const body = await res.text();
+        let parsed: { messages?: { id?: string }[]; error?: { message?: string; code?: number } } =
+          {};
+        try {
+          parsed = JSON.parse(body);
+        } catch {
+          parsed = {};
+        }
         if (!res.ok) {
-          console.error("WhatsApp alert failed:", res.status, body.slice(0, 300));
+          console.error("[WhatsApp] Meta rejected the message", {
+            to,
+            status: res.status,
+            code: parsed.error?.code,
+            message: parsed.error?.message || body.slice(0, 500),
+          });
           return;
         }
-        console.log("WhatsApp alert sent for application:", input.candidateMobile);
+        console.log("[WhatsApp] Meta accepted the message", {
+          to,
+          messageId: parsed.messages?.[0]?.id || "",
+          candidateMobile: input.candidateMobile,
+        });
       } catch (err) {
-        console.error("WhatsApp alert error:", err);
+        console.error("[WhatsApp] request failed", { to, err });
       }
     }),
   );

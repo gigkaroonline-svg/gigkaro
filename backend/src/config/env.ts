@@ -24,7 +24,7 @@ export const env = {
   whatsappAccessToken: process.env.WHATSAPP_ACCESS_TOKEN || "",
   whatsappWabaId: process.env.WHATSAPP_WABA_ID || "",
   whatsappApplicationTemplate: process.env.WHATSAPP_APPLICATION_TEMPLATE || "",
-  whatsappTemplateLanguage: process.env.WHATSAPP_TEMPLATE_LANGUAGE || "en",
+  whatsappTemplateLanguage: process.env.WHATSAPP_TEMPLATE_LANGUAGE || "en_IN",
   whatsappNotifyTo: (process.env.WHATSAPP_NOTIFY_TO || "")
     .split(",")
     .map((s) => s.trim())
