@@ -4,6 +4,7 @@ export type Category = {
   subtitle: string;
   icon: string;
   color: string;
+  aliases?: string[];
 };
 export type Location = {
   city: string;

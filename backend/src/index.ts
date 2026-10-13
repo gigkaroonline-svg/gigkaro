@@ -27,10 +27,22 @@ async function main() {
   await ensureApplicationIndexes();
 
   const { Category } = await import("./models/Category.js");
-  const { catalogCategories } = await import("./data/taxonomy.js");
-  if ((await Category.countDocuments()) === 0) {
-    await Category.insertMany(catalogCategories);
-    console.log(`Auto-seeded ${catalogCategories.length} categories`);
+  const { catalogCategories, retiredCategoryKeys } = await import(
+    "./data/taxonomy.js"
+  );
+  const synced = await Category.bulkWrite(
+    catalogCategories.map(({ key, ...fields }) => ({
+      updateOne: { filter: { key }, update: { $set: fields }, upsert: true },
+    })),
+  );
+  const retired = await Category.updateMany(
+    { key: { $in: retiredCategoryKeys }, active: { $ne: false } },
+    { $set: { active: false } },
+  );
+  if (synced.upsertedCount || synced.modifiedCount || retired.modifiedCount) {
+    console.log(
+      `Categories synced: ${synced.upsertedCount} added, ${synced.modifiedCount} updated, ${retired.modifiedCount} retired`,
+    );
   }
   const { seedPincodesIfEmpty } = await import("./utils/seedPincodes.js");
   await seedPincodesIfEmpty();

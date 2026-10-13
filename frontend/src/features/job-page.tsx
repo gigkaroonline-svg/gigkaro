@@ -21,9 +21,15 @@ export function JobPage() {
       return;
     }
     let cancelled = false;
+    const city = new URLSearchParams(window.location.search).get("city")?.trim();
     api<{ job: Job }>(`/jobs/${encodeURIComponent(slug)}`, { auth: false })
       .then((data) => {
-        if (!cancelled) setJob(data.job);
+        if (cancelled) return;
+        setJob(
+          city && data.job.showEverywhere
+            ? { ...data.job, city, locality: "", pincode: "" }
+            : data.job,
+        );
       })
       .catch(() => {
         if (!cancelled) setJob(null);
@@ -35,7 +41,7 @@ export function JobPage() {
 
   useEffect(() => {
     if (!job) return;
-    document.title = `${job.title} in ${job.locality} — ₹${job.salaryMin / 1000}k–₹${job.salaryMax / 1000}k | GigKaro`;
+    document.title = `${job.title} in ${job.locality || job.city} — ₹${job.salaryMin / 1000}k–₹${job.salaryMax / 1000}k | GigKaro`;
   }, [job]);
 
   if (job === undefined) {

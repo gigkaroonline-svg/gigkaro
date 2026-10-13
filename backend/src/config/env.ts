@@ -19,9 +19,16 @@ export const env = {
   gcsProjectId: process.env.GCS_PROJECT_ID || "",
   gcsClientEmail: process.env.GCS_CLIENT_EMAIL || "",
   gcsPrivateKey: (process.env.GCS_PRIVATE_KEY || "").replace(/\\n/g, "\n"),
-  gupshupUserId: process.env.GUPSHUP_USERID || "",
-  gupshupPassword: process.env.GUPSHUP_PASSWORD || "",
-  gupshupNotifyTo: process.env.GUPSHUP_NOTIFY_TO || "",
+  metaGraphApiVersion: process.env.META_GRAPH_API_VERSION || "v21.0",
+  whatsappPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || "",
+  whatsappAccessToken: process.env.WHATSAPP_ACCESS_TOKEN || "",
+  whatsappWabaId: process.env.WHATSAPP_WABA_ID || "",
+  whatsappApplicationTemplate: process.env.WHATSAPP_APPLICATION_TEMPLATE || "",
+  whatsappTemplateLanguage: process.env.WHATSAPP_TEMPLATE_LANGUAGE || "en",
+  whatsappNotifyTo: (process.env.WHATSAPP_NOTIFY_TO || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
 };
 
 export function isAdminIdentifier(mobile?: string, email?: string) {

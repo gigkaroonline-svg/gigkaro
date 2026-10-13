@@ -14,7 +14,7 @@ import {
 import { getLocationByPincode, getLocations } from "@/lib/services/locations";
 import { api } from "@/lib/api";
 import { getCategories } from "@/lib/services/categories";
-import { JobCard } from "@/components/job-card";
+import { JobCard, JobCardSkeleton } from "@/components/job-card";
 import { EmptyState, Breadcrumb } from "@/components/primitives";
 import {
   Sheet,
@@ -412,12 +412,18 @@ export function SearchResults({
         </aside>
         <section className="results-body">
           <div className="results-toolbar">
-            <h2>
-              {jobs.length} {jobs.length === 1 ? "job" : "jobs"}{" "}
-              <span>
-                {nearLabel ? `near ${nearLabel}` : "to explore"}
-              </span>
-            </h2>
+            {loading ? (
+              <h2>
+                <span className="shimmer shimmer-line" style={{ width: 180, height: 22 }} />
+              </h2>
+            ) : (
+              <h2>
+                {jobs.length} {jobs.length === 1 ? "job" : "jobs"}{" "}
+                <span>
+                  {nearLabel ? `near ${nearLabel}` : "to explore"}
+                </span>
+              </h2>
+            )}
             <label className="sort-label">
               {uiText("sortBy")}
               <select
@@ -482,7 +488,9 @@ export function SearchResults({
               .map(([k, v]) => (
                 <button key={k} onClick={() => change(k, "")}>
                   {k === "category"
-                    ? getCategories().find((c) => c.id === v)?.title
+                    ? getCategories().find(
+                        (c) => c.id === v || c.aliases?.includes(String(v)),
+                      )?.title || String(v)
                     : k === "immediate"
                       ? "Immediate joining"
                       : String(v)}
@@ -491,7 +499,12 @@ export function SearchResults({
               ))}
           </div>
           {loading ? (
-            <p className="notice">Loading jobs…</p>
+            <div className="search-job-grid" role="status" aria-busy="true">
+              <span className="sr-only">Loading jobs…</span>
+              {Array.from({ length: 6 }, (_, i) => (
+                <JobCardSkeleton key={i} />
+              ))}
+            </div>
           ) : loadError ? (
             <EmptyState title="API unavailable" description={loadError} />
           ) : jobs.length ? (

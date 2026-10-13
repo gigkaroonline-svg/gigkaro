@@ -6028,6 +6028,76 @@ details p {
   background: transparent;
   color: #0047b3;
 }
+.job-card-skeleton,
+.job-card-skeleton:hover {
+  border-color: #e4eaf2;
+  box-shadow: 0 1px 2px #17304d0a;
+}
+.shimmer {
+  display: block;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    #edf1f6 0%,
+    #f7f9fc 40%,
+    #edf1f6 80%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.3s ease-in-out infinite;
+}
+.shimmer-line {
+  height: 14px;
+}
+.shimmer-line.sm {
+  height: 11px;
+}
+.job-heading .shimmer-line + .shimmer-line {
+  margin-top: 8px;
+}
+.shimmer-avatar {
+  flex: none;
+  width: 41px;
+  height: 41px;
+  border-radius: 10px;
+}
+.job-card-skeleton .job-heading {
+  flex: 1;
+}
+.shimmer-pay {
+  height: 58px;
+  margin-top: 14px;
+  border-radius: 10px;
+}
+.shimmer-tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+.shimmer-pill {
+  width: 82px;
+  height: 26px;
+  border-radius: 999px;
+}
+.shimmer-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 18px;
+  min-height: 48px;
+}
+.results-toolbar h2 .shimmer {
+  display: inline-block;
+  vertical-align: middle;
+}
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
 .account-main,
 .dashboard-main {
   min-width: 0;

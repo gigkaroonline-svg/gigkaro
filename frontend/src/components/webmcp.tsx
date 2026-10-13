@@ -3,7 +3,9 @@ import { useEffect } from "react";
 import { useDemoStore } from "@/hooks/use-demo-store";
 import { getEffectiveJobs, jobHref } from "@/lib/services/demo-jobs";
 import { searchJobs } from "@/lib/services/jobs";
+import { categories } from "@/data/categories";
 import { z } from "zod";
+const categoryIds = categories.map((c) => c.id) as [string, ...string[]];
 type Tool = {
   name: string;
   title: string;
@@ -29,16 +31,7 @@ export function WebMCP() {
       .object({
         location: z.string().max(100).optional(),
         category: z
-          .enum([
-            "delivery",
-            "food",
-            "commerce",
-            "warehouse",
-            "logistics",
-            "ev",
-            "field",
-            "other",
-          ])
+          .enum(categoryIds)
           .optional(),
         radius: z.enum(["0", "5", "10", "25"]).optional(),
       })
@@ -57,16 +50,7 @@ export function WebMCP() {
                 location: { type: "string" },
                 category: {
                   type: "string",
-                  enum: [
-                    "delivery",
-                    "food",
-                    "commerce",
-                    "warehouse",
-                    "logistics",
-                    "ev",
-                    "field",
-                    "other",
-                  ],
+                  enum: categoryIds,
                 },
                 radius: { type: "string", enum: ["0", "5", "10", "25"] },
               },

@@ -182,6 +182,31 @@ export function JobCard({
   );
 }
 
+export function JobCardSkeleton() {
+  return (
+    <div className="job-card job-card-skeleton" aria-hidden="true">
+      <div className="job-card-top">
+        <span className="shimmer shimmer-avatar" />
+        <div className="job-heading">
+          <span className="shimmer shimmer-line" style={{ width: "70%" }} />
+          <span className="shimmer shimmer-line sm" style={{ width: "45%" }} />
+        </div>
+      </div>
+      <span className="shimmer shimmer-line sm" style={{ width: "60%", marginTop: 16 }} />
+      <span className="shimmer shimmer-pay" />
+      <div className="shimmer-tags">
+        <span className="shimmer shimmer-pill" />
+        <span className="shimmer shimmer-pill" />
+        <span className="shimmer shimmer-pill" />
+      </div>
+      <div className="shimmer-bottom">
+        <span className="shimmer shimmer-line sm" style={{ width: "30%" }} />
+        <span className="shimmer shimmer-line sm" style={{ width: "22%" }} />
+      </div>
+    </div>
+  );
+}
+
 export function JobList({ jobs }: { jobs: Job[] }) {
   return (
     <div className="job-grid">

@@ -199,7 +199,7 @@ export function ApplyButton({
                 : "A little about your work preferences."}
         </DialogTitle>
         <DialogDescription>
-          {job.title} at {job.company} · {job.locality}
+          {job.title} at {job.company} · {job.locality || job.city}
         </DialogDescription>
         {step === 3 || (applied && step !== 1 && step !== 2) ? (
           <div className="application-success">
@@ -221,7 +221,7 @@ export function ApplyButton({
             <Link
               className="text-link"
               onClick={() => setOpen(false)}
-              href={`/jobs?category=${job.category}&location=${job.pincode}`}
+              href={`/jobs?category=${job.category}&location=${encodeURIComponent(job.pincode || job.city)}`}
             >
               {uiText("viewSimilarJobs")}
               <ArrowRight size={15} />

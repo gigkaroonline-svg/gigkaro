@@ -1,5 +1,6 @@
 import { jobs } from "@/data/jobs";
 import { locations } from "@/data/locations";
+import { categoryGroupId } from "@/data/categories";
 import type { SearchFilters, Job } from "@/types";
 export function getJobs() {
   return jobs;
@@ -14,7 +15,7 @@ export async function getCategoryCounts() {
     if (!res.ok) return counts;
     const data = (await res.json()) as { jobs?: { category?: string }[] };
     for (const job of data.jobs || []) {
-      const id = job.category || "";
+      const id = categoryGroupId(job.category || "");
       if (!id) continue;
       counts[id] = (counts[id] || 0) + 1;
     }
@@ -83,7 +84,11 @@ export function searchJobs(f: SearchFilters = {}, source: Job[] = jobs) {
         )
           return false;
       }
-      if (f.category && j.category !== f.category) return false;
+      if (
+        f.category &&
+        categoryGroupId(j.category) !== categoryGroupId(f.category)
+      )
+        return false;
       if (f.salary) {
         const [min, max] = f.salary.split("-").map(Number);
         if (j.salaryMax < min || (max && j.salaryMin > max)) return false;

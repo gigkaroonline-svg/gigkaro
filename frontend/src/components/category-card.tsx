@@ -8,6 +8,14 @@ import {
   BatteryCharging,
   MapPinned,
   BriefcaseBusiness,
+  Wrench,
+  PlugZap,
+  Settings,
+  Cog,
+  Factory,
+  Flame,
+  Headset,
+  HardHat,
   ArrowUpRight,
 } from "lucide-react";
 import type { Category } from "@/types";
@@ -20,6 +28,14 @@ const icons = {
   BatteryCharging,
   MapPinned,
   BriefcaseBusiness,
+  Wrench,
+  PlugZap,
+  Settings,
+  Cog,
+  Factory,
+  Flame,
+  Headset,
+  HardHat,
 };
 export function CategoryCard({
   category,

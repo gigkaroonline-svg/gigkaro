@@ -19,9 +19,12 @@ export function getEffectiveJobStatus(state: State, id: string) {
   );
 }
 export function jobHref(job: Job) {
-  return job.id.startsWith("posted_")
-    ? `/job/local?id=${encodeURIComponent(job.id)}`
-    : `/job/${job.slug}`;
+  if (job.id.startsWith("posted_"))
+    return `/job/local?id=${encodeURIComponent(job.id)}`;
+  // City searches list nationwide roles under the searched city with no pincode; the stored slug still points at the seed locality.
+  if (job.showEverywhere && !job.pincode && job.city)
+    return `/job/${job.slug}/?city=${encodeURIComponent(job.city)}`;
+  return `/job/${job.slug}`;
 }
 export function postedJobToJob(p: PostedJob): Job {
   const location = getLocationByPincode(p.pincode);
