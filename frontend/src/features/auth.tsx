@@ -15,6 +15,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { useDemoStore } from "@/hooks/use-demo-store";
 import { ApiError } from "@/lib/api";
+import { staffHome } from "@/lib/roles";
 import { z } from "zod";
 export function AuthPage({
   mode = "login",
@@ -24,16 +25,19 @@ export function AuthPage({
   const router = useRouter();
   const params = useSearchParams();
   const roleParam = params.get("role");
+  const staffLogin =
+    mode === "login" && (roleParam === "admin" || roleParam === "staff");
   const role =
-    roleParam === "employer"
-      ? "employer"
-      : roleParam === "admin"
-        ? "admin"
+    staffLogin || roleParam === "admin"
+      ? "admin"
+      : roleParam === "employer"
+        ? "employer"
         : "candidate";
-  const { requestOtp, verifyOtp } = useAuth();
+  const { requestOtp, verifyOtp, loginWithPassword } = useAuth();
   const { toast } = useDemoStore();
   const [emailMode, setEmailMode] = useState(false);
   const [value, setValue] = useState("");
+  const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -83,6 +87,33 @@ export function AuthPage({
       }
       return;
     }
+    if (staffLogin) {
+      if (!z.string().email().safeParse(value.trim()).success) {
+        setError("Enter a valid email address.");
+        return;
+      }
+      if (password.length < 8) {
+        setError("Enter your password.");
+        return;
+      }
+      setPending(true);
+      try {
+        const user = await loginWithPassword({
+          email: value.trim(),
+          password,
+        });
+        router.push(staffHome(user.role));
+      } catch (err) {
+        setError(
+          err instanceof ApiError
+            ? err.message
+            : "Could not sign in. Is the API running?",
+        );
+      } finally {
+        setPending(false);
+      }
+      return;
+    }
     const schema = emailMode
       ? z.string().email()
       : z.string().regex(/^[6-9]\d{9}$/);
@@ -123,14 +154,14 @@ export function AuthPage({
           {role === "employer"
             ? "Great teams start close to home."
             : role === "admin"
-              ? "Keep the network healthy."
+              ? "Keep hiring moving."
               : "Your next chapter starts nearby."}
         </h1>
         <p>
           {role === "employer"
             ? "Reach local workers, manage applications and build a team in your neighbourhood."
             : role === "admin"
-              ? "Review jobs, applications and directory health across GigKaro."
+              ? "Admins, hiring managers and recruiters sign in here to work the application pipeline."
               : "Discover work that fits your life. Save your favourites, apply in minutes and follow your progress."}
         </p>
         <div className="auth-benefits">
@@ -150,7 +181,9 @@ export function AuthPage({
         </div>
       </div>
       <section className="auth-card panel">
-        <div className="icon-tile blue">{emailMode ? <Mail /> : <Phone />}</div>
+        <div className="icon-tile blue">
+          {staffLogin || emailMode ? <Mail /> : <Phone />}
+        </div>
         <h2>
           {mode === "otp"
             ? "Enter your code"
@@ -159,7 +192,7 @@ export function AuthPage({
               : role === "employer"
                 ? "Welcome, employer."
                 : role === "admin"
-                  ? "Welcome, admin."
+                  ? "Staff sign in"
                   : "Welcome to GigKaro."}
         </h2>
         <p>
@@ -168,7 +201,7 @@ export function AuthPage({
             : role === "employer"
               ? "Hire great workers near you."
               : role === "admin"
-                ? "Use an allowlisted admin mobile or email."
+                ? "Use the email and password from your admin."
                 : "Find work near you."}
         </p>
         <form onSubmit={submit} className="stack">
@@ -176,7 +209,7 @@ export function AuthPage({
             <label htmlFor="auth-value">
               {mode === "otp"
                 ? "6-digit code"
-                : emailMode
+                : staffLogin || emailMode
                   ? "Email address"
                   : "Mobile number"}
             </label>
@@ -190,6 +223,15 @@ export function AuthPage({
                 value={otp}
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
                 placeholder="000000"
+              />
+            ) : staffLogin ? (
+              <input
+                id="auth-value"
+                type="email"
+                autoComplete="username"
+                placeholder="you@company.com"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
               />
             ) : (
               <div className={!emailMode ? "phone-field" : ""}>
@@ -210,12 +252,24 @@ export function AuthPage({
                 />
               </div>
             )}
-            {error && (
-              <p className="field-error" role="alert">
-                {error}
-              </p>
-            )}
           </div>
+          {staffLogin && (
+            <div className="form-field">
+              <label htmlFor="auth-password">Password</label>
+              <input
+                id="auth-password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+          )}
+          {error && (
+            <p className="field-error" role="alert">
+              {error}
+            </p>
+          )}
           <button
             className="button button-primary button-full"
             disabled={pending}
@@ -224,7 +278,9 @@ export function AuthPage({
               ? "Please wait…"
               : mode === "otp"
                 ? "Verify & Continue"
-                : "Continue"}
+                : staffLogin
+                  ? "Sign in"
+                  : "Continue"}
             <ArrowRight size={17} />
           </button>
         </form>
@@ -282,7 +338,7 @@ export function AuthPage({
               {uiText("changeMobileEmail")}
             </Link>
           </div>
-        ) : (
+        ) : staffLogin ? null : (
           <>
             <div className="or-divider">
               <span>or</span>

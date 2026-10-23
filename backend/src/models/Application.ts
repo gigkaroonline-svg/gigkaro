@@ -20,6 +20,12 @@ const applicationSchema = new Schema(
     bike: { type: String, required: true },
     licence: { type: String, required: true },
     joining: { type: String, required: true },
+    assignedTo: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: false,
+      index: true,
+    },
     status: {
       type: String,
       enum: ["Applied", "Contacted", "Interview", "Selected", "Joined"],

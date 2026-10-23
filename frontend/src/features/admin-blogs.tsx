@@ -282,7 +282,7 @@ export function AdminBlogs() {
               <tbody>
                 {posts.map((post) => (
                   <tr key={post.id}>
-                    <td>
+                    <td data-label="Cover">
                       {post.coverUrl ? (
                         <img
                           className="blog-table-cover"
@@ -293,12 +293,16 @@ export function AdminBlogs() {
                         "—"
                       )}
                     </td>
-                    <td>
+                    <td data-label="Title">
                       <span className="blog-story-title">{post.title}</span>
                     </td>
-                    <td>{post.status === "published" ? "Published" : "Draft"}</td>
-                    <td>{formatBlogDate(post.publishedAt) || "—"}</td>
-                    <td>
+                    <td data-label="Status">
+                      {post.status === "published" ? "Published" : "Draft"}
+                    </td>
+                    <td data-label="Published">
+                      {formatBlogDate(post.publishedAt) || "—"}
+                    </td>
+                    <td data-label="Actions">
                       <div className="row">
                         <button
                           type="button"

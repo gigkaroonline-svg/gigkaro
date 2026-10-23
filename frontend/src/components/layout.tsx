@@ -11,6 +11,7 @@ import {
   Bookmark,
   UserRound,
   FileCheck2,
+  Settings,
   ArrowRight,
 } from "lucide-react";
 import {
@@ -237,6 +238,7 @@ export function MobileNav() {
         [FileCheck2, "Applications", "/candidate/applications"],
         [Bookmark, "Saved", "/candidate/saved"],
         [UserRound, "Profile", "/candidate/profile"],
+        [Settings, "Settings", "/candidate/settings"],
       ].map(([Icon, label, href]) => {
         const I = Icon as typeof MapPin;
         return (

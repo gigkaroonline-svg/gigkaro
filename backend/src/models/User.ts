@@ -22,12 +22,14 @@ const userSchema = new Schema(
   {
     role: {
       type: String,
-      enum: ["candidate", "employer", "admin"],
+      enum: ["candidate", "employer", "admin", "hiring_manager", "recruiter"],
       default: "candidate",
     },
     mobile: { type: String, sparse: true, unique: true },
     email: { type: String, sparse: true, unique: true, lowercase: true },
+    passwordHash: { type: String, select: false },
     name: { type: String, default: "" },
+    companyKeys: { type: [String], default: [] },
     otp: { type: String },
     otpExpires: { type: Date },
     profile: { type: profileSchema, default: () => ({}) },

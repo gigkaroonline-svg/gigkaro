@@ -1809,6 +1809,48 @@ textarea::placeholder {
   min-height: 140px;
   resize: vertical;
 }
+.password-field {
+  position: relative;
+}
+.password-field input {
+  padding-right: 44px;
+}
+.password-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 44px;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #546b88;
+  cursor: pointer;
+}
+.staff-user-dialog {
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+}
+.company-picks {
+  display: grid;
+  gap: 4px;
+  max-height: 240px;
+  overflow: auto;
+}
+.company-pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-size: 14px;
+  color: #263c5a;
+}
+.company-pick input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
 .form-field small {
   font-size: 11px;
   color: #7a889b;
@@ -3208,6 +3250,10 @@ details p {
     border-radius: 18px 18px 0 0;
     max-height: 92dvh;
     padding: 25px;
+  }
+  [data-slot="dialog-header"],
+  [data-slot="dialog-content"] h2 {
+    padding-right: 36px;
   }
   .form-field input,
   .form-field select,
@@ -5413,11 +5459,21 @@ details p {
     display: block;
     margin-top: 4px;
   }
-  .dashboard-sidebar nav {
+  .dashboard-sidebar,
+  .account-sidebar {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .dashboard-sidebar nav,
+  .account-sidebar nav {
     display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    padding-bottom: 6px;
+    flex-wrap: nowrap;
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    padding-bottom: 4px;
   }
   .mobile-filters {
     flex-wrap: wrap;
@@ -5431,14 +5487,125 @@ details p {
     min-width: 0;
     max-width: 100%;
   }
+  .table-controls {
+    flex-wrap: wrap;
+  }
+  .table-controls > input,
+  .table-controls > select,
+  .table-controls > .button,
+  .table-controls > .control,
+  .dashboard-main .row.wrap > input,
+  .dashboard-main .row.wrap > select,
+  .dashboard-main .row.wrap > .button,
+  .account-main .row.wrap > input,
+  .account-main .row.wrap > select,
+  .account-main .row.wrap > .button {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
   .post-form-actions {
     flex-wrap: wrap;
   }
   .dashboard-sidebar nav a {
+    flex: 0 0 auto;
     white-space: nowrap;
+    font-size: 13px;
+    padding: 10px 12px;
+    min-height: 44px;
+  }
+  .dashboard-heading h1,
+  .account-title h1 {
+    font-size: 26px;
+    overflow-wrap: anywhere;
+  }
+  .dashboard-heading > .button,
+  .dashboard-main .row.spread > .button,
+  .dashboard-main .row.spread > select,
+  .account-main .row.spread > .button,
+  .account-main .row.spread > select {
+    width: 100%;
+  }
+  .dashboard-main .table-wrap,
+  .dashboard-main .table-scroll,
+  .data-panel .table-scroll,
+  .account-main .table-wrap,
+  .account-main .table-scroll {
+    overflow: visible;
+  }
+  .dashboard-main table,
+  .data-panel table,
+  .account-main table {
+    display: block;
+    min-width: 0;
+    white-space: normal;
+  }
+  .dashboard-main table thead,
+  .data-panel table thead,
+  .account-main table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .dashboard-main table tbody,
+  .dashboard-main table tr,
+  .data-panel table tbody,
+  .data-panel table tr,
+  .account-main table tbody,
+  .account-main table tr {
+    display: block;
+  }
+  .dashboard-main table tr,
+  .data-panel table tr,
+  .account-main table tr {
+    border: 1px solid #e4eaf2;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    padding: 6px 0;
+    background: #fff;
+  }
+  .dashboard-main table td,
+  .data-panel table td,
+  .account-main table td {
+    display: grid;
+    width: 100%;
+    box-sizing: border-box;
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 8px 12px;
+    align-items: center;
+    white-space: normal;
+    border: 0;
+    padding: 8px 14px;
+    overflow-wrap: anywhere;
+  }
+  .dashboard-main table td::before,
+  .data-panel table td::before,
+  .account-main table td::before {
+    content: attr(data-label);
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+    padding-top: 2px;
+    color: #7b8da3;
     font-size: 11px;
-    padding: 10px;
-    min-height: 42px;
+    font-weight: 600;
+  }
+  .dashboard-main table td > *,
+  .data-panel table td > *,
+  .account-main table td > * {
+    grid-column: 2;
+    min-width: 0;
+  }
+  .dashboard-main table td select,
+  .data-panel table td select,
+  .account-main table td select,
+  .table-select {
+    width: 100%;
+    max-width: none;
+    min-height: 44px;
   }
   .dashboard-sidebar nav svg {
     width: 15px;
@@ -6400,6 +6567,13 @@ details p {
 @media (max-width: 600px) {
   [data-slot="dialog-content"] {
     translate: none;
+  }
+  .blog-stories td:nth-child(n),
+  .blog-stories th:nth-child(n) {
+    width: 100%;
+  }
+  .blog-stories .row {
+    flex-wrap: wrap;
   }
   .search-job-grid {
     grid-template-columns: minmax(0, 1fr);

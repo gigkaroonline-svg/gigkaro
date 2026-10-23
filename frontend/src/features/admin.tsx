@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import {
   LayoutDashboard,
   BriefcaseBusiness,
@@ -15,6 +15,7 @@ import {
   LogOut,
   CheckCircle2,
   Eye,
+  EyeOff,
   Activity,
   BarChart3,
 } from "lucide-react";
@@ -39,6 +40,7 @@ import {
   SectionHeading,
 } from "@/components/primitives";
 import { jobHref } from "@/lib/services/demo-jobs";
+import { isStaffRole, roleLabel } from "@/lib/roles";
 import { AdminBlogs } from "@/features/admin-blogs";
 
 const adminNav = [
@@ -50,6 +52,7 @@ const adminNav = [
   ["companies", "Companies", Building2],
   ["categories", "Categories", Layers],
   ["blogs", "Blog", Newspaper],
+  ["users", "Users", ShieldCheck],
 ] as const;
 
 const jobStatuses = [
@@ -109,7 +112,30 @@ type AdminApplication = {
   joining?: string;
   job?: Job | null;
   candidate?: { id: string; name: string; mobile: string } | null;
+  assignedTo?: { id: string; name: string; email: string } | null;
 };
+
+type StaffAccount = {
+  id: string;
+  role: string;
+  name: string;
+  email: string;
+  companyKeys?: string[];
+};
+
+const recruiterStatusOptions = ["Applied", "Contacted", "Interview"] as const;
+
+function navForRole(role?: string | null) {
+  if (role === "hiring_manager") {
+    return adminNav.filter(
+      ([key]) => key === "applications" || key === "candidates",
+    );
+  }
+  if (role === "recruiter") {
+    return adminNav.filter(([key]) => key === "applications");
+  }
+  return adminNav;
+}
 
 function AdminShell({
   view,
@@ -119,6 +145,7 @@ function AdminShell({
   children: ReactNode;
 }) {
   const { logout, user } = useAuth();
+  const nav = navForRole(user?.role);
   return (
     <div className="dashboard-background">
       <div className="container dashboard-layout">
@@ -128,14 +155,14 @@ function AdminShell({
               <ShieldCheck />
             </span>
             <div>
-              <strong>GigKaro Admin</strong>
-              <small>
-                {user?.name || user?.mobile || "Platform workspace"}
-              </small>
+              <strong>
+                {user?.role === "admin" ? "GigKaro Admin" : roleLabel(user?.role)}
+              </strong>
+              <small>{user?.name || user?.email || "Platform workspace"}</small>
             </div>
           </div>
           <nav>
-            {adminNav.map(([key, label, Icon]) => (
+            {nav.map(([key, label, Icon]) => (
               <Link
                 key={key}
                 className={key === view ? "active" : ""}
@@ -147,8 +174,14 @@ function AdminShell({
             ))}
           </nav>
           <div className="dashboard-sidebar-bottom">
-            <span className="badge badge-blue">Admin API</span>
-            <p>Moderation and pipelines are stored in MongoDB.</p>
+            <span className="badge badge-blue">{roleLabel(user?.role)}</span>
+            <p>
+              {user?.role === "recruiter"
+                ? "Applications for your companies, until one is assigned to another recruiter."
+                : user?.role === "hiring_manager"
+                  ? "Applications for your companies. Assign a recruiter to hand one off."
+                  : "Hiring pipeline stored in MongoDB."}
+            </p>
             <button
               type="button"
               className="text-link"
@@ -165,9 +198,15 @@ function AdminShell({
               <h1>
                 {view === "overview"
                   ? "Your network, at a glance."
-                  : adminNav.find((v) => v[0] === view)?.[1] || "Admin"}
+                  : nav.find((v) => v[0] === view)?.[1] || "Admin"}
               </h1>
-              <p>Review jobs, applications and directory health.</p>
+              <p>
+                {user?.role === "recruiter"
+                  ? "Work applications for your companies. Updating one assigns it to you."
+                  : user?.role === "hiring_manager"
+                    ? "Review applications for your companies and assign a recruiter."
+                    : "Review jobs, applications and directory health."}
+              </p>
             </div>
           </div>
           {children}
@@ -726,20 +765,20 @@ function AdminModeration() {
               const st = j.status || "Active";
               return (
                 <tr key={j.id}>
-                  <td>
+                  <td data-label="Job">
                     <Link href={jobHref(j)}>{j.title}</Link>
                     <div className="muted">{j.category}</div>
                   </td>
-                  <td>{j.company}</td>
-                  <td>
+                  <td data-label="Company">{j.company}</td>
+                  <td data-label="Location">
                     {j.locality}, {j.pincode}
                   </td>
-                  <td>
+                  <td data-label="Reach">
                     <Badge tone={j.showEverywhere ? "green" : "blue"}>
                       {j.showEverywhere ? "Everywhere" : "Local"}
                     </Badge>
                   </td>
-                  <td>
+                  <td data-label="Status">
                     <Badge
                       tone={
                         st === "Active"
@@ -752,7 +791,7 @@ function AdminModeration() {
                       {st}
                     </Badge>
                   </td>
-                  <td>
+                  <td data-label="Moderate">
                     <select
                       aria-label={`Moderate ${j.title}`}
                       value={st}
@@ -782,10 +821,20 @@ function AdminModeration() {
   );
 }
 
+function statusChoices(role: string | undefined, current: string) {
+  if (role !== "recruiter") return [...applicationStatuses];
+  if (current === "Selected" || current === "Joined") return [current];
+  if (current === "Applied") return [...recruiterStatusOptions];
+  return ["Contacted", "Interview"];
+}
+
 function AdminApplications({ mode }: { mode: "applications" | "candidates" }) {
+  const { user } = useAuth();
   const [rows, setRows] = useState<AdminApplication[]>([]);
+  const [recruiters, setRecruiters] = useState<StaffAccount[]>([]);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+  const canAssign = user?.role === "admin" || user?.role === "hiring_manager";
 
   async function load() {
     try {
@@ -809,11 +858,21 @@ function AdminApplications({ mode }: { mode: "applications" | "candidates" }) {
     load();
   }, [status]);
 
-  async function updateStatus(id: string, value: string) {
+  useEffect(() => {
+    if (!canAssign) return;
+    api<{ users: StaffAccount[] }>("/admin/staff?role=recruiter")
+      .then((data) => setRecruiters(data.users))
+      .catch(() => setRecruiters([]));
+  }, [canAssign]);
+
+  async function updateApplication(
+    id: string,
+    body: { status?: string; assignedTo?: string | null },
+  ) {
     try {
       await api(`/admin/applications/${id}`, {
         method: "PATCH",
-        body: JSON.stringify({ status: value }),
+        body: JSON.stringify(body),
       });
       await load();
     } catch (err) {
@@ -851,63 +910,437 @@ function AdminApplications({ mode }: { mode: "applications" | "candidates" }) {
               <th>Mobile</th>
               <th>Job</th>
               <th>{mode === "candidates" ? "Joining" : "Applied"}</th>
+              {canAssign && <th>Recruiter</th>}
               <th>Status</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((a) => (
-              <tr key={a.id}>
-                <td>
-                  <strong>{a.name}</strong>
-                  <div className="muted">
-                    {a.location
-                      ? `${a.location} (${a.pincode})`
-                      : a.pincode}
-                  </div>
-                </td>
-                <td>{a.mobile || "—"}</td>
-                <td>
-                  {a.job ? (
-                    <Link href={jobHref(a.job)}>{a.job.title}</Link>
-                  ) : (
-                    "—"
+            {rows.map((a) => {
+              const choices = statusChoices(user?.role, a.status);
+              const locked = choices.length === 1 && choices[0] === a.status && user?.role === "recruiter";
+              const companyRecruiters = recruiters.filter((recruiter) =>
+                a.job?.companyId
+                  ? (recruiter.companyKeys || []).includes(a.job.companyId)
+                  : true,
+              );
+              const assigneeOptions =
+                a.assignedTo &&
+                !companyRecruiters.some((recruiter) => recruiter.id === a.assignedTo?.id)
+                  ? [
+                      ...companyRecruiters,
+                      {
+                        id: a.assignedTo.id,
+                        name: a.assignedTo.name,
+                        email: a.assignedTo.email,
+                        role: "recruiter",
+                      },
+                    ]
+                  : companyRecruiters;
+              return (
+                <tr key={a.id}>
+                  <td data-label="Candidate">
+                    <strong>{a.name}</strong>
+                    <div className="muted">
+                      {a.location
+                        ? `${a.location} (${a.pincode})`
+                        : a.pincode}
+                    </div>
+                  </td>
+                  <td data-label="Mobile">{a.mobile || "—"}</td>
+                  <td data-label="Job">
+                    {a.job ? (
+                      <Link href={jobHref(a.job)}>{a.job.title}</Link>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td data-label={mode === "candidates" ? "Joining" : "Applied"}>
+                    {mode === "candidates"
+                      ? a.joining || "—"
+                      : new Date(a.createdAt).toLocaleString("en-IN", {
+                          day: "numeric",
+                          month: "numeric",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                  </td>
+                  {canAssign && (
+                    <td data-label="Recruiter">
+                      <select
+                        value={a.assignedTo?.id || ""}
+                        onChange={(e) =>
+                          updateApplication(a.id, {
+                            assignedTo: e.target.value || null,
+                          })
+                        }
+                      >
+                        <option value="">Unassigned</option>
+                        {assigneeOptions.map((recruiter) => (
+                          <option key={recruiter.id} value={recruiter.id}>
+                            {recruiter.name || recruiter.email}
+                          </option>
+                        ))}
+                      </select>
+                      {!assigneeOptions.length && (
+                        <div className="muted">No recruiter covers this company yet.</div>
+                      )}
+                    </td>
                   )}
-                </td>
-                <td>
-                  {mode === "candidates"
-                    ? a.joining || "—"
-                    : new Date(a.createdAt).toLocaleString("en-IN", {
-                        day: "numeric",
-                        month: "numeric",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                </td>
-                <td>
-                  <select
-                    value={a.status}
-                    onChange={(e) => updateStatus(a.id, e.target.value)}
-                  >
-                    {applicationStatuses.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-              </tr>
-            ))}
+                  <td data-label="Status">
+                    {locked ? (
+                      <span>{a.status}</span>
+                    ) : (
+                      <select
+                        value={a.status}
+                        onChange={(e) =>
+                          updateApplication(a.id, { status: e.target.value })
+                        }
+                      >
+                        {choices.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
       {!rows.length && !error && (
         <EmptyState
-          title="No applications yet"
-          description="When candidates apply, their pipeline appears here."
+          title={
+            user?.role === "recruiter" || user?.role === "hiring_manager"
+              ? user.companyKeys?.length
+                ? "No applications yet"
+                : "No companies assigned"
+              : "No applications yet"
+          }
+          description={
+            user?.role === "recruiter"
+              ? user.companyKeys?.length
+                ? "New applications for your companies show up here. After you or a hiring manager assigns one, only that recruiter keeps it."
+                : "An admin assigns the companies you cover. Their applications then show up here."
+              : user?.role === "hiring_manager"
+                ? user.companyKeys?.length
+                  ? "Applications for your companies show up here."
+                  : "An admin assigns the companies you cover. Their applications then show up here."
+                : "When candidates apply, their pipeline appears here."
+          }
         />
       )}
     </section>
+  );
+}
+
+function CompanyPicks({
+  companies,
+  selected,
+  onToggle,
+}: {
+  companies: AdminCompany[];
+  selected: string[];
+  onToggle: (key: string) => void;
+}) {
+  if (!companies.length) {
+    return <p className="muted">Add a company before assigning one.</p>;
+  }
+  return (
+    <div className="company-picks">
+      {companies.map((company) => (
+        <label key={company.id} className="company-pick">
+          <input
+            type="checkbox"
+            checked={selected.includes(company.key)}
+            onChange={() => onToggle(company.key)}
+          />
+          <span>{company.name}</span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
+function AdminStaffUsers() {
+  const [users, setUsers] = useState<
+    Array<StaffAccount & { mobile?: string; createdAt?: string }>
+  >([]);
+  const [companies, setCompanies] = useState<AdminCompany[]>([]);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [role, setRole] = useState<"hiring_manager" | "recruiter">("recruiter");
+  const [createCompanies, setCreateCompanies] = useState<string[]>([]);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [assignUser, setAssignUser] = useState<StaffAccount | null>(null);
+  const [assignCompanies, setAssignCompanies] = useState<string[]>([]);
+  const [assignError, setAssignError] = useState("");
+  const [assignSaving, setAssignSaving] = useState(false);
+
+  function closeCreate() {
+    setCreateOpen(false);
+    setError("");
+    setShowPassword(false);
+  }
+
+  function companyLabel(keys: string[] | undefined) {
+    const names = (keys || [])
+      .map((key) => companies.find((company) => company.key === key)?.name || key)
+      .filter(Boolean);
+    return names.length ? names.join(", ") : "None";
+  }
+
+  function toggleKey(
+    key: string,
+    setKeys: Dispatch<SetStateAction<string[]>>,
+  ) {
+    setKeys((current) =>
+      current.includes(key) ? current.filter((item) => item !== key) : [...current, key],
+    );
+  }
+
+  async function load() {
+    try {
+      const [data, companyData] = await Promise.all([
+        api<{
+          users: Array<StaffAccount & { mobile?: string; createdAt?: string }>;
+        }>("/admin/users?role=staff"),
+        api<{ companies: AdminCompany[] }>("/admin/companies"),
+      ]);
+      setUsers(
+        data.users.filter((user) => user.role === "hiring_manager" || user.role === "recruiter"),
+      );
+      setCompanies(companyData.companies);
+      setError("");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not load users.");
+    }
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function createUser(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      await api("/admin/users", {
+        method: "POST",
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          role,
+          companyKeys: createCompanies,
+        }),
+      });
+      setName("");
+      setEmail("");
+      setPassword("");
+      setRole("recruiter");
+      setCreateCompanies([]);
+      setShowPassword(false);
+      setCreateOpen(false);
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not create the user.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function openAssign(account: StaffAccount) {
+    setAssignUser(account);
+    setAssignCompanies(account.companyKeys || []);
+    setAssignError("");
+  }
+
+  async function saveCompanies(e: React.FormEvent) {
+    e.preventDefault();
+    if (!assignUser) return;
+    setAssignSaving(true);
+    setAssignError("");
+    try {
+      await api(`/admin/users/${assignUser.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ companyKeys: assignCompanies }),
+      });
+      setAssignUser(null);
+      await load();
+    } catch (err) {
+      setAssignError(
+        err instanceof ApiError ? err.message : "Could not assign companies.",
+      );
+    } finally {
+      setAssignSaving(false);
+    }
+  }
+
+  return (
+    <div className="stack">
+      <section className="panel stack">
+        <div className="row spread">
+          <h2>Staff</h2>
+          <button
+            type="button"
+            className="button button-primary"
+            onClick={() => setCreateOpen(true)}
+          >
+            Add user
+          </button>
+        </div>
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Companies</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((account) => (
+                <tr key={account.id}>
+                  <td data-label="Name">{account.name || "—"}</td>
+                  <td data-label="Email">{account.email || "—"}</td>
+                  <td data-label="Role">{roleLabel(account.role)}</td>
+                  <td data-label="Companies">
+                    <div>{companyLabel(account.companyKeys)}</div>
+                    <button
+                      type="button"
+                      className="text-link"
+                      onClick={() => openAssign(account)}
+                    >
+                      Assign
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!users.length && !error && (
+          <EmptyState
+            title="No hiring managers or recruiters yet"
+            description="Add a hiring manager or recruiter, then assign the companies whose applications they should see."
+          />
+        )}
+      </section>
+      <Dialog open={createOpen} onOpenChange={(open) => !open && closeCreate()}>
+        <DialogContent className="staff-user-dialog">
+          <DialogTitle>Add a hiring manager or recruiter</DialogTitle>
+          <DialogDescription>
+            They sign in with this email and password. Share the password with them directly.
+          </DialogDescription>
+          <form onSubmit={createUser} className="stack">
+            <div className="form-field">
+              <label htmlFor="staff-name">Name</label>
+              <input
+                id="staff-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-field">
+              <label htmlFor="staff-email">Email</label>
+              <input
+                id="staff-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-field">
+              <label htmlFor="staff-password">Temporary password</label>
+              <div className="password-field">
+                <input
+                  id="staff-password"
+                  type={showPassword ? "text" : "password"}
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowPassword((visible) => !visible)}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+            <div className="form-field">
+              <label htmlFor="staff-role">Role</label>
+              <select
+                id="staff-role"
+                value={role}
+                onChange={(e) =>
+                  setRole(
+                    e.target.value === "hiring_manager" ? "hiring_manager" : "recruiter",
+                  )
+                }
+              >
+                <option value="recruiter">Recruiter</option>
+                <option value="hiring_manager">Hiring manager</option>
+              </select>
+            </div>
+            <div className="form-field">
+              <span className="form-label">Companies</span>
+              <CompanyPicks
+                companies={companies}
+                selected={createCompanies}
+                onToggle={(key) => toggleKey(key, setCreateCompanies)}
+              />
+            </div>
+            {error && (
+              <p className="field-error" role="alert">
+                {error}
+              </p>
+            )}
+            <button className="button button-primary" disabled={saving}>
+              {saving ? "Saving…" : "Create account"}
+            </button>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!assignUser} onOpenChange={(open) => !open && setAssignUser(null)}>
+        <DialogContent className="staff-user-dialog">
+          <DialogTitle>Assign companies</DialogTitle>
+          <DialogDescription>
+            {assignUser?.name || assignUser?.email} sees applications for the companies you select.
+          </DialogDescription>
+          <form onSubmit={saveCompanies} className="stack">
+            <CompanyPicks
+              companies={companies}
+              selected={assignCompanies}
+              onToggle={(key) => toggleKey(key, setAssignCompanies)}
+            />
+            {assignError && (
+              <p className="field-error" role="alert">
+                {assignError}
+              </p>
+            )}
+            <button className="button button-primary" disabled={assignSaving}>
+              {assignSaving ? "Saving…" : "Save companies"}
+            </button>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
 
@@ -1090,7 +1523,7 @@ function AdminCompanies() {
             <tbody>
               {companies.map((c) => (
                 <tr key={c.id}>
-                  <td>
+                  <td data-label="Company">
                     <span className="company-table-name">
                       {c.logo ? (
                         <img
@@ -1108,9 +1541,9 @@ function AdminCompanies() {
                       <span>{c.name}</span>
                     </span>
                   </td>
-                  <td>{c.key}</td>
-                  <td>{c.activeJobs}</td>
-                  <td>{c.jobs}</td>
+                  <td data-label="Key">{c.key}</td>
+                  <td data-label="Active jobs">{c.activeJobs}</td>
+                  <td data-label="Total jobs">{c.jobs}</td>
                 </tr>
               ))}
             </tbody>
@@ -1226,10 +1659,10 @@ function AdminCategories() {
             <tbody>
               {categories.map((c) => (
                 <tr key={c.id}>
-                  <td>{c.title}</td>
-                  <td>{c.activeJobs}</td>
-                  <td>{c.jobs}</td>
-                  <td>
+                  <td data-label="Category">{c.title}</td>
+                  <td data-label="Active jobs">{c.activeJobs}</td>
+                  <td data-label="Total jobs">{c.jobs}</td>
+                  <td data-label="Jobs">
                     <Link className="text-link" href={`/jobs?category=${c.id}`}>
                       View jobs
                     </Link>
@@ -1311,14 +1744,16 @@ function AdminDirectory({
           <tbody>
             {locations.map((l) => (
               <tr key={l.pincode}>
-                <td>{view === "pincodes" ? l.pincode : l.locality}</td>
-                <td>
+                <td data-label={view === "pincodes" ? "Pincode" : "Locality"}>
+                  {view === "pincodes" ? l.pincode : l.locality}
+                </td>
+                <td data-label={view === "pincodes" ? "Area" : "Pincode"}>
                   {view === "pincodes"
                     ? `${l.locality}, ${l.city}`
                     : l.pincode}
                 </td>
-                <td>{l.activeJobs}</td>
-                <td>
+                <td data-label="Active jobs">{l.activeJobs}</td>
+                <td data-label="Jobs">
                   <Link
                     className="text-link"
                     href={`/jobs?location=${l.pincode}`}
@@ -1538,24 +1973,34 @@ export function AdminPage({ view = "overview" }: { view?: string }) {
     );
   }
 
-  if (!user || user.role !== "admin") {
+  if (!user || !isStaffRole(user.role)) {
     return (
       <div className="container page-content">
         <EmptyState
-          title="Admin sign-in required"
-          description="Sign in with an allowlisted admin mobile number or email."
+          title="Staff sign-in required"
+          description="Admins, hiring managers and recruiters sign in with email and password."
         >
           <Link className="button button-primary" href="/login?role=admin">
-            Admin login
+            Staff login
           </Link>
         </EmptyState>
       </div>
     );
   }
 
+  const visibleView =
+    user.role === "admin"
+      ? view
+      : user.role === "hiring_manager" &&
+          (view === "applications" || view === "candidates")
+        ? view
+        : user.role === "recruiter" && view === "applications"
+          ? view
+          : "applications";
+
   return (
-    <AdminShell view={view}>
-      {view === "overview" ? (
+    <AdminShell view={visibleView}>
+      {visibleView === "overview" ? (
         <>
           {error && (
             <p className="field-error" role="alert">
@@ -1613,20 +2058,22 @@ export function AdminPage({ view = "overview" }: { view?: string }) {
             </section>
           </div>
         </>
-      ) : view === "traffic" ? (
+      ) : visibleView === "traffic" ? (
         <AdminTraffic />
-      ) : view === "jobs" ? (
+      ) : visibleView === "jobs" ? (
         <AdminModeration />
-      ) : view === "applications" || view === "candidates" ? (
-        <AdminApplications mode={view} />
-      ) : view === "companies" ? (
+      ) : visibleView === "applications" || visibleView === "candidates" ? (
+        <AdminApplications mode={visibleView} />
+      ) : visibleView === "companies" ? (
         <AdminCompanies />
-      ) : view === "categories" ? (
+      ) : visibleView === "categories" ? (
         <AdminCategories />
-      ) : view === "blogs" ? (
+      ) : visibleView === "blogs" ? (
         <AdminBlogs />
-      ) : view === "locations" || view === "pincodes" ? (
-        <AdminDirectory view={view} />
+      ) : visibleView === "users" ? (
+        <AdminStaffUsers />
+      ) : visibleView === "locations" || visibleView === "pincodes" ? (
+        <AdminDirectory view={visibleView} />
       ) : (
         <EmptyState
           title="Page removed"
