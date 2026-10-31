@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { BlogArticle } from "@/features/blog";
 import { apiAssetUrl } from "@/lib/api";
-import { articlePageMetadata, blogPostingSchema, breadcrumbSchema } from "@/lib/metadata";
+import { relatedStories } from "@/lib/blog-list";
+import { articlePageMetadata, articleSchemaGraph, siteOrigin } from "@/lib/metadata";
 import {
   fetchPublishedPost,
   fetchPublishedPosts,
@@ -18,6 +19,28 @@ export async function generateStaticParams() {
   return posts.map((post) => ({ slug: post.slug }));
 }
 
+function authorLink(name?: string | null, url?: string | null) {
+  if (url?.trim()) return url.trim();
+  if (/^(gigkaro|gigkaro admin)$/i.test(name?.trim() || "")) return `${siteOrigin}/`;
+  return "";
+}
+
+function warnMissingSeo(post: {
+  slug: string;
+  publishedAt?: string | null;
+  authorName?: string | null;
+  coverUrl?: string | null;
+}) {
+  const missing = [
+    !post.publishedAt ? "date" : "",
+    !post.authorName?.trim() ? "author" : "",
+    !post.coverUrl?.trim() ? "image" : "",
+  ].filter(Boolean);
+  if (missing.length) {
+    console.error(`Blog post ${post.slug} is missing ${missing.join(", ")}`);
+  }
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -28,11 +51,17 @@ export async function generateMetadata({
   if (!post) {
     return { title: "Story", robots: { index: false, follow: false } };
   }
+  warnMissingSeo(post);
   return articlePageMetadata({
     title: post.title,
     excerpt: post.excerpt,
+    metaDescription: post.metaDescription,
     slug: post.slug,
     image: post.coverUrl ? apiAssetUrl(post.coverUrl) : undefined,
+    imageAlt: post.coverAlt,
+    publishedAt: post.publishedAt,
+    updatedAt: post.updatedAt || post.publishedAt,
+    authorUrl: authorLink(post.authorName, post.authorUrl),
   });
 }
 
@@ -44,37 +73,30 @@ export default async function Page({
   const { slug } = await params;
   const post = await fetchPublishedPost(slug);
   if (!post) notFound();
+  warnMissingSeo(post);
+  const related = relatedStories(await fetchPublishedPosts(), post.slug);
+  const authorUrl = authorLink(post.authorName, post.authorUrl);
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(
-            blogPostingSchema({
+            articleSchemaGraph({
               title: post.title,
               excerpt: post.excerpt,
+              metaDescription: post.metaDescription,
               slug: post.slug,
               publishedAt: post.publishedAt,
-              updatedAt: post.updatedAt,
+              updatedAt: post.updatedAt || post.publishedAt,
               authorName: post.authorName,
+              authorUrl,
               image: post.coverUrl ? apiAssetUrl(post.coverUrl) : undefined,
             }),
           ),
         }}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            breadcrumbSchema([
-              { name: "Home", path: "/" },
-              { name: "Blog", path: "/blog" },
-              { name: post.title, path: `/blog/${post.slug}` },
-            ]),
-          ),
-        }}
-      />
-      <BlogArticle post={post} />
+      <BlogArticle post={{ ...post, authorUrl }} related={related} />
     </>
   );
 }

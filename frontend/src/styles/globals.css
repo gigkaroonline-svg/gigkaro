@@ -1617,16 +1617,16 @@ textarea::placeholder {
 .footer-instagram:hover {
   opacity: 0.88;
 }
-.footer-grid h3 {
+.footer-grid .footer-heading {
   font-size: 11px;
   font-weight: 600;
   margin: 4px 0 18px;
 }
-.footer-grid h3 a {
+.footer-grid .footer-heading a {
   color: inherit;
   text-decoration: none;
 }
-.footer-grid h3 a:hover {
+.footer-grid .footer-heading a:hover {
   color: var(--primary);
 }
 .footer-grid > div:not(:first-child) > a {
@@ -2681,7 +2681,7 @@ details p {
   .footer-tagline {
     margin-top: 12px;
   }
-  .footer-grid h3 {
+  .footer-grid .footer-heading {
     font-size: 12px;
   }
   .footer-grid > div:not(:first-child) > a {
@@ -3164,7 +3164,7 @@ details p {
   .footer-brand {
     padding-bottom: 5px;
   }
-  .footer-grid h3 {
+  .footer-grid .footer-heading {
     font-size: 13px;
     margin-bottom: 16px;
   }
@@ -5811,7 +5811,7 @@ details p {
 .job-card-bottom > span {
   font-size: 10px;
 }
-.footer-grid h3 {
+.footer-grid .footer-heading {
   font-size: 13px;
 }
 .footer-grid > div:not(:first-child) > a {
@@ -6408,6 +6408,16 @@ details p {
 }
 .blog-prose h3 {
   font-size: 20px;
+}
+.related-stories {
+  margin-top: 36px;
+}
+.related-stories ul {
+  margin: 12px 0 0;
+  padding-left: 1.2rem;
+}
+.related-stories li {
+  margin: 8px 0;
 }
 .blog-prose ul,
 .blog-prose ol {

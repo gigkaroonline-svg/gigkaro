@@ -5,7 +5,10 @@ export type BlogPost = {
   excerpt: string;
   body: string;
   coverUrl: string;
+  coverAlt?: string;
   authorName: string;
+  authorUrl?: string;
+  metaDescription?: string;
   status: "draft" | "published";
   publishedAt: string | null;
   updatedAt: string | null;

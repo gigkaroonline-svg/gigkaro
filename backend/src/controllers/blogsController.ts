@@ -17,6 +17,9 @@ const blogSchema = z.object({
   excerpt: z.string().trim().min(20).max(320),
   body: z.string().trim().min(40).max(20000),
   coverUrl: coverUrl.optional(),
+  coverAlt: z.string().trim().max(180).optional(),
+  authorUrl: z.string().trim().max(300).optional(),
+  metaDescription: z.string().trim().max(155).optional(),
   status: z.enum(["draft", "published"]).optional(),
 });
 
@@ -61,7 +64,10 @@ function serialize(post: BlogPostDoc, includeDraft = false) {
     excerpt: post.excerpt,
     body: includeDraft || post.status === "published" ? post.body : "",
     coverUrl: post.coverUrl || "",
+    coverAlt: post.coverAlt || "",
     authorName: post.authorName || "GigKaro",
+    authorUrl: post.authorUrl || "",
+    metaDescription: post.metaDescription || "",
     status: post.status,
     publishedAt: post.publishedAt ? post.publishedAt.toISOString() : null,
     updatedAt: post.updatedAt ? new Date(post.updatedAt).toISOString() : null,
@@ -125,6 +131,9 @@ export async function createAdminBlog(req: AuthRequest, res: Response) {
     body: parsed.data.body,
     coverUrl: uploadedCover,
     authorName: req.user?.name || "GigKaro",
+    authorUrl: parsed.data.authorUrl || "",
+    coverAlt: parsed.data.coverAlt || "",
+    metaDescription: parsed.data.metaDescription || "",
     status,
     publishedAt: status === "published" ? new Date() : null,
   });
@@ -150,6 +159,11 @@ export async function patchAdminBlog(req: AuthRequest, res: Response) {
   }
   if (parsed.data.excerpt !== undefined) post.excerpt = parsed.data.excerpt;
   if (parsed.data.body !== undefined) post.body = parsed.data.body;
+  if (parsed.data.coverAlt !== undefined) post.coverAlt = parsed.data.coverAlt;
+  if (parsed.data.authorUrl !== undefined) post.authorUrl = parsed.data.authorUrl;
+  if (parsed.data.metaDescription !== undefined) {
+    post.metaDescription = parsed.data.metaDescription;
+  }
   let uploadedCover: string | undefined;
   try {
     uploadedCover = await coverFromRequest(req);

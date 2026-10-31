@@ -172,39 +172,60 @@ export const noindex: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export function metaDescription(value: string, max = 160) {
+export function metaDescription(value: string, max = 155) {
   const text = value.replace(/\s+/g, " ").trim();
   if (text.length <= max) return text;
-  const slice = text.slice(0, max - 1);
+  const slice = text.slice(0, max + 1);
   const space = slice.lastIndexOf(" ");
-  const trimmed = (space > 80 ? slice.slice(0, space) : slice)
+  return (space > 40 ? slice.slice(0, space) : text.slice(0, max))
     .trimEnd()
     .replace(/[.,;:–—-]+$/, "");
-  return `${trimmed}…`;
 }
 
 export function articlePageMetadata(post: {
   title: string;
   excerpt: string;
+  metaDescription?: string | null;
   slug: string;
   image?: string | null;
+  imageAlt?: string | null;
+  publishedAt?: string | null;
+  updatedAt?: string | null;
+  authorUrl?: string | null;
 }): Metadata {
-  const description = metaDescription(post.excerpt);
+  const description = metaDescription(post.metaDescription?.trim() || post.excerpt);
   const metadata = pageMetadata(post.title, description, `/blog/${post.slug}`);
   const image = post.image?.trim();
+  const imageAlt = post.imageAlt?.trim() || "Cover image for this story";
+  const authorUrl = post.authorUrl?.trim();
   return {
     ...metadata,
     description,
+    robots: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+    },
     openGraph: {
       ...metadata.openGraph,
       description,
       type: "article",
-      ...(image ? { images: [{ url: image, alt: post.title }] } : {}),
+      locale: "en_IN",
+      ...(post.publishedAt ? { publishedTime: post.publishedAt } : {}),
+      ...(post.updatedAt ? { modifiedTime: post.updatedAt } : {}),
+      ...(authorUrl ? { authors: [authorUrl] } : {}),
+      ...(image ? { images: [{ url: image, alt: imageAlt }] } : {}),
     },
     twitter: {
       ...metadata.twitter,
       description,
       ...(image ? { images: [image] } : {}),
+    },
+    other: {
+      ...(post.publishedAt ? { "article:published_time": post.publishedAt } : {}),
+      ...(post.updatedAt ? { "article:modified_time": post.updatedAt } : {}),
+      ...(authorUrl ? { "article:author": authorUrl } : {}),
+      "article:section": "Blog",
     },
   };
 }
@@ -286,10 +307,12 @@ const brandAuthor = /^(gigkaro|gigkaro admin)$/i;
 export function blogPostingSchema(post: {
   title: string;
   excerpt: string;
+  metaDescription?: string | null;
   slug: string;
   publishedAt?: string | null;
   updatedAt?: string | null;
   authorName?: string | null;
+  authorUrl?: string | null;
   image?: string | null;
 }) {
   const url = canonicalUrl(`/blog/${post.slug}`);
@@ -297,12 +320,15 @@ export function blogPostingSchema(post: {
   const author =
     !authorName || brandAuthor.test(authorName)
       ? { "@id": `${siteOrigin}/#organization` }
-      : { "@type": "Person" as const, name: authorName };
+      : {
+          "@type": "Person" as const,
+          name: authorName,
+          ...(post.authorUrl ? { url: post.authorUrl } : {}),
+        };
   return {
-    "@context": "https://schema.org",
     "@type": "BlogPosting",
     headline: post.title,
-    description: post.excerpt,
+    description: metaDescription(post.metaDescription?.trim() || post.excerpt),
     url,
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
     datePublished: post.publishedAt || undefined,
@@ -310,6 +336,49 @@ export function blogPostingSchema(post: {
     author,
     publisher: { "@id": `${siteOrigin}/#organization` },
     ...(post.image ? { image: post.image } : {}),
+    articleSection: "Blog",
+    inLanguage: "en-IN",
+  };
+}
+
+export function articleSchemaGraph(post: {
+  title: string;
+  excerpt: string;
+  metaDescription?: string | null;
+  slug: string;
+  publishedAt?: string | null;
+  updatedAt?: string | null;
+  authorName?: string | null;
+  authorUrl?: string | null;
+  image?: string | null;
+}) {
+  const posting = blogPostingSchema(post);
+  const crumbs = breadcrumbSchema([
+    { name: "Home", path: "/" },
+    { name: "Blog", path: "/blog" },
+    { name: post.title, path: `/blog/${post.slug}` },
+  ]);
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${siteOrigin}/#organization`,
+        name: siteName,
+        url: `${siteOrigin}/`,
+        logo: `${siteOrigin}/images/gigkaro-home-og.jpg`,
+        sameAs: [
+          "https://www.linkedin.com/company/gigkaro/",
+          "https://www.instagram.com/gigkaro",
+          "https://www.youtube.com/@GigKaro",
+        ],
+      },
+      posting,
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: crumbs.itemListElement,
+      },
+    ],
   };
 }
 
@@ -347,6 +416,7 @@ export function siteSchema() {
         name: siteName,
         legalName: "Victa EarlyJobs Technologies Private Limited",
         url: `${siteOrigin}/`,
+        logo: `${siteOrigin}/images/gigkaro-home-og.jpg`,
         telephone: "+919180379173",
         founder: {
           "@type": "Person",
