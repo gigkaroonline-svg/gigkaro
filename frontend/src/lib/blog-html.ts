@@ -235,6 +235,35 @@ function fixCitations(inner: string) {
   );
 }
 
+function stripInjectedKeywords(html: string) {
+  return html.replace(/>([^<]*)</g, (_full, text: string) => {
+    if (!text.includes("india")) return `>${text}<`;
+    let removed = false;
+    let next = text.replace(/\bindia\b/g, (word) => {
+      if (word !== "india") return word;
+      removed = true;
+      return "";
+    });
+    if (!removed) return `>${text}<`;
+    next = next.replace(/[ \t]{2,}/g, " ").replace(/\s+([.,;:!?])/g, "$1");
+    next = next
+      .replace(/\b(startups|platforms|companies|firms|workers)\s+hosts\b/g, "$1 host")
+      .replace(/\b(startups|platforms|companies|firms|workers)\s+is\b/g, "$1 are")
+      .replace(/\b(startups|platforms|companies|firms|workers)\s+has\b/g, "$1 have");
+    return `>${next}<`;
+  });
+}
+
+function withoutTitleEcho(inner: string, title: string) {
+  const titleNorm = title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const text = plainText(inner);
+  const textNorm = text.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  if (!titleNorm || textNorm === titleNorm || !textNorm.startsWith(`${titleNorm} `)) return inner;
+  const rest = text.split(/\s+/).slice(titleNorm.split(" ").length).join(" ");
+  if (!rest) return inner;
+  return /^is\b/i.test(rest) ? `This ${rest}` : rest.charAt(0).toUpperCase() + rest.slice(1);
+}
+
 function ensureHeadings(html: string) {
   if ((html.match(/<h2[\s>]/gi) || []).length >= 2) return html;
   return html.replace(/<p>([\s\S]*?)<\/p>/gi, (full, inner: string) => {
@@ -251,14 +280,14 @@ function ensureHeadings(html: string) {
 /** Turn stored post HTML into heading tags and whole paragraphs. Does not rewrite sentences. */
 export function renderBlogBody(value: string, title = "") {
   const source = looksLikeBlogHtml(value) ? value : plainTextToBlogHtml(value);
-  const sanitized = sanitizeBlogHtml(source).replace(
+  const sanitized = stripInjectedKeywords(sanitizeBlogHtml(source)).replace(
     /<li>(\s*)<p>([\s\S]*?)<\/p>(\s*)<\/li>/gi,
     "<li>$1$2$3</li>",
   );
   const blocks = joinSplitParagraphs(
     topLevelBlocks(sanitized).map((block) => ({
       ...block,
-      inner: fixCitations(block.inner),
+      inner: withoutTitleEcho(fixCitations(block.inner), title),
     })),
     title,
   );

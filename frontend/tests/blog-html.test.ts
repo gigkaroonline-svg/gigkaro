@@ -23,6 +23,36 @@ test("citations sit inside the sentence and keep proper-noun casing", () => {
   assert.match(out, /exact accounting is expected to be exact\./);
 });
 
+test("injected keyword tails and split sentences are cleaned", () => {
+  const html = [
+    "<p>India Gig Hiring Startups: Complete Market Map is a reading of that living edition.</p>",
+    "<p>Blue collar hiring startups india hosts 113 of the platforms.</p>",
+    "<p>The stack runs through payroll - gig payroll platforms india is the construction the layer is known by.</p>",
+    "<p>Ev leasing for gig fleets india has put vehicles under riders.</p>",
+    "<p>India had a printed map, and India's districts kept their own lists.</p>",
+    "<p>software that carries a worker from KYC to payout trail;</p>",
+    "<p>verification, which confirms the name behind every listing.</p>",
+    '<p>a decade average of seventeen a year.<a href="https://tracxn.com/companies"> as the category tracker counts</a>, updated this month.</p>',
+    '<p>The demand is dense.<a href="https://www.gigkaro.in/delivery-jobs/mumbai/"> the mumbai page on the hiring network</a> shows one deep market.</p>',
+    '<p>Depth shows in single markets.<a href="https://www.gigkaro.in/delivery-jobs/bengaluru/"> the bengaluru demand page on the hiring network</a> is the deepest entry.</p>',
+  ].join("");
+  const out = renderBlogBody(html, "India Gig Hiring Startups: Complete Market Map");
+  assert.match(out, /This is a reading of that living edition\./);
+  assert.match(out, /startups host 113/);
+  assert.match(out, /gig payroll platforms are the construction/);
+  assert.match(out, /Ev leasing for gig fleets has put vehicles/);
+  assert.match(out, /India had a printed map/);
+  assert.match(out, /India's districts/);
+  assert.doesNotMatch(out, /\bindia\b/);
+  assert.match(out, /payout trail; verification, which confirms/);
+  assert.doesNotMatch(out, /year\.<a/);
+  assert.match(out, /year <a[^>]*>as the category tracker counts<\/a>, updated/);
+  assert.match(out, />the Mumbai page on the hiring network</);
+  assert.match(out, />the Bengaluru demand page on the hiring network</);
+  assert.doesNotMatch(out, />the mumbai/);
+  assert.doesNotMatch(out, />the bengaluru/);
+});
+
 test("section titles become h2 and split paragraphs are joined", () => {
   const html = [
     `<p>${title}</p>`,
