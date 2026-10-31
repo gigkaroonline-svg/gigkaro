@@ -50,6 +50,8 @@ async function main() {
   await seedDummyBlogIfEmpty();
 
   await bootstrapAdmin();
+  const { startPartnerChecks } = await import("./services/partnerCheck.js");
+  startPartnerChecks();
 
   const app = express();
   app.use(

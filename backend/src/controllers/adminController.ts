@@ -1,8 +1,11 @@
 import type { Response, NextFunction } from "express";
+import mongoose from "mongoose";
 import { z } from "zod";
 import { Job } from "../models/Job.js";
 import { Application } from "../models/Application.js";
 import { User } from "../models/User.js";
+import { isStaffRole, recruiterStatuses } from "../auth/roles.js";
+import { hashPassword } from "../utils/password.js";
 import { Company } from "../models/Company.js";
 import { Category } from "../models/Category.js";
 import { serializeJob } from "../utils/jobs.js";
@@ -422,30 +425,233 @@ export async function patchAdminJob(
   }
 }
 
+async function companyKeysFor(keys: string[]) {
+  const unique = [...new Set(keys.map((key) => key.trim()).filter(Boolean))];
+  if (!unique.length) return [];
+  const companies = await Company.find({ key: { $in: unique } }).select("key");
+  if (companies.length !== unique.length) {
+    return null;
+  }
+  return unique;
+}
+
+async function jobIdsForCompanies(keys: string[]) {
+  if (!keys.length) return [];
+  const jobs = await Job.find({ companyId: { $in: keys } }).select("_id");
+  return jobs.map((job) => job._id);
+}
+
+function uniqueKeys(keys: Array<string | undefined | null>) {
+  return [...new Set(keys.map((key) => String(key || "").trim()).filter(Boolean))];
+}
+
+async function managerCompanyKeys(managerId: unknown) {
+  if (!managerId) return [];
+  const manager = await User.findById(managerId).select("role companyKeys");
+  if (!manager || manager.role !== "hiring_manager") return [];
+  return manager.companyKeys || [];
+}
+
+async function effectiveCompanyKeys(user: {
+  role?: string;
+  companyKeys?: string[];
+  managerId?: unknown;
+}) {
+  const own = user.companyKeys || [];
+  if (user.role !== "recruiter") return own;
+  return uniqueKeys([...own, ...(await managerCompanyKeys(user.managerId))]);
+}
+
+function serializeManagerHistory(
+  entries: Array<{
+    managerId?: unknown;
+    name?: string;
+    email?: string;
+    startedAt?: Date;
+    endedAt?: Date | null;
+  }> | undefined,
+) {
+  return [...(entries || [])]
+    .map((entry) => ({
+      managerId: entry.managerId ? String(entry.managerId) : null,
+      name: entry.name || "",
+      email: entry.email || "",
+      startedAt: entry.startedAt ? new Date(entry.startedAt).toISOString() : "",
+      endedAt: entry.endedAt ? new Date(entry.endedAt).toISOString() : null,
+    }))
+    .sort((a, b) => (b.startedAt || "").localeCompare(a.startedAt || ""));
+}
+
+async function recordManagerAssignment(
+  user: {
+    managerId?: unknown;
+    managerHistory?: Array<{
+      managerId?: unknown;
+      name?: string;
+      email?: string;
+      startedAt?: Date;
+      endedAt?: Date | null;
+    }>;
+    createdAt?: Date;
+  },
+  manager: { _id: mongoose.Types.ObjectId; name?: string | null; email?: string | null },
+) {
+  const nextId = String(manager._id);
+  const currentId = user.managerId ? String(user.managerId) : "";
+  if (currentId === nextId) return manager.name || manager.email || "";
+  const now = new Date();
+  const history: Array<{
+    managerId?: unknown;
+    name: string;
+    email: string;
+    startedAt?: Date;
+    endedAt?: Date;
+  }> = (user.managerHistory || []).map((entry) => ({
+    managerId: entry.managerId,
+    name: entry.name || "",
+    email: entry.email || "",
+    startedAt: entry.startedAt,
+    endedAt: entry.endedAt || undefined,
+  }));
+  const open = history.find((entry) => !entry.endedAt);
+  if (open) {
+    open.endedAt = now;
+  } else if (currentId) {
+    const previous = await User.findById(currentId).select("name email");
+    history.push({
+      managerId: user.managerId,
+      name: previous?.name || previous?.email || "Previous manager",
+      email: previous?.email || "",
+      startedAt: user.createdAt || now,
+      endedAt: now,
+    });
+  }
+  history.push({
+    managerId: manager._id,
+    name: manager.name || manager.email || "",
+    email: manager.email || "",
+    startedAt: now,
+  });
+  user.managerHistory = history;
+  user.managerId = manager._id;
+  return manager.name || manager.email || "";
+}
+
+async function hiringManagerById(id: string | undefined | null) {
+  if (!id || !mongoose.isValidObjectId(id)) return null;
+  const manager = await User.findById(id).select("role name email");
+  if (!manager || manager.role !== "hiring_manager") return null;
+  return manager;
+}
+
+async function staffCoversApplication(
+  user: { _id?: { toString(): string }; role?: string; companyKeys?: string[]; managerId?: unknown } | undefined,
+  jobId: unknown,
+  assignedTo?: unknown,
+) {
+  if (!user || user.role === "admin") return true;
+  const assignedId = assignedTo ? String(assignedTo) : "";
+  if (user.role === "recruiter" && assignedId && assignedId === user._id?.toString()) return true;
+  if (user.role === "hiring_manager" && assignedId) {
+    const recruiter = await User.findById(assignedId).select("role managerId");
+    if (
+      recruiter?.role === "recruiter" &&
+      recruiter.managerId &&
+      String(recruiter.managerId) === user._id?.toString()
+    ) {
+      return true;
+    }
+  }
+  const keys =
+    user.role === "hiring_manager"
+      ? uniqueKeys([
+          ...(user.companyKeys || []),
+          ...(
+            await User.find({ role: "recruiter", managerId: user._id }).select("companyKeys")
+          ).flatMap((recruiter) => recruiter.companyKeys || []),
+        ])
+      : await effectiveCompanyKeys(user);
+  if (!keys.length) return false;
+  const job = await Job.findById(jobId).select("companyId");
+  return !!job && keys.includes(job.companyId);
+}
+
+async function applicationScope(user: {
+  _id: mongoose.Types.ObjectId;
+  role?: string;
+  companyKeys?: string[];
+  managerId?: unknown;
+}) {
+  if (user.role === "recruiter") {
+    const jobIds = await jobIdsForCompanies(await effectiveCompanyKeys(user));
+    return {
+      $or: [{ assignedTo: user._id }, { assignedTo: null, jobId: { $in: jobIds } }],
+    };
+  }
+  if (user.role === "hiring_manager") {
+    const team = await User.find({ role: "recruiter", managerId: user._id }).select(
+      "_id companyKeys",
+    );
+    const jobIds = await jobIdsForCompanies(
+      uniqueKeys([
+        ...(user.companyKeys || []),
+        ...team.flatMap((recruiter) => recruiter.companyKeys || []),
+      ]),
+    );
+    return {
+      $or: [{ jobId: { $in: jobIds } }, { assignedTo: { $in: team.map((recruiter) => recruiter._id) } }],
+    };
+  }
+  return null;
+}
+
+function assignedRecruiter(value: unknown) {
+  if (!value || typeof value !== "object" || !("_id" in value)) return null;
+  const user = value as {
+    _id?: { toString(): string };
+    name?: string;
+    email?: string;
+  };
+  if (!user._id) return null;
+  return {
+    id: user._id.toString(),
+    name: user.name || "",
+    email: user.email || "",
+  };
+}
+
 export async function listAdminApplications(
-  req: { query: Record<string, unknown> },
+  req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) {
   try {
     const status = String(req.query.status || "");
     const q = String(req.query.q || "").trim();
-    const filter: Record<string, unknown> = {};
+    const clauses: Record<string, unknown>[] = [];
+    if (req.user && (req.user.role === "recruiter" || req.user.role === "hiring_manager")) {
+      const scope = await applicationScope(req.user);
+      if (scope) clauses.push(scope);
+    }
     if (status && appStatuses.includes(status as (typeof appStatuses)[number])) {
-      filter.status = status;
+      clauses.push({ status });
     }
     if (q) {
-      filter.$or = [
-        { name: new RegExp(q, "i") },
-        { mobile: new RegExp(q, "i") },
-        { pincode: new RegExp(q, "i") },
-      ];
+      clauses.push({
+        $or: [
+          { name: new RegExp(q, "i") },
+          { mobile: new RegExp(q, "i") },
+          { pincode: new RegExp(q, "i") },
+        ],
+      });
     }
+    const filter = clauses.length ? { $and: clauses } : {};
     const apps = await Application.find(filter)
       .sort({ createdAt: -1 })
       .limit(200)
       .populate("jobId")
-      .populate("userId", "name mobile email role profile");
+      .populate("userId", "name mobile email role profile")
+      .populate("assignedTo", "name email role");
 
     res.json({
       applications: apps.map((a) => {
@@ -478,6 +684,14 @@ export async function listAdminApplications(
           status: a.status,
           createdAt: a.createdAt?.toISOString?.() ?? new Date().toISOString(),
           experience: a.joining,
+          assignedTo: assignedRecruiter(a.assignedTo),
+          partnerCheck: a.partnerCheck?.status
+            ? {
+                status: a.partnerCheck.status,
+                clientName: a.partnerCheck.clientName || "",
+                detail: a.partnerCheck.detail || "",
+              }
+            : null,
           job,
           candidate: userRaw
             ? {
@@ -497,27 +711,109 @@ export async function listAdminApplications(
 }
 
 export async function patchAdminApplication(
-  req: { params: { id: string }; body: unknown },
+  req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) {
   try {
     const parsed = z
-      .object({ status: z.enum(appStatuses) })
+      .object({
+        status: z.enum(appStatuses).optional(),
+        assignedTo: z.string().nullable().optional(),
+      })
+      .refine((value) => value.status !== undefined || value.assignedTo !== undefined, {
+        message: "Nothing to update.",
+      })
       .safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: "Invalid status." });
+      res.status(400).json({ error: parsed.error.issues[0]?.message || "Invalid update." });
       return;
     }
-    const app = await Application.findByIdAndUpdate(
-      req.params.id,
-      { status: parsed.data.status },
-      { new: true },
-    ).populate("jobId");
+
+    const role = req.user?.role;
+    const app = await Application.findById(req.params.id);
     if (!app) {
       res.status(404).json({ error: "Application not found." });
       return;
     }
+
+    const inScope = await staffCoversApplication(req.user, app.jobId, app.assignedTo);
+    if (!inScope) {
+      res.status(403).json({ error: "This application is outside your companies." });
+      return;
+    }
+
+    const assignedId = app.assignedTo ? String(app.assignedTo) : "";
+    if (role === "recruiter" && assignedId && assignedId !== req.userId) {
+      res.status(403).json({ error: "This application is assigned to another recruiter." });
+      return;
+    }
+
+    const update: { status?: (typeof appStatuses)[number]; assignedTo?: mongoose.Types.ObjectId | null } = {};
+
+    if (parsed.data.assignedTo !== undefined) {
+      if (role !== "admin" && role !== "hiring_manager") {
+        res.status(403).json({
+          error: "Only an admin or hiring manager can assign a recruiter.",
+        });
+        return;
+      }
+      const nextAssignee = parsed.data.assignedTo?.trim() || "";
+      if (!nextAssignee) {
+        update.assignedTo = null;
+      } else {
+        if (!mongoose.isValidObjectId(nextAssignee)) {
+          res.status(400).json({ error: "Choose a recruiter." });
+          return;
+        }
+        const recruiter = await User.findById(nextAssignee).select("role companyKeys managerId");
+        if (!recruiter || recruiter.role !== "recruiter") {
+          res.status(400).json({ error: "Assign a recruiter account." });
+          return;
+        }
+        if (
+          role === "hiring_manager" &&
+          String(recruiter.managerId || "") !== req.userId
+        ) {
+          res.status(403).json({ error: "You can only assign recruiters on your team." });
+          return;
+        }
+        const job = await Job.findById(app.jobId).select("companyId");
+        const covered = await effectiveCompanyKeys(recruiter);
+        if (job && !covered.includes(job.companyId)) {
+          res.status(400).json({
+            error: "That recruiter is not on a team that covers this company.",
+          });
+          return;
+        }
+        update.assignedTo = recruiter._id;
+      }
+    }
+
+    if (parsed.data.status) {
+      if (role === "recruiter") {
+        const allowed = recruiterStatuses.includes(
+          parsed.data.status as (typeof recruiterStatuses)[number],
+        );
+        const locked = app.status === "Selected" || app.status === "Joined";
+        if (!allowed || locked) {
+          res.status(403).json({
+            error: "Recruiters can set Contacted or Interview only.",
+          });
+          return;
+        }
+      }
+      update.status = parsed.data.status;
+      if (role === "recruiter" && !assignedId) {
+        update.assignedTo = req.user?._id;
+      }
+    }
+
+    Object.assign(app, update);
+    await app.save();
+    await app.populate("jobId");
+    await app.populate("assignedTo", "name email role");
+
     const jobRaw = app.jobId as unknown;
     const job =
       jobRaw && typeof jobRaw === "object" && "slug" in jobRaw
@@ -534,6 +830,7 @@ export async function patchAdminApplication(
         licence: app.licence,
         joining: app.joining,
         status: app.status,
+        assignedTo: assignedRecruiter(app.assignedTo),
         createdAt: app.createdAt?.toISOString?.() ?? new Date().toISOString(),
         job,
       },
@@ -552,7 +849,15 @@ export async function listAdminUsers(
     const role = String(req.query.role || "");
     const q = String(req.query.q || "").trim();
     const filter: Record<string, unknown> = {};
-    if (role === "candidate" || role === "employer" || role === "admin") {
+    if (role === "staff") {
+      filter.role = { $in: ["admin", "hiring_manager", "recruiter"] };
+    } else if (
+      role === "candidate" ||
+      role === "employer" ||
+      role === "admin" ||
+      role === "hiring_manager" ||
+      role === "recruiter"
+    ) {
       filter.role = role;
     }
     if (q) {
@@ -563,6 +868,11 @@ export async function listAdminUsers(
       ];
     }
     const users = await User.find(filter).sort({ createdAt: -1 }).limit(200);
+    const managerIds = users.map((user) => user.managerId).filter(Boolean);
+    const managers = await User.find({ _id: { $in: managerIds } }).select("name email");
+    const managerNames = new Map(
+      managers.map((manager) => [manager._id.toString(), manager.name || manager.email || ""]),
+    );
     const withCounts = await Promise.all(
       users.map(async (u) => {
         const [applications, jobs] = await Promise.all([
@@ -581,11 +891,194 @@ export async function listAdminUsers(
           pincode: u.profile?.pincode || "",
           applications,
           jobs,
+          companyKeys: u.companyKeys || [],
+          managerId: u.managerId ? String(u.managerId) : null,
+          managerName: u.managerId ? managerNames.get(String(u.managerId)) || "" : "",
+          managerHistory: serializeManagerHistory(u.managerHistory),
           createdAt: u.createdAt?.toISOString?.() ?? "",
         };
       }),
     );
     res.json({ users: withCounts });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function listStaff(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const role = String(req.query.role || "");
+    const filter: Record<string, unknown> = {
+      role:
+        role === "recruiter" || role === "hiring_manager"
+          ? role
+          : { $in: ["hiring_manager", "recruiter"] },
+    };
+    if (req.user?.role === "hiring_manager") {
+      filter.role = "recruiter";
+      filter.managerId = req.user._id;
+    }
+    const users = await User.find(filter)
+      .select("name email role companyKeys managerId")
+      .sort({ name: 1 })
+      .limit(200);
+    const managerIds = users.map((user) => user.managerId).filter(Boolean);
+    const managers = await User.find({ _id: { $in: managerIds } }).select("companyKeys");
+    const managerKeys = new Map(
+      managers.map((manager) => [manager._id.toString(), manager.companyKeys || []]),
+    );
+    res.json({
+      users: users.map((user) => ({
+        id: user._id.toString(),
+        role: user.role,
+        name: user.name || "",
+        email: user.email || "",
+        managerId: user.managerId ? String(user.managerId) : null,
+        companyKeys: uniqueKeys([
+          ...(user.companyKeys || []),
+          ...(user.managerId ? managerKeys.get(String(user.managerId)) || [] : []),
+        ]),
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+const staffUserSchema = z.object({
+  name: z.string().trim().min(1, "Enter a name.").max(80),
+  email: z.string().email("Enter a valid email address."),
+  password: z.string().min(8, "Password must be at least 8 characters.").max(100),
+  role: z.enum(["admin", "hiring_manager", "recruiter"]),
+  companyKeys: z.array(z.string().trim().min(1)).max(50).optional(),
+  managerId: z.string().trim().optional(),
+});
+
+export async function createStaffUser(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const parsed = staffUserSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({
+        error: parsed.error.issues[0]?.message || "Enter a name, email, password and role.",
+      });
+      return;
+    }
+    if (!isStaffRole(parsed.data.role)) {
+      res.status(400).json({ error: "Choose a staff role." });
+      return;
+    }
+    const companyKeys = await companyKeysFor(parsed.data.companyKeys || []);
+    if (!companyKeys) {
+      res.status(400).json({ error: "Choose companies from the list." });
+      return;
+    }
+    const manager =
+      parsed.data.role === "recruiter" ? await hiringManagerById(parsed.data.managerId) : null;
+    if (parsed.data.role === "recruiter" && !manager) {
+      res.status(400).json({ error: "Choose the hiring manager this recruiter reports to." });
+      return;
+    }
+    const email = parsed.data.email.toLowerCase();
+    const existing = await User.findOne({ email });
+    if (existing) {
+      res.status(409).json({ error: "An account with this email already exists." });
+      return;
+    }
+    const user = await User.create({
+      email,
+      name: parsed.data.name,
+      role: parsed.data.role,
+      passwordHash: await hashPassword(parsed.data.password),
+      companyKeys,
+      managerId: manager?._id,
+      managerHistory: manager
+        ? [
+            {
+              managerId: manager._id,
+              name: manager.name || manager.email || "",
+              email: manager.email || "",
+              startedAt: new Date(),
+            },
+          ]
+        : [],
+      profile: { name: parsed.data.name, email },
+    });
+    res.status(201).json({
+      user: {
+        id: user._id.toString(),
+        role: user.role,
+        name: user.name,
+        email: user.email,
+        companyKeys: user.companyKeys || [],
+        managerId: user.managerId ? String(user.managerId) : null,
+        managerName: manager?.name || manager?.email || "",
+        managerHistory: serializeManagerHistory(user.managerHistory),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function patchStaffCompanies(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const parsed = z
+      .object({
+        companyKeys: z.array(z.string().trim().min(1)).max(50),
+        managerId: z.string().trim().nullable().optional(),
+      })
+      .safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Choose the companies this user covers." });
+      return;
+    }
+    const companyKeys = await companyKeysFor(parsed.data.companyKeys);
+    if (!companyKeys) {
+      res.status(400).json({ error: "Choose companies from the list." });
+      return;
+    }
+    const user = await User.findById(req.params.id);
+    if (!user || (user.role !== "hiring_manager" && user.role !== "recruiter")) {
+      res.status(404).json({ error: "Staff user not found." });
+      return;
+    }
+    let managerName = user.managerId
+      ? (await User.findById(user.managerId).select("name email"))?.name || ""
+      : "";
+    if (user.role === "recruiter" && parsed.data.managerId !== undefined) {
+      const manager = await hiringManagerById(parsed.data.managerId);
+      if (!manager) {
+        res.status(400).json({ error: "Choose the hiring manager this recruiter reports to." });
+        return;
+      }
+      managerName = await recordManagerAssignment(user, manager);
+    }
+    user.companyKeys = companyKeys;
+    await user.save();
+    res.json({
+      user: {
+        id: user._id.toString(),
+        role: user.role,
+        name: user.name || "",
+        email: user.email || "",
+        companyKeys: user.companyKeys || [],
+        managerId: user.managerId ? String(user.managerId) : null,
+        managerName,
+        managerHistory: serializeManagerHistory(user.managerHistory),
+      },
+    });
   } catch (err) {
     next(err);
   }

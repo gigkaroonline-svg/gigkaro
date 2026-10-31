@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
+import type { UserRole } from "../auth/roles.js";
 import { User, type UserDoc } from "../models/User.js";
 
 export type AuthRequest = Request & {
@@ -43,9 +44,7 @@ export async function requireAuth(
   }
 }
 
-export function requireRole(
-  ...roles: Array<"candidate" | "employer" | "admin">
-) {
+export function requireRole(...roles: UserRole[]) {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
       res.status(401).json({ error: "Authentication required." });
@@ -66,6 +65,7 @@ export function serializeUser(user: UserDoc) {
     name: user.name || user.profile?.name || "",
     mobile: user.mobile || user.profile?.mobile || "",
     email: user.email || user.profile?.email || "",
+    companyKeys: user.companyKeys || [],
     profile: user.profile,
   };
 }

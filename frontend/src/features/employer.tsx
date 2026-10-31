@@ -95,19 +95,21 @@ export function ApplicantTable({
             <tbody>
               {list.map((a) => (
                 <tr key={a.id}>
-                  <td>
+                  <td data-label="Candidate">
                     <strong>{a.name}</strong>
                     <small>
                       {a.vehicle}
                     </small>
                   </td>
-                  <td>{a.job}</td>
-                  <td>
+                  <td data-label="Role">{a.job}</td>
+                  <td data-label="Location">
                     {a.location}
                     <small>{a.pincode}</small>
                   </td>
-                  <td>{view === "candidates" ? a.experience : a.joined}</td>
-                  <td>
+                  <td data-label={view === "candidates" ? "Experience" : "Applied"}>
+                    {view === "candidates" ? a.experience : a.joined}
+                  </td>
+                  <td data-label="Stage">
                     <select
                       aria-label={`Stage for ${a.name}`}
                       className="table-select"
@@ -195,7 +197,7 @@ export function EmployerJobsTable({ limit }: { limit?: number }) {
           <tbody>
             {rows.map((j) => (
               <tr key={j.id}>
-                <td>
+                <td data-label="Job">
                   <strong>
                     {j.id.startsWith("posted_") ? (
                       j.title
@@ -204,13 +206,13 @@ export function EmployerJobsTable({ limit }: { limit?: number }) {
                     )}
                   </strong>
                 </td>
-                <td>
+                <td data-label="Location">
                   {j.locality}
                   <small>{j.pincode}</small>
                 </td>
-                <td>{j.openings}</td>
-                <td>{j.applications}</td>
-                <td>
+                <td data-label="Openings">{j.openings}</td>
+                <td data-label="Applications">{j.applications}</td>
+                <td data-label="Status">
                   <Badge
                     tone={
                       j.status === "Active"
@@ -223,12 +225,12 @@ export function EmployerJobsTable({ limit }: { limit?: number }) {
                     {j.status}
                   </Badge>
                 </td>
-                <td>
+                <td data-label="Expires">
                   {j.status === "Pending approval"
                     ? "After approval"
                     : "17 Oct 2026"}
                 </td>
-                <td>
+                <td data-label="Actions">
                   {!["Active", "Paused"].includes(j.status) ? (
                     user?.role === "admin" ? (
                       <Link href="/admin/jobs" className="text-link">

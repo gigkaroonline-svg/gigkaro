@@ -8,6 +8,7 @@ import type { AuthRequest } from "../middleware/auth.js";
 import { serializeUser } from "../middleware/auth.js";
 import { serializeJob } from "../utils/jobs.js";
 import { sendApplicationWhatsApp } from "../utils/whatsapp.js";
+import { enqueueApplicationCheck } from "../services/partnerCheck.js";
 
 const applicationBody = z.object({
   jobId: z.string().min(1),
@@ -159,6 +160,12 @@ export async function createApplication(
         locality: job.locality || job.city,
         candidateName: parsed.data.name,
         candidateMobile: parsed.data.mobile,
+      });
+      void enqueueApplicationCheck(app, job).catch((err) => {
+        console.error(
+          "Could not queue partner check",
+          err instanceof Error ? err.message : err,
+        );
       });
 
       res.status(201).json({

@@ -14,6 +14,8 @@ export const env = {
   corsOrigin: process.env.CORS_ORIGIN || "http://127.0.0.1:3000",
   devOtp: process.env.DEV_OTP || "123456",
   adminIdentifiers: parseIdentifiers(process.env.ADMIN_IDENTIFIERS),
+  adminEmail: (process.env.ADMIN_EMAIL || "").trim().toLowerCase(),
+  adminPassword: process.env.ADMIN_PASSWORD || "",
   contactTo: process.env.CONTACT_TO || "info@gigkaro.in",
   gcsBucket: process.env.GCS_BUCKET || "",
   gcsProjectId: process.env.GCS_PROJECT_ID || "",
@@ -29,6 +31,11 @@ export const env = {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean),
+  vahanBaseUrl: (process.env.VAHAN_BASE_URL || "https://pwa-jobfinder.vahan.co").replace(/\/$/, ""),
+  vahanClientId: process.env.VAHAN_CLIENT_ID || "",
+  vahanClientSecret: process.env.VAHAN_CLIENT_SECRET || "",
+  vahanSourceId: process.env.VAHAN_SOURCE_ID || "",
+  vahanSource: process.env.VAHAN_SOURCE || "mitra-leader",
 };
 
 export function isAdminIdentifier(mobile?: string, email?: string) {

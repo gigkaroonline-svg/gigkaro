@@ -20,10 +20,25 @@ const applicationSchema = new Schema(
     bike: { type: String, required: true },
     licence: { type: String, required: true },
     joining: { type: String, required: true },
+    assignedTo: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: false,
+      index: true,
+    },
     status: {
       type: String,
       enum: ["Applied", "Contacted", "Interview", "Selected", "Joined"],
       default: "Applied",
+    },
+    partnerCheck: {
+      status: {
+        type: String,
+        enum: ["queued", "needs_locality", "waiting", "unique", "not_unique", "failed"],
+      },
+      clientName: { type: String, default: "" },
+      detail: { type: String, default: "" },
+      checkedAt: { type: Date },
     },
   },
   { timestamps: true },

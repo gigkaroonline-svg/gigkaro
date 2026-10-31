@@ -9,13 +9,15 @@ import {
   type ReactNode,
 } from "react";
 import { api, getToken, setToken } from "@/lib/api";
+import type { AppRole } from "@/lib/roles";
 
 export type AuthUser = {
   id: string;
-  role: "candidate" | "employer" | "admin";
+  role: AppRole;
   name: string;
   mobile: string;
   email: string;
+  companyKeys?: string[];
   profile: {
     name: string;
     mobile: string;
@@ -46,6 +48,10 @@ type AuthContextValue = {
     email?: string;
     otp: string;
     role: "candidate" | "employer" | "admin";
+  }) => Promise<AuthUser>;
+  loginWithPassword: (input: {
+    email: string;
+    password: string;
   }) => Promise<AuthUser>;
   logout: () => void;
   refreshUser: () => Promise<void>;
@@ -113,6 +119,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return data.user;
   }
 
+  async function loginWithPassword(input: { email: string; password: string }) {
+    const data = await api<{ token: string; user: AuthUser }>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify(input),
+      auth: false,
+    });
+    setToken(data.token);
+    setTokenState(data.token);
+    setUser(data.user);
+    return data.user;
+  }
+
   function logout() {
     setToken(null);
     setTokenState(null);
@@ -136,6 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token,
         requestOtp,
         verifyOtp,
+        loginWithPassword,
         logout,
         refreshUser,
         updateProfile,

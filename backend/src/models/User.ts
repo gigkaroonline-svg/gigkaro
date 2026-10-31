@@ -18,16 +18,31 @@ const profileSchema = new Schema(
   { _id: false },
 );
 
+const managerHistorySchema = new Schema(
+  {
+    managerId: { type: Schema.Types.ObjectId, ref: "User" },
+    name: { type: String, default: "" },
+    email: { type: String, default: "" },
+    startedAt: { type: Date, default: Date.now },
+    endedAt: { type: Date },
+  },
+  { _id: false },
+);
+
 const userSchema = new Schema(
   {
     role: {
       type: String,
-      enum: ["candidate", "employer", "admin"],
+      enum: ["candidate", "employer", "admin", "hiring_manager", "recruiter"],
       default: "candidate",
     },
     mobile: { type: String, sparse: true, unique: true },
     email: { type: String, sparse: true, unique: true, lowercase: true },
+    passwordHash: { type: String, select: false },
     name: { type: String, default: "" },
+    companyKeys: { type: [String], default: [] },
+    managerId: { type: Schema.Types.ObjectId, ref: "User", index: true },
+    managerHistory: { type: [managerHistorySchema], default: [] },
     otp: { type: String },
     otpExpires: { type: Date },
     profile: { type: profileSchema, default: () => ({}) },

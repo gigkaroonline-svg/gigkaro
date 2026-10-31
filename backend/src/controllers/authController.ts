@@ -1,8 +1,10 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { env, isAdminIdentifier } from "../config/env.js";
+import { isStaffRole } from "../auth/roles.js";
 import { User } from "../models/User.js";
 import { serializeUser, signToken } from "../middleware/auth.js";
+import { verifyPassword } from "../utils/password.js";
 
 const roleSchema = z.enum(["candidate", "employer", "admin"]);
 
@@ -36,7 +38,7 @@ function resolveRole(
   email?: string,
   existingRole?: string,
 ) {
-  if (existingRole === "admin") return "admin" as const;
+  if (isStaffRole(existingRole)) return existingRole;
   if (requested === "admin") {
     if (!isAdminIdentifier(mobile, email)) {
       return null;
@@ -44,6 +46,40 @@ function resolveRole(
     return "admin" as const;
   }
   return requested;
+}
+
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1).max(100),
+});
+
+export async function loginWithPassword(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const parsed = loginSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Enter your email and password." });
+      return;
+    }
+    const email = parsed.data.email.toLowerCase();
+    const user = await User.findOne({ email }).select("+passwordHash");
+    if (!user || !isStaffRole(user.role) || !user.passwordHash) {
+      res.status(401).json({ error: "Invalid email or password." });
+      return;
+    }
+    const ok = await verifyPassword(parsed.data.password, user.passwordHash);
+    if (!ok) {
+      res.status(401).json({ error: "Invalid email or password." });
+      return;
+    }
+    const token = signToken(user);
+    res.json({ token, user: serializeUser(user) });
+  } catch (err) {
+    next(err);
+  }
 }
 
 export async function requestOtp(
@@ -58,6 +94,20 @@ export async function requestOtp(
       return;
     }
     const { mobile, email, role: requestedRole } = parsed.data;
+    const query = mobile ? { mobile } : { email: email!.toLowerCase() };
+    let user = await User.findOne(query);
+    if (user && isStaffRole(user.role)) {
+      res.status(400).json({
+        error: "This account signs in with email and password.",
+      });
+      return;
+    }
+    if (requestedRole === "admin") {
+      res.status(400).json({
+        error: "Staff accounts sign in with email and password.",
+      });
+      return;
+    }
     const role = resolveRole(requestedRole, mobile, email);
     if (!role) {
       res.status(403).json({
@@ -65,9 +115,6 @@ export async function requestOtp(
       });
       return;
     }
-
-    const query = mobile ? { mobile } : { email: email!.toLowerCase() };
-    let user = await User.findOne(query);
     if (!user) {
       user = await User.create({
         ...query,
@@ -78,8 +125,8 @@ export async function requestOtp(
           name: role === "admin" ? "GigKaro Admin" : "",
         },
       });
-    } else if (user.role !== "admin") {
-      if (role === "employer" || role === "admin") user.role = role;
+    } else if (!isStaffRole(user.role)) {
+      if (role === "employer") user.role = role;
       else if (role === "candidate" && user.role !== "employer")
         user.role = "candidate";
     }
@@ -134,17 +181,23 @@ export async function verifyOtp(
       return;
     }
 
+    if (isStaffRole(user.role)) {
+      res.status(400).json({
+        error: "This account signs in with email and password.",
+      });
+      return;
+    }
     const role = resolveRole(requestedRole, mobile, email, user.role);
-    if (!role) {
-      res.status(403).json({
-        error: "This account is not allowed to sign in as admin.",
+    if (!role || role === "admin") {
+      res.status(400).json({
+        error: "Staff accounts sign in with email and password.",
       });
       return;
     }
 
     user.otp = undefined;
     user.otpExpires = undefined;
-    if (user.role !== "admin") user.role = role;
+    if (!isStaffRole(user.role)) user.role = role;
     await user.save();
 
     const token = signToken(user);
