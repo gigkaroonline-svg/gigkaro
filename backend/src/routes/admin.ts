@@ -20,6 +20,17 @@ import {
 } from "../controllers/adminController.js";
 import { analyticsTraffic } from "../controllers/analyticsController.js";
 import {
+  createPartnerSheet,
+  deletePartnerSheet,
+  listPartnerSheets,
+  listCombinedApplications,
+  listCheckCompanies,
+  patchApplicationLocality,
+  patchPartnerSheet,
+  saveCheckCompanies,
+  syncPartnerSheet,
+} from "../controllers/partnerController.js";
+import {
   createAdminBlog,
   deleteAdminBlog,
   listAdminBlogs,
@@ -56,3 +67,12 @@ adminRouter.get("/blogs", listAdminBlogs);
 adminRouter.post("/blogs", optionalBlogCover, createAdminBlog);
 adminRouter.patch("/blogs/:id", optionalBlogCover, patchAdminBlog);
 adminRouter.delete("/blogs/:id", deleteAdminBlog);
+adminRouter.get("/all-applications", listCombinedApplications);
+adminRouter.get("/check-companies", listCheckCompanies);
+adminRouter.put("/check-companies", saveCheckCompanies);
+adminRouter.get("/partner-sheets", listPartnerSheets);
+adminRouter.post("/partner-sheets", createPartnerSheet);
+adminRouter.patch("/partner-sheets/:id", patchPartnerSheet);
+adminRouter.delete("/partner-sheets/:id", deletePartnerSheet);
+adminRouter.post("/partner-sheets/:id/sync", syncPartnerSheet);
+adminRouter.patch("/applications/:id/partner", patchApplicationLocality);

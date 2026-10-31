@@ -441,15 +441,168 @@ async function jobIdsForCompanies(keys: string[]) {
   return jobs.map((job) => job._id);
 }
 
+function uniqueKeys(keys: Array<string | undefined | null>) {
+  return [...new Set(keys.map((key) => String(key || "").trim()).filter(Boolean))];
+}
+
+async function managerCompanyKeys(managerId: unknown) {
+  if (!managerId) return [];
+  const manager = await User.findById(managerId).select("role companyKeys");
+  if (!manager || manager.role !== "hiring_manager") return [];
+  return manager.companyKeys || [];
+}
+
+async function effectiveCompanyKeys(user: {
+  role?: string;
+  companyKeys?: string[];
+  managerId?: unknown;
+}) {
+  const own = user.companyKeys || [];
+  if (user.role !== "recruiter") return own;
+  return uniqueKeys([...own, ...(await managerCompanyKeys(user.managerId))]);
+}
+
+function serializeManagerHistory(
+  entries: Array<{
+    managerId?: unknown;
+    name?: string;
+    email?: string;
+    startedAt?: Date;
+    endedAt?: Date | null;
+  }> | undefined,
+) {
+  return [...(entries || [])]
+    .map((entry) => ({
+      managerId: entry.managerId ? String(entry.managerId) : null,
+      name: entry.name || "",
+      email: entry.email || "",
+      startedAt: entry.startedAt ? new Date(entry.startedAt).toISOString() : "",
+      endedAt: entry.endedAt ? new Date(entry.endedAt).toISOString() : null,
+    }))
+    .sort((a, b) => (b.startedAt || "").localeCompare(a.startedAt || ""));
+}
+
+async function recordManagerAssignment(
+  user: {
+    managerId?: unknown;
+    managerHistory?: Array<{
+      managerId?: unknown;
+      name?: string;
+      email?: string;
+      startedAt?: Date;
+      endedAt?: Date | null;
+    }>;
+    createdAt?: Date;
+  },
+  manager: { _id: mongoose.Types.ObjectId; name?: string | null; email?: string | null },
+) {
+  const nextId = String(manager._id);
+  const currentId = user.managerId ? String(user.managerId) : "";
+  if (currentId === nextId) return manager.name || manager.email || "";
+  const now = new Date();
+  const history: Array<{
+    managerId?: unknown;
+    name: string;
+    email: string;
+    startedAt?: Date;
+    endedAt?: Date;
+  }> = (user.managerHistory || []).map((entry) => ({
+    managerId: entry.managerId,
+    name: entry.name || "",
+    email: entry.email || "",
+    startedAt: entry.startedAt,
+    endedAt: entry.endedAt || undefined,
+  }));
+  const open = history.find((entry) => !entry.endedAt);
+  if (open) {
+    open.endedAt = now;
+  } else if (currentId) {
+    const previous = await User.findById(currentId).select("name email");
+    history.push({
+      managerId: user.managerId,
+      name: previous?.name || previous?.email || "Previous manager",
+      email: previous?.email || "",
+      startedAt: user.createdAt || now,
+      endedAt: now,
+    });
+  }
+  history.push({
+    managerId: manager._id,
+    name: manager.name || manager.email || "",
+    email: manager.email || "",
+    startedAt: now,
+  });
+  user.managerHistory = history;
+  user.managerId = manager._id;
+  return manager.name || manager.email || "";
+}
+
+async function hiringManagerById(id: string | undefined | null) {
+  if (!id || !mongoose.isValidObjectId(id)) return null;
+  const manager = await User.findById(id).select("role name email");
+  if (!manager || manager.role !== "hiring_manager") return null;
+  return manager;
+}
+
 async function staffCoversApplication(
-  user: { role?: string; companyKeys?: string[] } | undefined,
+  user: { _id?: { toString(): string }; role?: string; companyKeys?: string[]; managerId?: unknown } | undefined,
   jobId: unknown,
+  assignedTo?: unknown,
 ) {
   if (!user || user.role === "admin") return true;
-  const keys = user.companyKeys || [];
+  const assignedId = assignedTo ? String(assignedTo) : "";
+  if (user.role === "recruiter" && assignedId && assignedId === user._id?.toString()) return true;
+  if (user.role === "hiring_manager" && assignedId) {
+    const recruiter = await User.findById(assignedId).select("role managerId");
+    if (
+      recruiter?.role === "recruiter" &&
+      recruiter.managerId &&
+      String(recruiter.managerId) === user._id?.toString()
+    ) {
+      return true;
+    }
+  }
+  const keys =
+    user.role === "hiring_manager"
+      ? uniqueKeys([
+          ...(user.companyKeys || []),
+          ...(
+            await User.find({ role: "recruiter", managerId: user._id }).select("companyKeys")
+          ).flatMap((recruiter) => recruiter.companyKeys || []),
+        ])
+      : await effectiveCompanyKeys(user);
   if (!keys.length) return false;
   const job = await Job.findById(jobId).select("companyId");
   return !!job && keys.includes(job.companyId);
+}
+
+async function applicationScope(user: {
+  _id: mongoose.Types.ObjectId;
+  role?: string;
+  companyKeys?: string[];
+  managerId?: unknown;
+}) {
+  if (user.role === "recruiter") {
+    const jobIds = await jobIdsForCompanies(await effectiveCompanyKeys(user));
+    return {
+      $or: [{ assignedTo: user._id }, { assignedTo: null, jobId: { $in: jobIds } }],
+    };
+  }
+  if (user.role === "hiring_manager") {
+    const team = await User.find({ role: "recruiter", managerId: user._id }).select(
+      "_id companyKeys",
+    );
+    const jobIds = await jobIdsForCompanies(
+      uniqueKeys([
+        ...(user.companyKeys || []),
+        ...team.flatMap((recruiter) => recruiter.companyKeys || []),
+      ]),
+    );
+    return {
+      $or: [{ jobId: { $in: jobIds } }, { assignedTo: { $in: team.map((recruiter) => recruiter._id) } }],
+    };
+  }
+  return null;
 }
 
 function assignedRecruiter(value: unknown) {
@@ -476,15 +629,9 @@ export async function listAdminApplications(
     const status = String(req.query.status || "");
     const q = String(req.query.q || "").trim();
     const clauses: Record<string, unknown>[] = [];
-    if (req.user?.role === "recruiter" || req.user?.role === "hiring_manager") {
-      clauses.push({
-        jobId: { $in: await jobIdsForCompanies(req.user.companyKeys || []) },
-      });
-    }
-    if (req.user?.role === "recruiter") {
-      clauses.push({
-        $or: [{ assignedTo: req.user._id }, { assignedTo: null }],
-      });
+    if (req.user && (req.user.role === "recruiter" || req.user.role === "hiring_manager")) {
+      const scope = await applicationScope(req.user);
+      if (scope) clauses.push(scope);
     }
     if (status && appStatuses.includes(status as (typeof appStatuses)[number])) {
       clauses.push({ status });
@@ -538,6 +685,13 @@ export async function listAdminApplications(
           createdAt: a.createdAt?.toISOString?.() ?? new Date().toISOString(),
           experience: a.joining,
           assignedTo: assignedRecruiter(a.assignedTo),
+          partnerCheck: a.partnerCheck?.status
+            ? {
+                status: a.partnerCheck.status,
+                clientName: a.partnerCheck.clientName || "",
+                detail: a.partnerCheck.detail || "",
+              }
+            : null,
           job,
           candidate: userRaw
             ? {
@@ -583,7 +737,7 @@ export async function patchAdminApplication(
       return;
     }
 
-    const inScope = await staffCoversApplication(req.user, app.jobId);
+    const inScope = await staffCoversApplication(req.user, app.jobId, app.assignedTo);
     if (!inScope) {
       res.status(403).json({ error: "This application is outside your companies." });
       return;
@@ -612,15 +766,23 @@ export async function patchAdminApplication(
           res.status(400).json({ error: "Choose a recruiter." });
           return;
         }
-        const recruiter = await User.findById(nextAssignee).select("role companyKeys");
+        const recruiter = await User.findById(nextAssignee).select("role companyKeys managerId");
         if (!recruiter || recruiter.role !== "recruiter") {
           res.status(400).json({ error: "Assign a recruiter account." });
           return;
         }
+        if (
+          role === "hiring_manager" &&
+          String(recruiter.managerId || "") !== req.userId
+        ) {
+          res.status(403).json({ error: "You can only assign recruiters on your team." });
+          return;
+        }
         const job = await Job.findById(app.jobId).select("companyId");
-        if (job && !(recruiter.companyKeys || []).includes(job.companyId)) {
+        const covered = await effectiveCompanyKeys(recruiter);
+        if (job && !covered.includes(job.companyId)) {
           res.status(400).json({
-            error: "That recruiter is not assigned to this company.",
+            error: "That recruiter is not on a team that covers this company.",
           });
           return;
         }
@@ -706,6 +868,11 @@ export async function listAdminUsers(
       ];
     }
     const users = await User.find(filter).sort({ createdAt: -1 }).limit(200);
+    const managerIds = users.map((user) => user.managerId).filter(Boolean);
+    const managers = await User.find({ _id: { $in: managerIds } }).select("name email");
+    const managerNames = new Map(
+      managers.map((manager) => [manager._id.toString(), manager.name || manager.email || ""]),
+    );
     const withCounts = await Promise.all(
       users.map(async (u) => {
         const [applications, jobs] = await Promise.all([
@@ -725,6 +892,9 @@ export async function listAdminUsers(
           applications,
           jobs,
           companyKeys: u.companyKeys || [],
+          managerId: u.managerId ? String(u.managerId) : null,
+          managerName: u.managerId ? managerNames.get(String(u.managerId)) || "" : "",
+          managerHistory: serializeManagerHistory(u.managerHistory),
           createdAt: u.createdAt?.toISOString?.() ?? "",
         };
       }),
@@ -748,17 +918,30 @@ export async function listStaff(
           ? role
           : { $in: ["hiring_manager", "recruiter"] },
     };
+    if (req.user?.role === "hiring_manager") {
+      filter.role = "recruiter";
+      filter.managerId = req.user._id;
+    }
     const users = await User.find(filter)
-      .select("name email role companyKeys")
+      .select("name email role companyKeys managerId")
       .sort({ name: 1 })
       .limit(200);
+    const managerIds = users.map((user) => user.managerId).filter(Boolean);
+    const managers = await User.find({ _id: { $in: managerIds } }).select("companyKeys");
+    const managerKeys = new Map(
+      managers.map((manager) => [manager._id.toString(), manager.companyKeys || []]),
+    );
     res.json({
       users: users.map((user) => ({
         id: user._id.toString(),
         role: user.role,
         name: user.name || "",
         email: user.email || "",
-        companyKeys: user.companyKeys || [],
+        managerId: user.managerId ? String(user.managerId) : null,
+        companyKeys: uniqueKeys([
+          ...(user.companyKeys || []),
+          ...(user.managerId ? managerKeys.get(String(user.managerId)) || [] : []),
+        ]),
       })),
     });
   } catch (err) {
@@ -772,6 +955,7 @@ const staffUserSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters.").max(100),
   role: z.enum(["admin", "hiring_manager", "recruiter"]),
   companyKeys: z.array(z.string().trim().min(1)).max(50).optional(),
+  managerId: z.string().trim().optional(),
 });
 
 export async function createStaffUser(
@@ -796,6 +980,12 @@ export async function createStaffUser(
       res.status(400).json({ error: "Choose companies from the list." });
       return;
     }
+    const manager =
+      parsed.data.role === "recruiter" ? await hiringManagerById(parsed.data.managerId) : null;
+    if (parsed.data.role === "recruiter" && !manager) {
+      res.status(400).json({ error: "Choose the hiring manager this recruiter reports to." });
+      return;
+    }
     const email = parsed.data.email.toLowerCase();
     const existing = await User.findOne({ email });
     if (existing) {
@@ -808,6 +998,17 @@ export async function createStaffUser(
       role: parsed.data.role,
       passwordHash: await hashPassword(parsed.data.password),
       companyKeys,
+      managerId: manager?._id,
+      managerHistory: manager
+        ? [
+            {
+              managerId: manager._id,
+              name: manager.name || manager.email || "",
+              email: manager.email || "",
+              startedAt: new Date(),
+            },
+          ]
+        : [],
       profile: { name: parsed.data.name, email },
     });
     res.status(201).json({
@@ -817,6 +1018,9 @@ export async function createStaffUser(
         name: user.name,
         email: user.email,
         companyKeys: user.companyKeys || [],
+        managerId: user.managerId ? String(user.managerId) : null,
+        managerName: manager?.name || manager?.email || "",
+        managerHistory: serializeManagerHistory(user.managerHistory),
       },
     });
   } catch (err) {
@@ -833,6 +1037,7 @@ export async function patchStaffCompanies(
     const parsed = z
       .object({
         companyKeys: z.array(z.string().trim().min(1)).max(50),
+        managerId: z.string().trim().nullable().optional(),
       })
       .safeParse(req.body);
     if (!parsed.success) {
@@ -849,6 +1054,17 @@ export async function patchStaffCompanies(
       res.status(404).json({ error: "Staff user not found." });
       return;
     }
+    let managerName = user.managerId
+      ? (await User.findById(user.managerId).select("name email"))?.name || ""
+      : "";
+    if (user.role === "recruiter" && parsed.data.managerId !== undefined) {
+      const manager = await hiringManagerById(parsed.data.managerId);
+      if (!manager) {
+        res.status(400).json({ error: "Choose the hiring manager this recruiter reports to." });
+        return;
+      }
+      managerName = await recordManagerAssignment(user, manager);
+    }
     user.companyKeys = companyKeys;
     await user.save();
     res.json({
@@ -858,6 +1074,9 @@ export async function patchStaffCompanies(
         name: user.name || "",
         email: user.email || "",
         companyKeys: user.companyKeys || [],
+        managerId: user.managerId ? String(user.managerId) : null,
+        managerName,
+        managerHistory: serializeManagerHistory(user.managerHistory),
       },
     });
   } catch (err) {

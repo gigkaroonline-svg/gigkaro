@@ -17,7 +17,10 @@ const config: NextConfig = {
   },
   async rewrites() {
     return {
-      fallback: [{ source: "/job/:slug", destination: "/job/view" }],
+      fallback: [
+        { source: "/job/:slug", destination: "/job/view" },
+        { source: "/blog/:slug", destination: "/blog/view" },
+      ],
     };
   },
   images: { unoptimized: true },

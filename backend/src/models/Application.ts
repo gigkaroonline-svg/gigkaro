@@ -31,6 +31,15 @@ const applicationSchema = new Schema(
       enum: ["Applied", "Contacted", "Interview", "Selected", "Joined"],
       default: "Applied",
     },
+    partnerCheck: {
+      status: {
+        type: String,
+        enum: ["queued", "needs_locality", "waiting", "unique", "not_unique", "failed"],
+      },
+      clientName: { type: String, default: "" },
+      detail: { type: String, default: "" },
+      checkedAt: { type: Date },
+    },
   },
   { timestamps: true },
 );

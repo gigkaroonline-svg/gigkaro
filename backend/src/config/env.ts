@@ -31,6 +31,11 @@ export const env = {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean),
+  vahanBaseUrl: (process.env.VAHAN_BASE_URL || "https://pwa-jobfinder.vahan.co").replace(/\/$/, ""),
+  vahanClientId: process.env.VAHAN_CLIENT_ID || "",
+  vahanClientSecret: process.env.VAHAN_CLIENT_SECRET || "",
+  vahanSourceId: process.env.VAHAN_SOURCE_ID || "",
+  vahanSource: process.env.VAHAN_SOURCE || "mitra-leader",
 };
 
 export function isAdminIdentifier(mobile?: string, email?: string) {

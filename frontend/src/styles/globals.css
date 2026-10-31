@@ -1851,6 +1851,35 @@ textarea::placeholder {
   height: 18px;
   margin: 0;
 }
+.partner-checks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.partner-unique {
+  color: #32814a;
+  font-weight: 600;
+}
+.partner-referred,
+.partner-locality {
+  color: #9a731d;
+  font-weight: 600;
+}
+.partner-checking {
+  color: var(--primary);
+  font-weight: 600;
+}
+.partner-failed {
+  color: #bb493c;
+  font-weight: 600;
+}
+.check-company-picks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 4px 16px;
+}
 .form-field small {
   font-size: 11px;
   color: #7a889b;
@@ -6273,6 +6302,19 @@ details p {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 18px;
+}
+.blog-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 22px;
+}
+.blog-pager span {
+  color: #607086;
+  font-size: 14px;
+  font-weight: 600;
 }
 .blog-card {
   display: flex;
