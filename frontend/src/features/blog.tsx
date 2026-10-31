@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Breadcrumb, EmptyState } from "@/components/primitives";
 import { API_URL, apiAssetUrl } from "@/lib/api";
-import { looksLikeBlogHtml, sanitizeBlogHtml } from "@/lib/blog-html";
+import { looksLikeBlogHtml, renderBlogBody } from "@/lib/blog-html";
 import { BLOG_PAGE_SIZE, blogListHref } from "@/lib/blog-list";
 import {
   formatBlogDate,
@@ -102,6 +102,8 @@ export function BlogIndex({
                       src={apiAssetUrl(post.coverUrl)}
                       alt={post.title}
                       className="blog-card-cover"
+                      loading="lazy"
+                      decoding="async"
                     />
                   ) : null}
                   <div className="blog-card-body">
@@ -190,16 +192,17 @@ export function BlogArticleFromPath() {
   return <BlogArticle post={post} />;
 }
 
-export function BlogArticle({ post }: { post: BlogPost }) {
-  const htmlBody = looksLikeBlogHtml(post.body)
-    ? sanitizeBlogHtml(post.body)
-    : null;
-  const paragraphs = htmlBody
-    ? []
-    : (post.body || "")
-        .split(/\n\s*\n/)
-        .map((part) => part.trim())
-        .filter(Boolean);
+export function BlogArticle({
+  post,
+  related = [],
+}: {
+  post: BlogPost;
+  related?: BlogPost[];
+}) {
+  const htmlBody = renderBlogBody(post.body || "", post.title);
+  const published = post.publishedAt || "";
+  const updated = post.updatedAt || published;
+  const authorHref = post.authorUrl || (/^(gigkaro|gigkaro admin)$/i.test(post.authorName || "") ? "/about/" : "");
   return (
     <>
       <div className="page-intro">
@@ -210,34 +213,61 @@ export function BlogArticle({ post }: { post: BlogPost }) {
               { label: post.title },
             ]}
           />
-          <p className="blog-meta">
-            {formatBlogDate(post.publishedAt)}
-            {post.authorName ? ` · ${post.authorName}` : ""}
-          </p>
-          <h1>{post.title}</h1>
-          <p>{post.excerpt}</p>
         </div>
       </div>
       <article className="container page-content blog-article">
+        <p className="blog-meta">
+          {published ? (
+            <>
+              Published <time dateTime={published}>{formatBlogDate(published)}</time>
+            </>
+          ) : null}
+          {updated ? (
+            <>
+              {published ? " · " : null}
+              Updated <time dateTime={updated}>{formatBlogDate(updated)}</time>
+            </>
+          ) : null}
+          {post.authorName ? (
+            <>
+              {" · "}
+              {authorHref ? (
+                <Link href={authorHref}>{post.authorName}</Link>
+              ) : (
+                post.authorName
+              )}
+            </>
+          ) : null}
+        </p>
+        <h1>{post.title}</h1>
+        <p>{post.excerpt}</p>
         {post.coverUrl ? (
           <img
             src={apiAssetUrl(post.coverUrl)}
-            alt={post.title}
+            alt={post.coverAlt || "Cover image for this story"}
             className="blog-cover"
+            fetchPriority="high"
+            decoding="async"
           />
         ) : null}
-        {htmlBody ? (
+        {looksLikeBlogHtml(htmlBody) ? (
           <div
             className="blog-prose"
             dangerouslySetInnerHTML={{ __html: htmlBody }}
           />
-        ) : (
-          <div className="blog-prose">
-            {paragraphs.map((paragraph, index) => (
-              <p key={index}>{paragraph}</p>
-            ))}
-          </div>
-        )}
+        ) : null}
+        {related.length ? (
+          <section className="related-stories" aria-label="Related stories">
+            <h2>Related stories</h2>
+            <ul>
+              {related.map((item) => (
+                <li key={item.id}>
+                  <Link href={`/blog/${item.slug}/`}>{item.title}</Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
         <Link className="text-link" href="/blog">
           All stories
         </Link>

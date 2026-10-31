@@ -7,7 +7,10 @@ const blogPostSchema = new Schema(
     excerpt: { type: String, required: true, trim: true },
     body: { type: String, required: true },
     coverUrl: { type: String, default: "" },
+    coverAlt: { type: String, default: "" },
     authorName: { type: String, default: "GigKaro" },
+    authorUrl: { type: String, default: "" },
+    metaDescription: { type: String, default: "" },
     status: {
       type: String,
       enum: ["draft", "published"],

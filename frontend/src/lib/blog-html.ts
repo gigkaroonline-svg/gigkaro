@@ -70,6 +70,7 @@ export function sanitizeBlogHtml(html: string) {
           .trim()
           .replace(/"/g, "");
         if (!/^https?:\/\//i.test(href) && !href.startsWith("/")) return "";
+        if (href.startsWith("/")) return `<a href="${href}">`;
         return `<a href="${href}" target="_blank" rel="noopener noreferrer">`;
       }
       return `<${tag}>`;
@@ -94,4 +95,75 @@ function decodeEntities(value: string) {
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
     .replace(/&quot;/gi, '"');
+}
+
+function plainText(html: string) {
+  return decodeEntities(html.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
+}
+
+function endsSentence(text: string) {
+  return /[.!?…]["'”’)\]]*$/.test(text);
+}
+
+function isSectionHeading(text: string, title: string) {
+  if (text.length < 2 || text.length > 80) return false;
+  if (endsSentence(text)) return false;
+  if (/^[a-z]/.test(text)) return false;
+  if (text.toLowerCase() === title.trim().toLowerCase()) return false;
+  return text.split(/\s+/).length <= 14;
+}
+
+type Block = { tag: "p" | "h2" | "h3" | "ul" | "ol" | "blockquote"; inner: string };
+
+function topLevelBlocks(html: string): Block[] {
+  const blocks: Block[] = [];
+  const re = /<(p|h2|h3|ul|ol|blockquote)>([\s\S]*?)<\/\1>/gi;
+  for (const match of html.matchAll(re)) {
+    const tag = match[1].toLowerCase() as Block["tag"];
+    blocks.push({
+      tag,
+      inner: match[2].replace(/\s*\n+\s*/g, " ").replace(/[ \t]{2,}/g, " ").trim(),
+    });
+  }
+  return blocks;
+}
+
+function joinSplitParagraphs(blocks: Block[]) {
+  const joined: Block[] = [];
+  for (const block of blocks) {
+    const previous = joined.at(-1);
+    const text = plainText(block.inner);
+    const previousText = previous ? plainText(previous.inner) : "";
+    if (
+      previous?.tag === "p" &&
+      block.tag === "p" &&
+      previousText &&
+      !endsSentence(previousText) &&
+      /^[a-z]/.test(text)
+    ) {
+      previous.inner = `${previous.inner} ${block.inner}`.replace(/\s+/g, " ").trim();
+      continue;
+    }
+    joined.push({ ...block });
+  }
+  return joined;
+}
+
+/** Turn stored post HTML into heading tags and whole paragraphs. Does not rewrite sentences. */
+export function renderBlogBody(value: string, title = "") {
+  const source = looksLikeBlogHtml(value) ? value : plainTextToBlogHtml(value);
+  const blocks = joinSplitParagraphs(topLevelBlocks(sanitizeBlogHtml(source)));
+  const html = blocks
+    .filter((block) => {
+      if (block.tag !== "p") return true;
+      return plainText(block.inner).toLowerCase() !== title.trim().toLowerCase();
+    })
+    .map((block) => {
+      const text = plainText(block.inner);
+      const tag =
+        block.tag === "p" && isSectionHeading(text, title) ? "h2" : block.tag;
+      return `<${tag}>${block.inner}</${tag}>`;
+    })
+    .join("");
+  return html || "<p><br></p>";
 }

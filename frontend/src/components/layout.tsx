@@ -66,7 +66,9 @@ export function MainHeader() {
             </SheetTrigger>
             <SheetContent>
               <SheetHeader>
-                <SheetTitle>{uiText("gigkaro")}</SheetTitle>
+                <SheetTitle asChild>
+                  <p>{uiText("gigkaro")}</p>
+                </SheetTitle>
               </SheetHeader>
               <nav className="sheet-nav">
                 {links.map(([label, href]) => (
@@ -93,8 +95,8 @@ export function Footer() {
           <div className="footer-brand">
             <GigKaroLogo />
             <p>{uiText("goodWorkCloserToHome")}</p>
-            <span>{uiText("indiaSPincodeLevelGigHiringNetwork")}</span>
-            <div className="footer-tagline">{uiText("kaamKaroKamao")}</div>
+            <span aria-hidden="true">{uiText("indiaSPincodeLevelGigHiringNetwork")}</span>
+            <div className="footer-tagline" aria-hidden="true">{uiText("kaamKaroKamao")}</div>
             <div className="footer-contact">
               <a
                 className="footer-linkedin"
@@ -129,7 +131,7 @@ export function Footer() {
                 href="https://wa.me/919180379173"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Chat on WhatsApp"
+                aria-label="Chat with GigKaro on WhatsApp"
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path
@@ -159,28 +161,28 @@ export function Footer() {
                 items: [
                   ["Delivery jobs", "/delivery-jobs/bengaluru"],
                   ["Warehouse jobs", "/warehouse-jobs/bengaluru"],
-                  ["EV rider jobs", "/jobs?category=ev"],
-                  ["Field jobs", "/jobs?category=field"],
+                  ["EV rider jobs", "/ev-rider-jobs/bengaluru/"],
+                  ["Field jobs", "/field-jobs/bengaluru/"],
                 ],
               },
               {
                 heading: "Popular locations",
                 headingHref: "/locations",
                 items: [
-                  ["Bengaluru", "/jobs?location=Bengaluru"],
-                  ["Delhi NCR", "/jobs?location=Delhi"],
-                  ["Mumbai", "/jobs?location=Mumbai"],
-                  ["Hyderabad", "/jobs?location=Hyderabad"],
+                  ["Bengaluru", "/delivery-jobs/bengaluru/"],
+                  ["Delhi NCR", "/delivery-jobs/delhi/"],
+                  ["Mumbai", "/delivery-jobs/mumbai/"],
+                  ["Hyderabad", "/delivery-jobs/hyderabad/"],
                 ],
               },
               {
                 heading: "More locations",
                 headingHref: "/locations",
                 items: [
-                  ["Chennai", "/jobs?location=Chennai"],
-                  ["Pune", "/jobs?location=Pune"],
-                  ["Kolkata", "/jobs?location=Kolkata"],
-                  ["Ahmedabad", "/jobs?location=Ahmedabad"],
+                  ["Chennai", "/delivery-jobs/chennai/"],
+                  ["Pune", "/delivery-jobs/pune/"],
+                  ["Kolkata", "/delivery-jobs/kolkata/"],
+                  ["Ahmedabad", "/delivery-jobs/ahmedabad/"],
                 ],
               },
             ] as {
@@ -190,13 +192,13 @@ export function Footer() {
             }[]
           ).map(({ heading, headingHref, items }) => (
             <div key={heading}>
-              <h3>
+              <p className="footer-heading">
                 {headingHref ? (
                   <Link href={headingHref}>{heading}</Link>
                 ) : (
                   heading
                 )}
-              </h3>
+              </p>
               {items.map(([label, href]) => (
                 <Link key={label} href={href}>
                   {label}

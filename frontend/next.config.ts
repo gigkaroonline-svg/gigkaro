@@ -4,6 +4,12 @@ const config: NextConfig = {
   async redirects() {
     return [
       {
+        source: "/:path*",
+        has: [{ type: "host", value: "gigkaro.in" }],
+        destination: "https://www.gigkaro.in/:path*",
+        permanent: true,
+      },
+      {
         source: "/job/:pin(\\d{6})",
         destination: "/jobs/?location=:pin",
         permanent: false,
