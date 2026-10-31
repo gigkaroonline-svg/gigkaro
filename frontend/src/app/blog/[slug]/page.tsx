@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { BlogArticle } from "@/features/blog";
 import { apiAssetUrl } from "@/lib/api";
 import { relatedStories } from "@/lib/blog-list";
+import { readImageSize } from "@/lib/image-size";
 import { articlePageMetadata, articleSchemaGraph, siteOrigin } from "@/lib/metadata";
 import {
   fetchPublishedPost,
@@ -52,13 +53,16 @@ export async function generateMetadata({
     return { title: "Story", robots: { index: false, follow: false } };
   }
   warnMissingSeo(post);
+  const image = post.coverUrl ? apiAssetUrl(post.coverUrl) : undefined;
+  const size = image ? await readImageSize(image) : null;
   return articlePageMetadata({
     title: post.title,
     excerpt: post.excerpt,
-    metaDescription: post.metaDescription,
     slug: post.slug,
-    image: post.coverUrl ? apiAssetUrl(post.coverUrl) : undefined,
+    image,
     imageAlt: post.coverAlt,
+    imageWidth: size?.width,
+    imageHeight: size?.height,
     publishedAt: post.publishedAt,
     updatedAt: post.updatedAt || post.publishedAt,
     authorUrl: authorLink(post.authorName, post.authorUrl),
@@ -85,7 +89,6 @@ export default async function Page({
             articleSchemaGraph({
               title: post.title,
               excerpt: post.excerpt,
-              metaDescription: post.metaDescription,
               slug: post.slug,
               publishedAt: post.publishedAt,
               updatedAt: post.updatedAt || post.publishedAt,
