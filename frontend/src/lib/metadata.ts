@@ -182,6 +182,16 @@ export function metaDescription(value: string, max = 155) {
     .replace(/[.,;:–—-]+$/, "");
 }
 
+function articleDescriptionText(post: {
+  title?: string | null;
+  excerpt?: string | null;
+  metaDescription?: string | null;
+}) {
+  return metaDescription(
+    post.metaDescription?.trim() || post.excerpt?.trim() || post.title?.trim() || "",
+  );
+}
+
 export function articlePageMetadata(post: {
   title: string;
   excerpt: string;
@@ -193,28 +203,34 @@ export function articlePageMetadata(post: {
   imageHeight?: number | null;
   publishedAt?: string | null;
   updatedAt?: string | null;
+  authorName?: string | null;
   authorUrl?: string | null;
 }): Metadata {
-  const description = metaDescription(post.excerpt);
-  const metadata = pageMetadata(post.title, description, `/blog/${post.slug}`);
+  const description = articleDescriptionText(post);
+  const url = canonicalUrl(`/blog/${post.slug}`);
   const image = post.image?.trim();
-  const imageAlt = post.imageAlt?.trim() || "Cover image for this story";
+  const imageAlt = post.imageAlt?.trim() || post.title.trim() || siteName;
+  const authorName = post.authorName?.trim();
   const authorUrl = post.authorUrl?.trim();
   const sized =
     image && post.imageWidth && post.imageHeight
       ? { width: post.imageWidth, height: post.imageHeight }
       : {};
   return {
-    ...metadata,
+    title: post.title,
     description,
+    alternates: { canonical: url },
+    ...(authorName ? { authors: [{ name: authorName, ...(authorUrl ? { url: authorUrl } : {}) }] } : {}),
     robots: {
       index: true,
       follow: true,
       "max-image-preview": "large",
     },
     openGraph: {
-      ...metadata.openGraph,
+      title: post.title,
       description,
+      url,
+      siteName,
       type: "article",
       locale: "en_IN",
       ...(post.publishedAt ? { publishedTime: post.publishedAt } : {}),
@@ -223,7 +239,8 @@ export function articlePageMetadata(post: {
       images: image ? [{ url: image, alt: imageAlt, ...sized }] : [],
     },
     twitter: {
-      ...metadata.twitter,
+      card: "summary_large_image",
+      title: post.title,
       description,
       images: image ? [image] : [],
     },
@@ -334,7 +351,7 @@ export function blogPostingSchema(post: {
   return {
     "@type": "BlogPosting",
     headline: post.title,
-    description: metaDescription(post.excerpt),
+    description: articleDescriptionText(post),
     url,
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
     datePublished: post.publishedAt || undefined,
@@ -367,18 +384,6 @@ export function articleSchemaGraph(post: {
   return {
     "@context": "https://schema.org",
     "@graph": [
-      {
-        "@type": "Organization",
-        "@id": `${siteOrigin}/#organization`,
-        name: siteName,
-        url: `${siteOrigin}/`,
-        logo: `${siteOrigin}/images/gigkaro-home-og.jpg`,
-        sameAs: [
-          "https://www.linkedin.com/company/gigkaro/",
-          "https://www.instagram.com/gigkaro",
-          "https://www.youtube.com/@GigKaro",
-        ],
-      },
       posting,
       {
         "@type": "BreadcrumbList",

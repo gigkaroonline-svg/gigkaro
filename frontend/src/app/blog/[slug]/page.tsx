@@ -58,6 +58,7 @@ export async function generateMetadata({
   return articlePageMetadata({
     title: post.title,
     excerpt: post.excerpt,
+    metaDescription: post.metaDescription,
     slug: post.slug,
     image,
     imageAlt: post.coverAlt,
@@ -65,6 +66,7 @@ export async function generateMetadata({
     imageHeight: size?.height,
     publishedAt: post.publishedAt,
     updatedAt: post.updatedAt || post.publishedAt,
+    authorName: post.authorName,
     authorUrl: authorLink(post.authorName, post.authorUrl),
   });
 }
@@ -89,6 +91,7 @@ export default async function Page({
             articleSchemaGraph({
               title: post.title,
               excerpt: post.excerpt,
+              metaDescription: post.metaDescription,
               slug: post.slug,
               publishedAt: post.publishedAt,
               updatedAt: post.updatedAt || post.publishedAt,

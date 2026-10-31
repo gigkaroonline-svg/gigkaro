@@ -244,7 +244,7 @@ export function BlogArticle({
         {post.coverUrl ? (
           <img
             src={apiAssetUrl(post.coverUrl)}
-            alt={post.coverAlt || "Cover image for this story"}
+            alt={post.coverAlt?.trim() || post.title}
             className="blog-cover"
             fetchPriority="high"
             decoding="async"

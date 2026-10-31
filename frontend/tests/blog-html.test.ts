@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { renderBlogBody } from "../src/lib/blog-html";
-import { articlePageMetadata, metaDescription } from "../src/lib/metadata";
+import { articlePageMetadata, articleSchemaGraph, metaDescription } from "../src/lib/metadata";
 
 const title = "The Future of India's Gig Economy: 2026-2030";
 
@@ -96,26 +96,49 @@ test("meta descriptions stop at a word and do not add an ellipsis", () => {
 });
 
 test("article metadata is computed from the post fields", () => {
-  const metadata = articlePageMetadata({
+  const described = articlePageMetadata({
     title: "Story",
-    excerpt: "A short excerpt that should be the description.",
-    metaDescription: "This stored description is stale and must not win.".repeat(4),
+    excerpt: "A short excerpt that should be the fallback.",
+    metaDescription: "The description saved on the post.",
     slug: "story",
     image: "https://storage.googleapis.com/gigkaro/blogs/cover.png",
-    imageAlt: "Cover image for this story",
     imageWidth: 800,
     imageHeight: 400,
     publishedAt: "2026-10-22T19:54:43.796Z",
     updatedAt: "2026-10-22T19:54:43.797Z",
+    authorName: "GigKaro",
     authorUrl: "https://www.gigkaro.in/",
   });
-  assert.equal(metadata.description, "A short excerpt that should be the description.");
-  const openGraph = metadata.openGraph;
+  assert.equal(described.description, "The description saved on the post.");
+  const openGraph = described.openGraph;
   assert.equal(openGraph && "type" in openGraph ? openGraph.type : "", "article");
-  assert.equal(String(metadata.alternates?.canonical), "https://www.gigkaro.in/blog/story/");
-  const images = metadata.openGraph?.images;
+  assert.equal(openGraph && "url" in openGraph ? openGraph.url : "", "https://www.gigkaro.in/blog/story/");
+  assert.equal(String(described.alternates?.canonical), "https://www.gigkaro.in/blog/story/");
+  const images = described.openGraph?.images;
   const image = Array.isArray(images) ? images[0] : images;
   assert.equal(typeof image === "object" && image && "url" in image ? image.url : "", "https://storage.googleapis.com/gigkaro/blogs/cover.png");
+  assert.equal(typeof image === "object" && image && "alt" in image ? image.alt : "", "Story");
   assert.equal(typeof image === "object" && image && "width" in image ? image.width : 0, 800);
-  assert.equal(metadata.other?.["article:section"], "Blog");
+  assert.equal(described.twitter && "title" in described.twitter ? described.twitter.title : "", "Story");
+  assert.equal(described.other?.["article:published_time"], "2026-10-22T19:54:43.796Z");
+  assert.equal(described.other?.["article:section"], "Blog");
+
+  const fromExcerpt = articlePageMetadata({
+    title: "Story",
+    excerpt: "A short excerpt that should be the description.",
+    slug: "story",
+  });
+  assert.equal(fromExcerpt.description, "A short excerpt that should be the description.");
+  assert.deepEqual(fromExcerpt.openGraph && "images" in fromExcerpt.openGraph ? fromExcerpt.openGraph.images : undefined, []);
+
+  const graph = articleSchemaGraph({
+    title: "Story",
+    excerpt: "A short excerpt that should be the description.",
+    slug: "story",
+    authorName: "GigKaro Admin",
+  });
+  const types = graph["@graph"].map((node) => node["@type"]);
+  assert.deepEqual(types, ["BlogPosting", "BreadcrumbList"]);
+  const posting = graph["@graph"].find((node) => node["@type"] === "BlogPosting");
+  assert.equal(posting && "publisher" in posting ? posting.publisher["@id"] : "", "https://www.gigkaro.in/#organization");
 });
