@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Breadcrumb } from "@/components/primitives";
+import { Breadcrumb, EmptyState } from "@/components/primitives";
 import { API_URL, apiAssetUrl } from "@/lib/api";
 import { looksLikeBlogHtml, sanitizeBlogHtml } from "@/lib/blog-html";
 import { BLOG_PAGE_SIZE, blogListHref } from "@/lib/blog-list";
@@ -126,6 +126,68 @@ export function BlogIndex({
       </div>
     </>
   );
+}
+
+export function BlogArticleFromPath() {
+  const [post, setPost] = useState<BlogPost | null | undefined>(undefined);
+
+  useEffect(() => {
+    const slug = window.location.pathname.split("/").filter(Boolean).at(-1);
+    if (!slug || slug === "view" || slug === "blog") {
+      setPost(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`${API_URL}/blogs/${encodeURIComponent(slug)}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(String(res.status));
+        return (await res.json()) as { post?: BlogPost };
+      })
+      .then((data) => {
+        if (!cancelled) setPost(data.post ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setPost(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!post?.title) return;
+    document.title = `${post.title} | GigKaro`;
+  }, [post]);
+
+  if (post === undefined) {
+    return (
+      <div
+        className="container page-content"
+        aria-label="Loading story"
+        role="status"
+      >
+        <div className="skeleton short" />
+        <div className="skeleton tall" />
+      </div>
+    );
+  }
+
+  if (!post) {
+    return (
+      <div className="container page-content">
+        <EmptyState
+          title="This story isn't available."
+          description="The link may be wrong, or this story is no longer published."
+        >
+          <Link className="button button-primary" href="/blog">
+            All stories
+          </Link>
+        </EmptyState>
+      </div>
+    );
+  }
+
+  return <BlogArticle post={post} />;
 }
 
 export function BlogArticle({ post }: { post: BlogPost }) {

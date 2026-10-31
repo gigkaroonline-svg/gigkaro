@@ -19,7 +19,7 @@ const config: NextConfig = {
     return {
       fallback: [
         { source: "/job/:slug", destination: "/job/view" },
-        { source: "/blog/:slug", destination: "/blog/view?slug=:slug" },
+        { source: "/blog/:slug", destination: "/blog/view" },
       ],
     };
   },
