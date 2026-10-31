@@ -189,15 +189,21 @@ export function articlePageMetadata(post: {
   slug: string;
   image?: string | null;
   imageAlt?: string | null;
+  imageWidth?: number | null;
+  imageHeight?: number | null;
   publishedAt?: string | null;
   updatedAt?: string | null;
   authorUrl?: string | null;
 }): Metadata {
-  const description = metaDescription(post.metaDescription?.trim() || post.excerpt);
+  const description = metaDescription(post.excerpt);
   const metadata = pageMetadata(post.title, description, `/blog/${post.slug}`);
   const image = post.image?.trim();
   const imageAlt = post.imageAlt?.trim() || "Cover image for this story";
   const authorUrl = post.authorUrl?.trim();
+  const sized =
+    image && post.imageWidth && post.imageHeight
+      ? { width: post.imageWidth, height: post.imageHeight }
+      : {};
   return {
     ...metadata,
     description,
@@ -214,12 +220,12 @@ export function articlePageMetadata(post: {
       ...(post.publishedAt ? { publishedTime: post.publishedAt } : {}),
       ...(post.updatedAt ? { modifiedTime: post.updatedAt } : {}),
       ...(authorUrl ? { authors: [authorUrl] } : {}),
-      ...(image ? { images: [{ url: image, alt: imageAlt }] } : {}),
+      images: image ? [{ url: image, alt: imageAlt, ...sized }] : [],
     },
     twitter: {
       ...metadata.twitter,
       description,
-      ...(image ? { images: [image] } : {}),
+      images: image ? [image] : [],
     },
     other: {
       ...(post.publishedAt ? { "article:published_time": post.publishedAt } : {}),
@@ -328,7 +334,7 @@ export function blogPostingSchema(post: {
   return {
     "@type": "BlogPosting",
     headline: post.title,
-    description: metaDescription(post.metaDescription?.trim() || post.excerpt),
+    description: metaDescription(post.excerpt),
     url,
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
     datePublished: post.publishedAt || undefined,

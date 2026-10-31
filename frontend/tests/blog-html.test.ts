@@ -1,9 +1,27 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { renderBlogBody } from "../src/lib/blog-html";
-import { metaDescription } from "../src/lib/metadata";
+import { articlePageMetadata, metaDescription } from "../src/lib/metadata";
 
 const title = "The Future of India's Gig Economy: 2026-2030";
+
+test("citations sit inside the sentence and keep proper-noun casing", () => {
+  const html = [
+    '<p>The calendar is specific.<a href="https://www.labour.gov.in/sites/default/files/gazette.pdf"> as the gazette notification records</a>, every aggregator had forty-five days.</p>',
+    '<p>The city page would.<a href="https://www.gigkaro.in/delivery-jobs/ghaziabad/"> ghaziabad\'s delivery page on the hiring network</a> holds the city\'s openings.</p>',
+    '<p>The minister spoke in <a href="https://www.pib.gov.in/PressReleasePage.aspx?PRID=2309283">september</a>.</p>',
+    "<p>The account is exact.</p>",
+    "<p>accounting is expected to be exact.</p>",
+  ].join("");
+  const out = renderBlogBody(html, title);
+  assert.doesNotMatch(out, /\.[^<]*<a[^>]*>\s*[a-z]/);
+  assert.match(out, /specific <a href="https:\/\/www\.labour\.gov\.in\/sites\/default\/files\/gazette\.pdf"[^>]*>as the gazette notification records<\/a>,/);
+  assert.match(out, /would <a href="https:\/\/www\.gigkaro\.in\/delivery-jobs\/ghaziabad\/"[^>]*>Ghaziabad's delivery page on the hiring network<\/a> holds/);
+  assert.match(out, />September</);
+  assert.doesNotMatch(out, />september</);
+  assert.doesNotMatch(out, />ghaziabad/);
+  assert.match(out, /exact accounting is expected to be exact\./);
+});
 
 test("section titles become h2 and split paragraphs are joined", () => {
   const html = [
@@ -45,4 +63,29 @@ test("meta descriptions stop at a word and do not add an ellipsis", () => {
   assert.ok(description.length <= 155);
   assert.equal(description.includes("…"), false);
   assert.equal(description.endsWith(" "), false);
+});
+
+test("article metadata is computed from the post fields", () => {
+  const metadata = articlePageMetadata({
+    title: "Story",
+    excerpt: "A short excerpt that should be the description.",
+    metaDescription: "This stored description is stale and must not win.".repeat(4),
+    slug: "story",
+    image: "https://storage.googleapis.com/gigkaro/blogs/cover.png",
+    imageAlt: "Cover image for this story",
+    imageWidth: 800,
+    imageHeight: 400,
+    publishedAt: "2026-10-22T19:54:43.796Z",
+    updatedAt: "2026-10-22T19:54:43.797Z",
+    authorUrl: "https://www.gigkaro.in/",
+  });
+  assert.equal(metadata.description, "A short excerpt that should be the description.");
+  const openGraph = metadata.openGraph;
+  assert.equal(openGraph && "type" in openGraph ? openGraph.type : "", "article");
+  assert.equal(String(metadata.alternates?.canonical), "https://www.gigkaro.in/blog/story/");
+  const images = metadata.openGraph?.images;
+  const image = Array.isArray(images) ? images[0] : images;
+  assert.equal(typeof image === "object" && image && "url" in image ? image.url : "", "https://storage.googleapis.com/gigkaro/blogs/cover.png");
+  assert.equal(typeof image === "object" && image && "width" in image ? image.width : 0, 800);
+  assert.equal(metadata.other?.["article:section"], "Blog");
 });

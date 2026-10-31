@@ -1,0 +1,47 @@
+name: Blog SEO
+
+on:
+  push:
+    branches: [qa]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/blog-seo.yml"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  blog-seo:
+    name: Every blog post
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SITE_URL: https://www.gigkaro.in
+          NEXT_PUBLIC_API_URL: https://api.gigkaro.in/api
+      - name: Fetch every blog URL
+        env:
+          BLOG_ORIGIN: http://127.0.0.1:3000
+          NEXT_PUBLIC_SITE_URL: https://www.gigkaro.in
+          NEXT_PUBLIC_API_URL: https://api.gigkaro.in/api
+        run: |
+          set -euo pipefail
+          npm run start -- --port 3000 &
+          for _ in $(seq 1 60); do
+            if curl -sf -o /dev/null http://127.0.0.1:3000/blog/; then
+              break
+            fi
+            sleep 2
+          done
+          curl -sf -o /dev/null http://127.0.0.1:3000/blog/
+          node --import tsx --test tests/blog-seo.test.ts
