@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { BlogArticle } from "@/features/blog";
 import { apiAssetUrl } from "@/lib/api";
-import { breadcrumbSchema, pageMetadata } from "@/lib/metadata";
+import { articlePageMetadata, blogPostingSchema, breadcrumbSchema } from "@/lib/metadata";
 import {
   fetchPublishedPost,
   fetchPublishedPosts,
@@ -28,7 +28,12 @@ export async function generateMetadata({
   if (!post) {
     return { title: "Story", robots: { index: false, follow: false } };
   }
-  return pageMetadata(post.title, post.excerpt, `/blog/${post.slug}`);
+  return articlePageMetadata({
+    title: post.title,
+    excerpt: post.excerpt,
+    slug: post.slug,
+    image: post.coverUrl ? apiAssetUrl(post.coverUrl) : undefined,
+  });
 }
 
 export default async function Page({
@@ -39,26 +44,30 @@ export default async function Page({
   const { slug } = await params;
   const post = await fetchPublishedPost(slug);
   if (!post) notFound();
-  const data = {
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    headline: post.title,
-    description: post.excerpt,
-    datePublished: post.publishedAt || undefined,
-    author: { "@type": "Person", name: post.authorName || "GigKaro" },
-    ...(post.coverUrl ? { image: apiAssetUrl(post.coverUrl) } : {}),
-  };
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            blogPostingSchema({
+              title: post.title,
+              excerpt: post.excerpt,
+              slug: post.slug,
+              publishedAt: post.publishedAt,
+              updatedAt: post.updatedAt,
+              authorName: post.authorName,
+              image: post.coverUrl ? apiAssetUrl(post.coverUrl) : undefined,
+            }),
+          ),
+        }}
       />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(
             breadcrumbSchema([
+              { name: "Home", path: "/" },
               { name: "Blog", path: "/blog" },
               { name: post.title, path: `/blog/${post.slug}` },
             ]),

@@ -2,9 +2,18 @@ import type { Metadata } from "next";
 import type { Job } from "@/types";
 import { resolvePostedAt } from "@/lib/posted-at";
 
-export const siteOrigin = (
-  process.env.NEXT_PUBLIC_SITE_URL || "https://gigkaro.in"
-).replace(/\/$/, "");
+function resolveSiteOrigin() {
+  const configured = (
+    process.env.NEXT_PUBLIC_SITE_URL || "https://www.gigkaro.in"
+  ).replace(/\/$/, "");
+  // The apex host only redirects to www, so canonicals use the host that serves the page.
+  if (configured === "https://gigkaro.in" || configured === "http://gigkaro.in") {
+    return "https://www.gigkaro.in";
+  }
+  return configured;
+}
+
+export const siteOrigin = resolveSiteOrigin();
 
 export const siteName = "GigKaro";
 
@@ -163,6 +172,43 @@ export const noindex: Metadata = {
   robots: { index: false, follow: false },
 };
 
+export function metaDescription(value: string, max = 160) {
+  const text = value.replace(/\s+/g, " ").trim();
+  if (text.length <= max) return text;
+  const slice = text.slice(0, max - 1);
+  const space = slice.lastIndexOf(" ");
+  const trimmed = (space > 80 ? slice.slice(0, space) : slice)
+    .trimEnd()
+    .replace(/[.,;:–—-]+$/, "");
+  return `${trimmed}…`;
+}
+
+export function articlePageMetadata(post: {
+  title: string;
+  excerpt: string;
+  slug: string;
+  image?: string | null;
+}): Metadata {
+  const description = metaDescription(post.excerpt);
+  const metadata = pageMetadata(post.title, description, `/blog/${post.slug}`);
+  const image = post.image?.trim();
+  return {
+    ...metadata,
+    description,
+    openGraph: {
+      ...metadata.openGraph,
+      description,
+      type: "article",
+      ...(image ? { images: [{ url: image, alt: post.title }] } : {}),
+    },
+    twitter: {
+      ...metadata.twitter,
+      description,
+      ...(image ? { images: [image] } : {}),
+    },
+  };
+}
+
 export function pageMetadata(
   title: string,
   description: string,
@@ -235,6 +281,38 @@ export function jobPostingSchema(job: Job) {
     },
   };
 }
+const brandAuthor = /^(gigkaro|gigkaro admin)$/i;
+
+export function blogPostingSchema(post: {
+  title: string;
+  excerpt: string;
+  slug: string;
+  publishedAt?: string | null;
+  updatedAt?: string | null;
+  authorName?: string | null;
+  image?: string | null;
+}) {
+  const url = canonicalUrl(`/blog/${post.slug}`);
+  const authorName = post.authorName?.trim() || "";
+  const author =
+    !authorName || brandAuthor.test(authorName)
+      ? { "@id": `${siteOrigin}/#organization` }
+      : { "@type": "Person" as const, name: authorName };
+  return {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.title,
+    description: post.excerpt,
+    url,
+    mainEntityOfPage: { "@type": "WebPage", "@id": url },
+    datePublished: post.publishedAt || undefined,
+    dateModified: post.updatedAt || post.publishedAt || undefined,
+    author,
+    publisher: { "@id": `${siteOrigin}/#organization` },
+    ...(post.image ? { image: post.image } : {}),
+  };
+}
+
 export function breadcrumbSchema(items: { name: string; path: string }[]) {
   return {
     "@context": "https://schema.org",
