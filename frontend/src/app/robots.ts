@@ -15,6 +15,7 @@ export default function robots(): MetadataRoute.Robots {
         "/verify-otp",
         "/job/local",
         "/job/view",
+        "/blog/view",
       ],
     },
     sitemap: `${siteOrigin}/sitemap.xml`,

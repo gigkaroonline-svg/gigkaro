@@ -2,54 +2,55 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Breadcrumb, EmptyState } from "@/components/primitives";
+import { Breadcrumb } from "@/components/primitives";
 import { API_URL, apiAssetUrl } from "@/lib/api";
 import { looksLikeBlogHtml, sanitizeBlogHtml } from "@/lib/blog-html";
+import { BLOG_PAGE_SIZE, blogListHref } from "@/lib/blog-list";
 import {
   formatBlogDate,
   type BlogPost,
 } from "@/lib/services/api-blogs";
 
-const PAGE_SIZE = 12;
-
-function BlogPager({
-  page,
-  pages,
-  onPage,
-}: {
-  page: number;
-  pages: number;
-  onPage: (page: number) => void;
-}) {
+function BlogPager({ page, pages }: { page: number; pages: number }) {
   if (pages <= 1) return null;
   return (
     <nav className="blog-pager" aria-label="Blog pages">
-      <button
-        type="button"
-        className="button button-outline"
-        disabled={page <= 1}
-        onClick={() => onPage(page - 1)}
-      >
-        Previous
-      </button>
+      {page <= 1 ? (
+        <button type="button" className="button button-outline" disabled>
+          Previous
+        </button>
+      ) : (
+        <Link className="button button-outline" href={blogListHref(page - 1)}>
+          Previous
+        </Link>
+      )}
       <span>
         Page {page} of {pages}
       </span>
-      <button
-        type="button"
-        className="button button-outline"
-        disabled={page >= pages}
-        onClick={() => onPage(page + 1)}
-      >
-        Next
-      </button>
+      {page >= pages ? (
+        <button type="button" className="button button-outline" disabled>
+          Next
+        </button>
+      ) : (
+        <Link className="button button-outline" href={blogListHref(page + 1)}>
+          Next
+        </Link>
+      )}
     </nav>
   );
 }
 
-export function BlogIndex({ posts: initialPosts }: { posts: BlogPost[] }) {
+export function BlogIndex({
+  posts: initialPosts,
+  page,
+  pages: initialPages,
+}: {
+  posts: BlogPost[];
+  page: number;
+  pages: number;
+}) {
   const [posts, setPosts] = useState(initialPosts);
-  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(initialPages);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,7 +58,13 @@ export function BlogIndex({ posts: initialPosts }: { posts: BlogPost[] }) {
       .then((res) => (res.ok ? res.json() : null))
       .then((data: { posts?: BlogPost[] } | null) => {
         if (cancelled || !data?.posts?.length) return;
-        setPosts(data.posts);
+        const nextPages = Math.max(
+          1,
+          Math.ceil(data.posts.length / BLOG_PAGE_SIZE),
+        );
+        const start = (page - 1) * BLOG_PAGE_SIZE;
+        setPages(nextPages);
+        setPosts(data.posts.slice(start, start + BLOG_PAGE_SIZE));
       })
       .catch(() => {
         // keep server-rendered posts
@@ -65,16 +72,7 @@ export function BlogIndex({ posts: initialPosts }: { posts: BlogPost[] }) {
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  const pages = Math.max(1, Math.ceil(posts.length / PAGE_SIZE));
-  const current = Math.min(page, pages);
-  const visible = posts.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
-
-  function go(next: number) {
-    setPage(next);
-    document.querySelector(".page-intro")?.scrollIntoView({ block: "start" });
-  }
+  }, [page]);
 
   return (
     <>
@@ -97,12 +95,12 @@ export function BlogIndex({ posts: initialPosts }: { posts: BlogPost[] }) {
         ) : (
           <>
             <div className="blog-grid">
-              {visible.map((post) => (
+              {posts.map((post) => (
                 <article className="blog-card" key={post.id}>
                   {post.coverUrl ? (
                     <img
                       src={apiAssetUrl(post.coverUrl)}
-                      alt=""
+                      alt={post.title}
                       className="blog-card-cover"
                     />
                   ) : null}
@@ -122,74 +120,12 @@ export function BlogIndex({ posts: initialPosts }: { posts: BlogPost[] }) {
                 </article>
               ))}
             </div>
-            <BlogPager page={current} pages={pages} onPage={go} />
+            <BlogPager page={page} pages={pages} />
           </>
         )}
       </div>
     </>
   );
-}
-
-export function BlogArticleFromPath() {
-  const [post, setPost] = useState<BlogPost | null | undefined>(undefined);
-
-  useEffect(() => {
-    const slug = window.location.pathname.split("/").filter(Boolean).at(-1);
-    if (!slug || slug === "view" || slug === "blog") {
-      setPost(null);
-      return;
-    }
-    let cancelled = false;
-    fetch(`${API_URL}/blogs/${encodeURIComponent(slug)}`)
-      .then(async (res) => {
-        if (!res.ok) throw new Error(String(res.status));
-        return (await res.json()) as { post?: BlogPost };
-      })
-      .then((data) => {
-        if (!cancelled) setPost(data.post ?? null);
-      })
-      .catch(() => {
-        if (!cancelled) setPost(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!post?.title) return;
-    document.title = `${post.title} | GigKaro`;
-  }, [post]);
-
-  if (post === undefined) {
-    return (
-      <div
-        className="container page-content"
-        aria-label="Loading story"
-        role="status"
-      >
-        <div className="skeleton short" />
-        <div className="skeleton tall" />
-      </div>
-    );
-  }
-
-  if (!post) {
-    return (
-      <div className="container page-content">
-        <EmptyState
-          title="This story isn't available."
-          description="The link may be wrong, or this story is no longer published."
-        >
-          <Link className="button button-primary" href="/blog">
-            All stories
-          </Link>
-        </EmptyState>
-      </div>
-    );
-  }
-
-  return <BlogArticle post={post} />;
 }
 
 export function BlogArticle({ post }: { post: BlogPost }) {
@@ -224,7 +160,7 @@ export function BlogArticle({ post }: { post: BlogPost }) {
         {post.coverUrl ? (
           <img
             src={apiAssetUrl(post.coverUrl)}
-            alt=""
+            alt={post.title}
             className="blog-cover"
           />
         ) : null}
