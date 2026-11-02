@@ -927,14 +927,39 @@ textarea::placeholder {
   font-weight: 600;
   color: #667085;
 }
+.client-strip-viewport {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.client-strip-track {
+  display: flex;
+  width: max-content;
+  animation: client-marquee 36s linear infinite;
+}
+.client-strip-viewport:hover .client-strip-track {
+  animation-play-state: paused;
+}
+@keyframes client-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
 .client-strip ul {
   display: flex;
   align-items: center;
-  gap: 18px 28px;
+  gap: 28px;
   margin: 0;
-  padding: 12px 0;
+  padding: 12px 28px 12px 0;
   list-style: none;
-  overflow-x: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .client-strip-viewport {
+    overflow-x: auto;
+  }
 }
 .client-strip li {
   display: flex;
@@ -1809,6 +1834,9 @@ textarea::placeholder {
   min-height: 140px;
   resize: vertical;
 }
+.form-field textarea.sheet-match-values {
+  min-height: 96px;
+}
 .password-field {
   position: relative;
 }
@@ -2209,6 +2237,18 @@ textarea::placeholder {
 .table-wrap {
   overflow-x: auto;
   max-width: 100%;
+}
+.table-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.table-pager span {
+  color: #607086;
+  font-size: 14px;
+  font-weight: 600;
 }
 .dashboard-layout > *,
 .dashboard-main,

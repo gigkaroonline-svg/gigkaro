@@ -996,16 +996,31 @@ type CombinedApplication = {
 function AllApplications() {
   const [rows, setRows] = useState<CombinedApplication[]>([]);
   const [source, setSource] = useState("");
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const pageSize = 10;
 
   useEffect(() => {
     let cancelled = false;
     let timer = 0;
     async function load() {
       try {
-        const data = await api<{ rows: CombinedApplication[] }>("/admin/all-applications");
+        const params = new URLSearchParams({ page: String(page), limit: String(pageSize) });
+        if (source) params.set("source", source);
+        const data = await api<{
+          rows: CombinedApplication[];
+          page: number;
+          pages: number;
+          total: number;
+        }>(`/admin/all-applications?${params.toString()}`);
         if (cancelled) return;
         setRows(data.rows);
+        setPages(data.pages);
+        setTotal(data.total);
+        if (data.page !== page) setPage(data.page);
         setError("");
         const pending = data.rows.some(
           (row) =>
@@ -1018,22 +1033,34 @@ function AllApplications() {
         if (!cancelled) {
           setError(err instanceof ApiError ? err.message : "Could not load applications.");
         }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
+    setLoading(true);
+    setRows([]);
     void load();
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, []);
+  }, [page, source]);
 
-  const visible = source ? rows.filter((row) => row.source === source) : rows;
+  const rangeStart = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const rangeEnd = Math.min(page * pageSize, total);
 
   return (
     <section className="panel stack">
       <div className="row spread">
         <h2>All applications</h2>
-        <select value={source} onChange={(event) => setSource(event.target.value)} aria-label="Source">
+        <select
+          value={source}
+          onChange={(event) => {
+            setSource(event.target.value);
+            setPage(1);
+          }}
+          aria-label="Source"
+        >
           <option value="">GigKaro and sheets</option>
           <option value="gigkaro">GigKaro</option>
           <option value="sheet">Sheets</option>
@@ -1058,7 +1085,7 @@ function AllApplications() {
             </tr>
           </thead>
           <tbody>
-            {visible.map((row) => (
+            {rows.map((row) => (
               <tr key={row.id}>
                 <td data-label="Source">
                   {row.source === "sheet" ? "Sheet" : "GigKaro"}
@@ -1112,11 +1139,34 @@ function AllApplications() {
           </tbody>
         </table>
       </div>
-      {!visible.length && !error && (
+      {!loading && !rows.length && !error && (
         <EmptyState
           title="No applications yet"
           description="GigKaro applications and rows from connected sheets show up here."
         />
+      )}
+      {total > pageSize && (
+        <nav className="table-pager" aria-label="Application pages">
+          <button
+            type="button"
+            className="button button-outline"
+            disabled={page <= 1}
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+          >
+            Previous
+          </button>
+          <span>
+            {rangeStart}–{rangeEnd} of {total}
+          </span>
+          <button
+            type="button"
+            className="button button-outline"
+            disabled={page >= pages}
+            onClick={() => setPage((current) => current + 1)}
+          >
+            Next
+          </button>
+        </nav>
       )}
     </section>
   );
@@ -1434,6 +1484,9 @@ type PartnerSheet = {
     company: string;
     locality: string;
   };
+  matchColumn: string;
+  matchValues: string[];
+  skipExistingRows: boolean;
   active: boolean;
   lastError: string;
   lastSyncedAt: string | null;
@@ -1473,6 +1526,10 @@ const defaultSheetColumns = {
   locality: "Locality",
 };
 
+function parseMatchValues(text: string) {
+  return [...new Set(text.split(/[\n,]+/).map((value) => value.trim()).filter(Boolean))];
+}
+
 function PartnerSheets() {
   const [sheets, setSheets] = useState<PartnerSheet[]>([]);
   const [configured, setConfigured] = useState(true);
@@ -1480,6 +1537,9 @@ function PartnerSheets() {
   const [spreadsheetId, setSpreadsheetId] = useState("");
   const [tab, setTab] = useState("Sheet1");
   const [columns, setColumns] = useState(defaultSheetColumns);
+  const [matchColumn, setMatchColumn] = useState("");
+  const [matchValues, setMatchValues] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [pendingRemove, setPendingRemove] = useState<PartnerSheet | null>(null);
   const [removing, setRemoving] = useState(false);
@@ -1503,23 +1563,56 @@ function PartnerSheets() {
     void load();
   }, []);
 
-  async function addSheet(event: React.FormEvent) {
+  function resetSheetForm() {
+    setName("");
+    setSpreadsheetId("");
+    setTab("Sheet1");
+    setColumns(defaultSheetColumns);
+    setMatchColumn("");
+    setMatchValues("");
+    setEditingId(null);
+  }
+
+  function openAddSheet() {
+    resetSheetForm();
+    setError("");
+    setAddOpen(true);
+  }
+
+  function openEditSheet(sheet: PartnerSheet) {
+    setEditingId(sheet.id);
+    setName(sheet.name);
+    setSpreadsheetId(sheet.spreadsheetId);
+    setTab(sheet.tab);
+    setColumns({ ...defaultSheetColumns, ...sheet.columns });
+    setMatchColumn(sheet.matchColumn || "");
+    setMatchValues((sheet.matchValues || []).join("\n"));
+    setError("");
+    setAddOpen(true);
+  }
+
+  async function saveSheet(event: React.FormEvent) {
     event.preventDefault();
     setSaving(true);
     setError("");
+    const body = {
+      name,
+      spreadsheetId,
+      tab,
+      columns,
+      matchColumn: matchColumn.trim(),
+      matchValues: matchColumn.trim() ? parseMatchValues(matchValues) : [],
+    };
     try {
-      await api("/admin/partner-sheets", {
-        method: "POST",
-        body: JSON.stringify({ name, spreadsheetId, tab, columns }),
+      await api(editingId ? `/admin/partner-sheets/${editingId}` : "/admin/partner-sheets", {
+        method: editingId ? "PATCH" : "POST",
+        body: JSON.stringify(body),
       });
-      setName("");
-      setSpreadsheetId("");
-      setTab("Sheet1");
-      setColumns(defaultSheetColumns);
+      resetSheetForm();
       setAddOpen(false);
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not add that sheet.");
+      setError(err instanceof ApiError ? err.message : "Could not save that sheet.");
     } finally {
       setSaving(false);
     }
@@ -1555,7 +1648,7 @@ function PartnerSheets() {
     <section className="panel stack">
       <div className="row spread">
         <h2>Partner sheets</h2>
-        <button type="button" className="button button-primary" onClick={() => setAddOpen(true)}>
+        <button type="button" className="button button-primary" onClick={openAddSheet}>
           Add sheet
         </button>
       </div>
@@ -1587,6 +1680,14 @@ function PartnerSheets() {
                   .map(([key, label]) => `${label}: ${sheet.columns?.[key] || defaultSheetColumns[key]}`)
                   .join(" · ")}
               </div>
+              <div className="muted">
+                {sheet.matchColumn && sheet.matchValues?.length
+                  ? `Only ${sheet.matchColumn}: ${sheet.matchValues.join(", ")}`
+                  : "Every row is imported"}
+              </div>
+              {sheet.skipExistingRows && (
+                <div className="muted">Rows already in the sheet when it was added are not imported.</div>
+              )}
               {problem && (
                 <p className="field-error" role="alert">
                   {problem.text}{" "}
@@ -1599,6 +1700,9 @@ function PartnerSheets() {
               )}
             </div>
             <div className="row">
+              <button type="button" className="button" onClick={() => openEditSheet(sheet)}>
+                Edit
+              </button>
               <button type="button" className="button" onClick={() => syncSheet(sheet.id)}>
                 Sync
               </button>
@@ -1619,15 +1723,21 @@ function PartnerSheets() {
         open={addOpen}
         onOpenChange={(open) => {
           setAddOpen(open);
-          if (!open) setError("");
+          if (!open) {
+            setError("");
+            setEditingId(null);
+          }
         }}
       >
         <DialogContent className="staff-user-dialog">
-          <DialogTitle>Add a sheet</DialogTitle>
+          <DialogTitle>{editingId ? "Edit sheet" : "Add a sheet"}</DialogTitle>
           <DialogDescription>
             The first row is the header. Enter the header name from that sheet for each field.
+            {editingId
+              ? " Set a match column and the allowed values to send only those sheet rows to All applications."
+              : " Rows already in the sheet stay out. Only rows added after you connect it are imported."}
           </DialogDescription>
-          <form onSubmit={addSheet} className="stack">
+          <form onSubmit={saveSheet} className="stack">
             <div className="form-field">
               <label htmlFor="sheet-label">Sheet label</label>
               <input
@@ -1668,13 +1778,34 @@ function PartnerSheets() {
                 />
               </div>
             ))}
+            <div className="form-field">
+              <label htmlFor="sheet-match-column">Match column</label>
+              <input
+                id="sheet-match-column"
+                value={matchColumn}
+                onChange={(event) => setMatchColumn(event.target.value)}
+                placeholder="Number"
+              />
+              <p className="muted">Header of the column the admin chooses, such as Number. Leave blank to import every row.</p>
+            </div>
+            <div className="form-field">
+              <label htmlFor="sheet-match-values">Allowed values</label>
+              <textarea
+                id="sheet-match-values"
+                className="sheet-match-values"
+                value={matchValues}
+                onChange={(event) => setMatchValues(event.target.value)}
+                placeholder={"101\n102\n103"}
+              />
+              <p className="muted">One value per line. A sheet row is imported only when the match column equals one of these.</p>
+            </div>
             {error && addOpen && (
               <p className="field-error" role="alert">
                 {error}
               </p>
             )}
             <button className="button button-primary" disabled={saving}>
-              {saving ? "Adding…" : "Add sheet"}
+              {saving ? "Saving…" : editingId ? "Save sheet" : "Add sheet"}
             </button>
           </form>
         </DialogContent>
