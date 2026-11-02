@@ -5,7 +5,7 @@ import { PartnerCheckSettings } from "../models/PartnerCheckSettings.js";
 import { PartnerLead } from "../models/PartnerLead.js";
 import { SheetSource } from "../models/SheetSource.js";
 import type { AuthRequest } from "../middleware/auth.js";
-import { retryLeadLocality, syncSheetSource } from "../services/partnerCheck.js";
+import { captureSheetBaseline, retryLeadLocality, syncSheetSource } from "../services/partnerCheck.js";
 import { sheetsConfigured } from "../services/sheets.js";
 import { VAHAN_COMPANIES, vahanClientName } from "../data/vahanClients.js";
 
@@ -21,6 +21,9 @@ function serializeSheet(source: {
     company?: string;
     locality?: string;
   } | null;
+  matchColumn?: string;
+  matchValues?: string[];
+  skipExistingRows?: boolean;
   active?: boolean;
   lastError?: string;
   lastSyncedAt?: Date | null;
@@ -38,6 +41,9 @@ function serializeSheet(source: {
       company: source.columns?.company || "Company",
       locality: source.columns?.locality || "Locality",
     },
+    matchColumn: source.matchColumn || "",
+    matchValues: (source.matchValues || []).filter(Boolean),
+    skipExistingRows: source.skipExistingRows === true,
     active: source.active !== false,
     lastError: source.lastError || "",
     lastSyncedAt: source.lastSyncedAt?.toISOString?.() || null,
@@ -46,7 +52,7 @@ function serializeSheet(source: {
   };
 }
 
-const sheetBody = z.object({
+const sheetObject = z.object({
   name: z.string().trim().min(1).max(80),
   spreadsheetId: z.string().trim().min(8).max(200),
   tab: z.string().trim().min(1).max(80),
@@ -59,8 +65,35 @@ const sheetBody = z.object({
       locality: z.string().trim().min(1).max(80).optional(),
     })
     .optional(),
+  matchColumn: z.string().trim().max(80).optional(),
+  matchValues: z.array(z.string().trim().min(1).max(80)).max(500).optional(),
   active: z.boolean().optional(),
 });
+
+function refineSheetMatch(
+  data: { matchColumn?: string; matchValues?: string[] },
+  ctx: z.RefinementCtx,
+) {
+  const column = data.matchColumn?.trim() || "";
+  const values = data.matchValues || [];
+  if (column && !values.length) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Add at least one value that this column must match.",
+      path: ["matchValues"],
+    });
+  }
+  if (!column && values.length) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Enter the sheet column that holds these values.",
+      path: ["matchColumn"],
+    });
+  }
+}
+
+const sheetBody = sheetObject.superRefine(refineSheetMatch);
+const sheetPatch = sheetObject.partial().superRefine(refineSheetMatch);
 
 function partnerLeadDetail(lead: {
   status?: string;
@@ -82,35 +115,107 @@ function sheetGroupKey(sourceRef: string, clientName: string) {
   return sourceRef.endsWith(suffix) ? sourceRef.slice(0, -suffix.length) : sourceRef;
 }
 
+function isoDate(value: unknown) {
+  return value instanceof Date ? value.toISOString() : "";
+}
+
+type CombinedIndex =
+  | { kind: "gigkaro"; id: string; createdAt: string }
+  | { kind: "sheet"; key: string; leadIds: string[]; createdAt: string };
+
 export async function listCombinedApplications(
-  _req: AuthRequest,
+  req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) {
   try {
-    const [applications, sheetLeads, sources] = await Promise.all([
-      Application.find().sort({ createdAt: -1 }).limit(200).populate("jobId", "title company city locality"),
-      PartnerLead.find({ source: "gsheet" }).sort({ priority: 1, createdAt: -1 }).limit(1000),
-      SheetSource.find().select("name spreadsheetId tab"),
-    ]);
-    const applicationIds = applications.map((application) => application._id);
-    const gigkaroLeads = applicationIds.length
-      ? await PartnerLead.find({ source: "gigkaro", applicationIds: { $in: applicationIds } }).sort({
-          priority: 1,
-        })
-      : [];
-    const sheetNameFor = (sourceRef: string) =>
-      sources.find((source) => sourceRef.startsWith(`${source.spreadsheetId}:${source.tab}:`))?.name ||
-      "";
-    const sheetGroups = new Map<string, typeof sheetLeads>();
-    for (const lead of sheetLeads) {
-      const key = sheetGroupKey(lead.sourceRef, lead.clientName);
-      const group = sheetGroups.get(key) || [];
-      group.push(lead);
-      sheetGroups.set(key, group);
+    const requestedPage = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+    const source =
+      req.query.source === "gigkaro" || req.query.source === "sheet" ? req.query.source : "";
+    const index: CombinedIndex[] = [];
+
+    if (source !== "sheet") {
+      const applications = await Application.find().select("createdAt").sort({ createdAt: -1 }).lean();
+      for (const application of applications) {
+        index.push({
+          kind: "gigkaro",
+          id: application._id.toString(),
+          createdAt: isoDate(application.createdAt),
+        });
+      }
     }
-    const rows = [
-      ...applications.map((application) => {
+
+    if (source !== "gigkaro") {
+      const sheetLeads = await PartnerLead.find({ source: "gsheet" })
+        .select("sourceRef clientName createdAt")
+        .lean();
+      const groups = new Map<string, { leadIds: string[]; createdAt: string }>();
+      for (const lead of sheetLeads) {
+        const key = sheetGroupKey(lead.sourceRef, lead.clientName);
+        const createdAt = isoDate(lead.createdAt);
+        const group = groups.get(key);
+        if (!group) {
+          groups.set(key, { leadIds: [lead._id.toString()], createdAt });
+          continue;
+        }
+        group.leadIds.push(lead._id.toString());
+        if (createdAt > group.createdAt) group.createdAt = createdAt;
+      }
+      for (const [key, group] of groups) {
+        index.push({ kind: "sheet", key, leadIds: group.leadIds, createdAt: group.createdAt });
+      }
+    }
+
+    index.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+    const total = index.length;
+    const pages = Math.max(1, Math.ceil(total / limit));
+    const page = Math.min(requestedPage, pages);
+    const window = index.slice((page - 1) * limit, page * limit);
+    const applicationIds = window.flatMap((row) => (row.kind === "gigkaro" ? [row.id] : []));
+    const sheetLeadIds = window.flatMap((row) => (row.kind === "sheet" ? row.leadIds : []));
+    const [applications, gigkaroLeads, sheetLeadDocs, sources] = await Promise.all([
+      applicationIds.length
+        ? Application.find({ _id: { $in: applicationIds } }).populate("jobId", "title company city locality")
+        : [],
+      applicationIds.length
+        ? PartnerLead.find({ source: "gigkaro", applicationIds: { $in: applicationIds } }).sort({ priority: 1 })
+        : [],
+      sheetLeadIds.length ? PartnerLead.find({ _id: { $in: sheetLeadIds } }) : [],
+      sheetLeadIds.length ? SheetSource.find().select("name spreadsheetId tab") : [],
+    ]);
+    const applicationById = new Map(applications.map((application) => [application._id.toString(), application]));
+    const leadsByApplication = new Map<string, typeof gigkaroLeads>();
+    for (const lead of gigkaroLeads) {
+      for (const id of lead.applicationIds || []) {
+        const key = id.toString();
+        const list = leadsByApplication.get(key) || [];
+        list.push(lead);
+        leadsByApplication.set(key, list);
+      }
+    }
+    const sheetLeadById = new Map(sheetLeadDocs.map((lead) => [lead._id.toString(), lead]));
+    const sheetNameFor = (sourceRef: string) =>
+      sources.find((item) => sourceRef.startsWith(`${item.spreadsheetId}:${item.tab}:`))?.name || "";
+    const rows: Array<{
+      id: string;
+      source: "gigkaro" | "sheet";
+      sheetName?: string;
+      name: string;
+      mobile: string;
+      company: string;
+      city: string;
+      locality: string;
+      jobTitle: string;
+      partnerStatus: string;
+      detail: string;
+      checks: { company: string; priority: number; status: string; detail: string }[];
+      createdAt: string;
+    }> = [];
+    for (const item of window) {
+      if (item.kind === "gigkaro") {
+        const application = applicationById.get(item.id);
+        if (!application) continue;
         const job = application.jobId as unknown as {
           title?: string;
           company?: string;
@@ -118,10 +223,7 @@ export async function listCombinedApplications(
           locality?: string;
         } | null;
         const partner = application.partnerCheck;
-        const checks = gigkaroLeads
-          .filter((lead) =>
-            lead.applicationIds?.some((id) => id.toString() === application._id.toString()),
-          )
+        const checks = (leadsByApplication.get(item.id) || [])
           .sort((a, b) => (a.priority || 99) - (b.priority || 99))
           .map((lead) => ({
             company: lead.clientName,
@@ -129,9 +231,9 @@ export async function listCombinedApplications(
             status: lead.status || "",
             detail: partnerLeadDetail(lead),
           }));
-        return {
+        rows.push({
           id: `gigkaro:${application._id.toString()}`,
-          source: "gigkaro" as const,
+          source: "gigkaro",
           name: application.name,
           mobile: application.mobile,
           company: job?.company || partner?.clientName || "",
@@ -141,42 +243,40 @@ export async function listCombinedApplications(
           partnerStatus: checks.length ? "" : partner?.status || "",
           detail: checks.length ? "" : partner?.detail || "",
           checks,
-          createdAt: application.createdAt?.toISOString?.() ?? "",
-        };
-      }),
-      ...[...sheetGroups.values()].map((group) => {
-        const ordered = [...group].sort((a, b) => (a.priority || 99) - (b.priority || 99));
-        const first = ordered[0];
-        const key = sheetGroupKey(first.sourceRef, first.clientName);
-        return {
-          id: `sheet:${key}`,
-          source: "sheet" as const,
-          sheetName: sheetNameFor(first.sourceRef),
-          name: ordered.find((lead) => lead.name)?.name || "",
-          mobile: first.phone,
-          company: "",
-          city: first.city || "",
-          locality: first.locality || "",
-          jobTitle: "",
-          partnerStatus: "",
-          detail: "",
-          checks: ordered.map((lead) => ({
-            company: lead.clientName,
-            priority: lead.priority || 0,
-            status: lead.status || "",
-            detail: partnerLeadDetail(lead),
-          })),
-          createdAt:
-            ordered
-              .map((lead) => lead.createdAt?.toISOString?.() ?? "")
-              .sort()
-              .at(-1) || "",
-        };
-      }),
-    ]
-      .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
-      .slice(0, 200);
-    res.json({ rows });
+          createdAt: item.createdAt,
+        });
+        continue;
+      }
+      const ordered = item.leadIds
+        .flatMap((id) => {
+          const lead = sheetLeadById.get(id);
+          return lead ? [lead] : [];
+        })
+        .sort((a, b) => (a.priority || 99) - (b.priority || 99));
+      const first = ordered[0];
+      if (!first) continue;
+      rows.push({
+        id: `sheet:${item.key}`,
+        source: "sheet",
+        sheetName: sheetNameFor(first.sourceRef),
+        name: ordered.find((lead) => lead.name)?.name || "",
+        mobile: first.phone,
+        company: "",
+        city: first.city || "",
+        locality: first.locality || "",
+        jobTitle: "",
+        partnerStatus: "",
+        detail: "",
+        checks: ordered.map((lead) => ({
+          company: lead.clientName,
+          priority: lead.priority || 0,
+          status: lead.status || "",
+          detail: partnerLeadDetail(lead),
+        })),
+        createdAt: item.createdAt,
+      });
+    }
+    res.json({ rows, page, limit, total, pages });
   } catch (err) {
     next(err);
   }
@@ -201,8 +301,15 @@ export async function createPartnerSheet(req: AuthRequest, res: Response, next: 
       res.status(400).json({ error: parsed.error.issues[0]?.message || "Enter the sheet details." });
       return;
     }
-    const source = await SheetSource.create(parsed.data);
-    res.status(201).json({ sheet: serializeSheet(source) });
+    const source = await SheetSource.create({ ...parsed.data, skipExistingRows: true });
+    try {
+      await captureSheetBaseline(source._id.toString());
+    } catch (err) {
+      source.lastError = err instanceof Error ? err.message : "Could not read that sheet.";
+      await source.save();
+    }
+    const saved = await SheetSource.findById(source._id);
+    res.status(201).json({ sheet: serializeSheet(saved || source) });
   } catch (err) {
     const code = err && typeof err === "object" && "code" in err ? (err as { code?: number }).code : 0;
     if (code === 11000) {
@@ -215,7 +322,7 @@ export async function createPartnerSheet(req: AuthRequest, res: Response, next: 
 
 export async function patchPartnerSheet(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const parsed = sheetBody.partial().safeParse(req.body);
+    const parsed = sheetPatch.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.issues[0]?.message || "Check the sheet details." });
       return;

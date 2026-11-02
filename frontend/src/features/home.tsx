@@ -185,13 +185,19 @@ export async function HomePage() {
         <section className="client-strip" aria-label="We are trusted by">
           <div className="container">
             <p>We are trusted by</p>
-            <ul>
-              {companies.map((company) => (
-                <li key={company.key}>
-                  <img src={companyLogoSrc(company.logo)} alt={company.name} />
-                </li>
-              ))}
-            </ul>
+            <div className="client-strip-viewport">
+              <div className="client-strip-track">
+                {[0, 1].map((copy) => (
+                  <ul key={copy} aria-hidden={copy === 1 ? true : undefined}>
+                    {companies.map((company) => (
+                      <li key={company.key}>
+                        <img src={companyLogoSrc(company.logo)} alt={company.name} />
+                      </li>
+                    ))}
+                  </ul>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
       )}

@@ -17,6 +17,7 @@ import {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WAIT_MS = 30 * 60 * 1000;
+const RIDER_CHECK_MINUTES = [5, 15, 30, 60];
 
 export async function configuredCheckCompanies() {
   const settings = await PartnerCheckSettings.findOne({ key: "default" }).lean();
@@ -183,9 +184,6 @@ async function defer(lead: PartnerLeadDoc, minutes: number, error: string) {
   lead.lastError = error;
   if (lead.attempts >= 5 && lead.status === "queued") {
     lead.status = "failed";
-  } else if (lead.attempts >= 8 && lead.status === "waiting") {
-    lead.status = "failed";
-    lead.lastError = lead.lastError || "Uniqueness result was not ready.";
   } else {
     lead.nextCheckAt = new Date(Date.now() + minutes * 60 * 1000);
   }
@@ -242,16 +240,35 @@ async function submitLead(lead: PartnerLeadDoc) {
     return;
   }
   lead.status = "waiting";
+  lead.attempts = 0;
+  lead.checkedAt = new Date();
+  lead.nextCheckAt = new Date(lead.checkedAt.getTime() + RIDER_CHECK_MINUTES[0] * 60 * 1000);
   await lead.save();
   await mirrorLead(lead);
-  await settleLead(lead);
+}
+
+function nextRiderCheck(lead: PartnerLeadDoc) {
+  const minute = RIDER_CHECK_MINUTES[lead.attempts || 0];
+  if (minute == null || !lead.checkedAt) return null;
+  return new Date(lead.checkedAt.getTime() + minute * 60 * 1000);
 }
 
 async function settleLead(lead: PartnerLeadDoc) {
   const row = await riderDetails(lead.phone, lead.clientName);
   const raw = String(row?.status || "").trim();
   if (!raw) {
-    await defer(lead, 1, "Uniqueness result is not ready yet.");
+    lead.attempts = (lead.attempts || 0) + 1;
+    lead.lastError = "Uniqueness result is not ready yet.";
+    const due = nextRiderCheck(lead);
+    if (!due) {
+      lead.status = "failed";
+      lead.lastError = "Uniqueness result was not ready.";
+      lead.nextCheckAt = undefined;
+    } else {
+      lead.nextCheckAt = due;
+    }
+    await lead.save();
+    await mirrorLead(lead);
     return;
   }
   lead.partnerStatus = raw;
@@ -266,11 +283,7 @@ async function settleLead(lead: PartnerLeadDoc) {
 async function processLeads() {
   const leads = await PartnerLead.find({
     status: { $in: ["queued", "waiting", "needs_locality"] },
-    $or: [
-      { status: "waiting" },
-      { nextCheckAt: null },
-      { nextCheckAt: { $lte: new Date() } },
-    ],
+    $or: [{ nextCheckAt: null }, { nextCheckAt: { $lte: new Date() } }],
   })
     .sort({ priority: 1, createdAt: 1 })
     .limit(8);
@@ -281,6 +294,18 @@ async function processLeads() {
     } catch (err) {
       if (err instanceof Error && err.name === "VahanRateLimit") return;
       const message = err instanceof Error ? err.message : "Partner check failed.";
+      if (lead.status === "waiting") {
+        lead.lastError = message;
+        if ((lead.attempts || 0) >= RIDER_CHECK_MINUTES.length) {
+          lead.status = "failed";
+          lead.nextCheckAt = undefined;
+        } else {
+          lead.nextCheckAt = new Date(Date.now() + 60 * 1000);
+        }
+        await lead.save();
+        await mirrorLead(lead);
+        continue;
+      }
       await defer(lead, 5, message);
     }
   }
@@ -289,6 +314,46 @@ async function processLeads() {
 function cell(row: string[], headers: string[], header: string) {
   const index = headers.findIndex((item) => item.trim().toLowerCase() === header.trim().toLowerCase());
   return index >= 0 ? String(row[index] || "").trim() : "";
+}
+
+export function sheetMatchToken(value: string) {
+  const trimmed = value.trim().toLowerCase().replace(/,/g, "");
+  return /^\d+\.0+$/.test(trimmed) ? trimmed.replace(/\.0+$/, "") : trimmed;
+}
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+export function sheetRowKey(row: string[], headers: string[], phoneHeader: string) {
+  const digits = cell(row, headers, phoneHeader).replace(/\D/g, "");
+  if (digits) return `phone:${digits}`;
+  const rest = row.map((value) => String(value || "").trim()).filter(Boolean);
+  return rest.length ? `row:${rest.join("|").toLowerCase()}` : "";
+}
+
+function baselineKeysFor(rows: string[][], headers: string[], phoneHeader: string) {
+  const keys = new Set<string>();
+  for (const row of rows) {
+    const key = sheetRowKey(row, headers, phoneHeader);
+    if (key) keys.add(key);
+  }
+  return [...keys];
+}
+
+export async function captureSheetBaseline(id: string) {
+  const source = await SheetSource.findById(id);
+  if (!source || !source.skipExistingRows || source.baselineCaptured) return source;
+  if (!sheetsConfigured()) return source;
+  const rows = await readSheet(source.spreadsheetId, source.tab);
+  const headers = (rows[0] || []).map((header) => String(header || ""));
+  source.baselineKeys = baselineKeysFor(rows.slice(1), headers, source.columns?.phone || "Phone");
+  source.baselineCaptured = true;
+  source.rowsSeen = Math.max(0, rows.length - 1);
+  source.lastError = "";
+  source.lastSyncedAt = new Date();
+  await source.save();
+  return source;
 }
 
 export async function syncSheetSource(id: string) {
@@ -302,14 +367,33 @@ export async function syncSheetSource(id: string) {
   try {
     const rows = await readSheet(source.spreadsheetId, source.tab);
     const headers = (rows[0] || []).map((header) => String(header || ""));
+    const phoneHeader = source.columns?.phone || "Phone";
+    if (source.skipExistingRows && !source.baselineCaptured) {
+      source.baselineKeys = baselineKeysFor(rows.slice(1), headers, phoneHeader);
+      source.baselineCaptured = true;
+      source.rowsSeen = Math.max(0, rows.length - 1);
+      source.lastError = "";
+      source.lastSyncedAt = new Date();
+      await source.save();
+      return { source, added: 0 };
+    }
+    const baseline = source.skipExistingRows ? new Set(source.baselineKeys || []) : null;
     const configured = await configuredCheckCompanies();
+    const matchColumn = source.matchColumn?.trim() || "";
+    const allowed = new Set((source.matchValues || []).map(sheetMatchToken).filter(Boolean));
+    const useFilter = Boolean(matchColumn && allowed.size);
+    const matchedPhones = new Set<string>();
     let added = 0;
     for (const row of rows.slice(1)) {
+      const key = sheetRowKey(row, headers, phoneHeader);
+      if (baseline?.has(key)) continue;
+      if (useFilter && !allowed.has(sheetMatchToken(cell(row, headers, matchColumn)))) continue;
       const company = cell(row, headers, source.columns?.company || "Company");
       const named = vahanClientName(company);
       const targets: string[] = configured.length ? configured : named ? [named] : [];
       const phone = normalizeIndianMobile(cell(row, headers, source.columns?.phone || "Phone"));
       if (!targets.length || !phone) continue;
+      matchedPhones.add(phone);
       const cityName = cell(row, headers, source.columns?.city || "City");
       const city = vahanCityName(cityName);
       for (const [index, clientName] of targets.entries()) {
@@ -328,6 +412,15 @@ export async function syncSheetSource(id: string) {
         });
         if (saved) added += 1;
       }
+    }
+    if (useFilter) {
+      await PartnerLead.deleteMany({
+        source: "gsheet",
+        sourceRef: {
+          $regex: `^${escapeRegex(source.spreadsheetId)}:${escapeRegex(source.tab)}:`,
+        },
+        ...(matchedPhones.size ? { phone: { $nin: [...matchedPhones] } } : {}),
+      });
     }
     source.rowsSeen = Math.max(0, rows.length - 1);
     source.lastError = "";
