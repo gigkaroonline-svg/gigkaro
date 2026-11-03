@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
-import type { Job } from "@/types";
+import { apiAssetUrl } from "@/lib/api";
+import {
+  escapeHtml,
+  jobOverviewContent,
+  jobPlaceLabel,
+} from "@/lib/job-copy";
+import { jobCanonicalPath } from "@/lib/job-url";
 import { resolvePostedAt } from "@/lib/posted-at";
+import type { Job } from "@/types";
 
 function resolveSiteOrigin() {
   const configured = (
@@ -286,32 +293,134 @@ const employmentTypeMap: Record<string, string> = {
   Flexible: "OTHER",
 };
 
+export function jobDescriptionHtml(job: Job) {
+  const place = escapeHtml(jobPlaceLabel(job));
+  const content = jobOverviewContent(job);
+  const duties = content.responsibilities
+    .map((line) => `<li>${escapeHtml(line)}</li>`)
+    .join("");
+  const requirements = (job.requirements || [])
+    .map((line) => `<li>${escapeHtml(line)}</li>`)
+    .join("");
+  const facts = content.facts
+    .map(
+      (fact) =>
+        `<li><strong>${escapeHtml(fact.label)}:</strong> ${escapeHtml(fact.value)}</li>`,
+    )
+    .join("");
+  const parts = [
+    `<p>${escapeHtml(content.overview)}</p>`,
+    `<ul>${facts}</ul>`,
+    `<p><strong>Responsibilities</strong></p><ul>${duties}</ul>`,
+    `<p><strong>How to apply</strong></p><p>${escapeHtml(content.howToApply)}</p>`,
+  ];
+  if (requirements) {
+    parts.push(`<p><strong>What you will need</strong></p><ul>${requirements}</ul>`);
+  }
+  parts.push(
+    `<p>Work location: ${place}${job.pincode ? ` (${escapeHtml(job.pincode)})` : ""}. Employment type: ${escapeHtml(job.employmentType)}. Shift: ${escapeHtml(job.shift)}. Vehicle: ${escapeHtml(job.vehicle)}.</p>`,
+  );
+  if (job.incentiveMax > 0) {
+    parts.push(
+      `<p>Potential incentives up to ₹${job.incentiveMax.toLocaleString("en-IN")} a month.</p>`,
+    );
+  }
+  return parts.join("");
+}
+
+export function jobPageMetadata(
+  job: Job,
+  options?: { placeVariant?: boolean },
+): Metadata {
+  const place = job.locality || job.city;
+  const title = `${job.title} in ${place}`;
+  const pay = `₹${Math.round(job.salaryMin / 1000)}k–₹${Math.round(job.salaryMax / 1000)}k`;
+  const description = metaDescription(
+    `${job.title} at ${job.company} in ${place}${job.city && job.city !== place ? `, ${job.city}` : ""}. ${pay} a month. ${job.description}`,
+  );
+  // Always canonicalise to the clean job path (no ?city=&locality=, no seed pincode).
+  const path = jobCanonicalPath(job);
+  const url = canonicalUrl(path);
+  const logo = job.companyLogo ? apiAssetUrl(job.companyLogo) : "";
+  const images = logo
+    ? [{ url: logo, alt: `${job.company} logo` }]
+    : [ogImage];
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "website",
+      siteName,
+      locale: "en_IN",
+      images,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: logo ? [logo] : [ogImage.url],
+    },
+    robots: options?.placeVariant
+      ? { index: false, follow: true }
+      : { index: true, follow: true },
+  };
+}
+
 export function jobPostingSchema(job: Job) {
   const posted = resolvePostedAt(job.id, job.postedAt).iso;
+  const logo = job.companyLogo ? apiAssetUrl(job.companyLogo) : "";
+  const inactive =
+    job.status &&
+    job.status !== "Active" &&
+    job.status !== "Pending approval";
+  const validThrough = inactive
+    ? posted
+    : undefined;
   return {
     "@context": "https://schema.org",
     "@type": "JobPosting",
     title: job.title,
-    description: job.description,
-    url: canonicalUrl(`/job/${job.slug}`),
+    description: jobDescriptionHtml(job),
+    url: canonicalUrl(jobCanonicalPath(job)),
     directApply: true,
     datePosted: posted,
+    ...(validThrough ? { validThrough } : {}),
     employmentType: employmentTypeMap[job.employmentType] || "OTHER",
     identifier: {
       "@type": "PropertyValue",
-      name: siteName,
-      value: job.slug,
+      name: job.company,
+      value: job.id || job.slug,
     },
-    hiringOrganization: { "@type": "Organization", name: job.company },
+    hiringOrganization: {
+      "@type": "Organization",
+      name: job.company,
+      ...(logo ? { logo } : {}),
+    },
     jobLocation: {
       "@type": "Place",
       address: {
         "@type": "PostalAddress",
         addressLocality: job.locality || job.city,
         addressRegion: job.city,
-        postalCode: job.pincode,
+        ...(job.pincode ? { postalCode: job.pincode } : {}),
         addressCountry: "IN",
       },
+      ...(typeof job.lat === "number" &&
+      typeof job.lng === "number" &&
+      Number.isFinite(job.lat) &&
+      Number.isFinite(job.lng)
+        ? {
+            geo: {
+              "@type": "GeoCoordinates",
+              latitude: job.lat,
+              longitude: job.lng,
+            },
+          }
+        : {}),
     },
     baseSalary: {
       "@type": "MonetaryAmount",
@@ -323,6 +432,7 @@ export function jobPostingSchema(job: Job) {
         unitText: "MONTH",
       },
     },
+    ...(job.immediateJoining ? { jobImmediateStart: true } : {}),
   };
 }
 const brandAuthor = /^(gigkaro|gigkaro admin)$/i;

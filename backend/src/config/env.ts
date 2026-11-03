@@ -36,6 +36,26 @@ export const env = {
   vahanClientSecret: process.env.VAHAN_CLIENT_SECRET || "",
   vahanSourceId: process.env.VAHAN_SOURCE_ID || "",
   vahanSource: process.env.VAHAN_SOURCE || "mitra-leader",
+  // Never fall back to CORS_ORIGIN (often localhost) — Indexing must hit prod.
+  publicSiteOrigin: (
+    process.env.PUBLIC_SITE_ORIGIN || "https://www.gigkaro.in"
+  ).replace(/\/$/, ""),
+  googleIndexingEnabled: /^(1|true|yes)$/i.test(
+    process.env.GOOGLE_INDEXING_ENABLED || "",
+  ),
+  googleIndexingClientEmail: process.env.GOOGLE_INDEXING_CLIENT_EMAIL || "",
+  googleIndexingPrivateKey: (process.env.GOOGLE_INDEXING_PRIVATE_KEY || "").replace(
+    /\\n/g,
+    "\n",
+  ),
+  /** In-process 3-slot IST freshness cron for existing Active jobs. */
+  googleFreshnessEnabled: /^(1|true|yes)$/i.test(
+    process.env.GOOGLE_FRESHNESS_ENABLED || "",
+  ),
+  googleIndexingBatchSize: Math.max(
+    1,
+    Math.min(100, Number(process.env.GOOGLE_INDEXING_BATCH_SIZE || 50) || 50),
+  ),
 };
 
 export function isAdminIdentifier(mobile?: string, email?: string) {

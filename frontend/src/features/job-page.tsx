@@ -21,13 +21,20 @@ export function JobPage() {
       return;
     }
     let cancelled = false;
-    const city = new URLSearchParams(window.location.search).get("city")?.trim();
+    const query = new URLSearchParams(window.location.search);
+    const city = query.get("city")?.trim();
+    const locality = query.get("locality")?.trim();
     api<{ job: Job }>(`/jobs/${encodeURIComponent(slug)}`, { auth: false })
       .then((data) => {
         if (cancelled) return;
         setJob(
-          city && data.job.showEverywhere
-            ? { ...data.job, city, locality: "", pincode: "" }
+          (city || locality) && data.job.showEverywhere
+            ? {
+                ...data.job,
+                city: city || data.job.city,
+                locality: locality || "",
+                pincode: "",
+              }
             : data.job,
         );
       })

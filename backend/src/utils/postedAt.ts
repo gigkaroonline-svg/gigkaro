@@ -4,14 +4,6 @@ function startOfLocalDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-function startOfWeekMonday(date: Date) {
-  const day = startOfLocalDay(date);
-  const weekday = day.getDay(); // 0 Sun … 6 Sat
-  const diff = weekday === 0 ? 6 : weekday - 1;
-  day.setDate(day.getDate() - diff);
-  return day;
-}
-
 function hashSeed(seed: string) {
   let h = 0;
   for (let i = 0; i < seed.length; i += 1) {
@@ -51,31 +43,22 @@ export function parsePostedAt(raw: string | undefined, now = new Date()): Date |
 }
 
 /**
- * Keep jobs looking fresh: never older than 7 days.
- * Each calendar week, stale dates roll into the current week (Monday reset).
+ * Prefer the stored postedAt. Only synthesize when missing — never roll
+ * dates forward each week (that looked like fake freshness to Google Jobs).
  */
 export function effectivePostedDate(
   seed: string,
   raw?: string,
   now = new Date(),
 ): Date {
-  const today = startOfLocalDay(now);
   const parsed = parsePostedAt(raw, now);
-  if (parsed) {
-    const ageDays = Math.round(
-      (today.getTime() - startOfLocalDay(parsed).getTime()) / MS_DAY,
-    );
-    if (ageDays >= 0 && ageDays < 7) return startOfLocalDay(parsed);
-  }
+  if (parsed) return startOfLocalDay(parsed);
 
-  const weekStart = startOfWeekMonday(today);
-  const daysIntoWeek = Math.max(
-    0,
-    Math.round((today.getTime() - weekStart.getTime()) / MS_DAY),
-  );
-  const offset = hashSeed(seed) % (daysIntoWeek + 1);
-  const fresh = new Date(weekStart);
-  fresh.setDate(weekStart.getDate() + offset);
+  // Stable fallback for legacy rows without postedAt (deterministic, not weekly).
+  const today = startOfLocalDay(now);
+  const offset = hashSeed(seed) % 14;
+  const fresh = new Date(today);
+  fresh.setDate(today.getDate() - offset);
   return fresh;
 }
 

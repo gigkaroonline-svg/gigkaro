@@ -1,32 +1,29 @@
 "use client";
-import { uiText } from "@/lib/i18n";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Search, MapPin } from "lucide-react";
+import { JobCardSkeleton, JobList } from "@/components/job-card";
 import {
-  Search,
-  MapPin,
-  SlidersHorizontal,
-  X,
-  Bell,
-  ArrowRight,
-} from "lucide-react";
-import { getLocationByPincode, getLocations } from "@/lib/services/locations";
+  OPENINGS_PAGE_SIZE,
+  OpeningsPager,
+} from "@/components/openings-pager";
+import { EmptyState, Breadcrumb, SectionHeading } from "@/components/primitives";
 import { api } from "@/lib/api";
-import { getCategories } from "@/lib/services/categories";
-import { JobCard, JobCardSkeleton } from "@/components/job-card";
-import { EmptyState, Breadcrumb } from "@/components/primitives";
 import {
-  Sheet,
-  SheetTrigger,
-  SheetContent,
-  SheetTitle,
-  SheetHeader,
-  SheetDescription,
-  SheetClose,
-} from "@/components/ui/sheet";
-import { useDemoStore } from "@/hooks/use-demo-store";
+  pageExpandedJobs,
+  phase1PlaceSlots,
+  placesForCity,
+} from "@/lib/city-openings";
+import { uiText } from "@/lib/i18n";
 import { fetchJobs } from "@/lib/services/api-jobs";
+import { getCategories } from "@/lib/services/categories";
+import {
+  getCityBySlug,
+  getLocationByPincode,
+  getPhase1Cities,
+  slugifyPlace,
+} from "@/lib/services/locations";
 import type { Job, SearchFilters } from "@/types";
 
 type LocationHit = {
@@ -44,101 +41,7 @@ function placeQuery(hit: LocationHit, typed: string) {
   if (city === q || city.startsWith(q) || city.includes(q)) return hit.city;
   return hit.locality || hit.pincode;
 }
-const filterGroups = [
-  {
-    key: "radius",
-    label: "Distance",
-    options: [
-      ["0", "Exact pincode"],
-      ["5", "Within 5 km"],
-      ["10", "Within 10 km"],
-      ["25", "Within 25 km"],
-    ],
-  },
-  {
-    key: "salary",
-    label: "Monthly earnings",
-    options: [
-      ["0-15000", "Below ₹15,000"],
-      ["15000-20000", "₹15,000–₹20,000"],
-      ["20000-25000", "₹20,000–₹25,000"],
-      ["25000-30000", "₹25,000–₹30,000"],
-      ["30000-0", "₹30,000+"],
-    ],
-  },
-  {
-    key: "type",
-    label: "Job type",
-    options: ["Full-time", "Part-time", "Flexible"].map((s) => [s, s]),
-  },
-  {
-    key: "shift",
-    label: "Shift",
-    options: ["Morning", "Evening", "Night", "Flexible"].map((s) => [s, s]),
-  },
-  {
-    key: "vehicle",
-    label: "Vehicle",
-    options: ["Bike required", "EV accepted", "No vehicle required"].map(
-      (s) => [s, s],
-    ),
-  },
-];
-export function JobFilters({
-  filters,
-  onChange,
-}: {
-  filters: SearchFilters;
-  onChange: (key: string, value: string | boolean) => void;
-}) {
-  const filterId = useId();
-  return (
-    <div className="filter-fields">
-      <div className="filter-group">
-        <h3>{uiText("category")}</h3>
-        <select
-          className="control"
-          aria-label={uiText("filterByCategory")}
-          value={filters.category || ""}
-          onChange={(e) => onChange("category", e.target.value)}
-        >
-          <option value="">{uiText("allCategories")}</option>
-          {getCategories().map((c) => (
-            <option value={c.id} key={c.id}>
-              {c.title}
-            </option>
-          ))}
-        </select>
-      </div>
-      {filterGroups.map((g) => (
-        <fieldset className="filter-group" key={g.key}>
-          <legend>{g.label}</legend>
-          {g.options.map(([value, label]) => (
-            <label className="check-label" key={value}>
-              <input
-                type="radio"
-                name={`${filterId}-${g.key}`}
-                checked={filters[g.key as keyof SearchFilters] === value}
-                onChange={() => onChange(g.key, value)}
-              />
-              {label}
-            </label>
-          ))}
-        </fieldset>
-      ))}
-      <div className="filter-group">
-        <label className="check-label">
-          <input
-            type="checkbox"
-            checked={!!filters.immediate}
-            onChange={(e) => onChange("immediate", e.target.checked)}
-          />
-          {uiText("immediateJoining")}
-        </label>
-      </div>
-    </div>
-  );
-}
+
 export function SearchResults({
   initialLocation = "",
   initialCategory = "",
@@ -154,28 +57,51 @@ export function SearchResults({
   const suggestId = useId();
   const fieldRef = useRef<HTMLDivElement>(null);
   const typedLocation = useRef(false);
-  const { toast, update } = useDemoStore();
   const [text, setText] = useState(params.get("location") || initialLocation);
   const [hits, setHits] = useState<LocationHit[]>([]);
   const [open, setOpen] = useState(false);
   const [searchingPlaces, setSearchingPlaces] = useState(false);
-  const [sort, setSort] = useState("recommended");
-  const [limit, setLimit] = useState(12);
+  const [page, setPage] = useState(1);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [error, setError] = useState("");
+  const [placeName, setPlaceName] = useState("");
+
   const filters: SearchFilters = {
     location: params.get("location") ?? initialLocation,
     category: params.get("category") ?? initialCategory,
-    radius: params.get("radius") || "10",
-    salary: params.get("salary") || "",
-    type: params.get("type") || "",
-    shift: params.get("shift") || "",
-    vehicle: params.get("vehicle") || "",
-    immediate: params.get("immediate") === "true",
+    company: params.get("company") || "",
+    radius:
+      params.get("radius") ||
+      (/^\d{6}$/.test(
+        ((params.get("location") ?? initialLocation) || "").trim(),
+      )
+        ? "10"
+        : ""),
   };
-  const [error, setError] = useState("");
-  const [placeName, setPlaceName] = useState("");
+
+  const categoryMeta = useMemo(
+    () =>
+      getCategories().find(
+        (c) =>
+          c.id === filters.category ||
+          c.aliases?.includes(String(filters.category || "")),
+      ),
+    [filters.category],
+  );
+
+  const companyLabel = useMemo(() => {
+    const key = (filters.company || "").trim();
+    if (!key) return "";
+    const fromJobs = jobs.find(
+      (job) =>
+        job.companyId?.toLowerCase() === key.toLowerCase() ||
+        job.company?.toLowerCase() === key.toLowerCase(),
+    );
+    return fromJobs?.company || key.replace(/-/g, " ");
+  }, [filters.company, jobs]);
+
   useEffect(() => {
     const location = (filters.location || "").trim();
     if (!/^\d{6}$/.test(location)) {
@@ -183,11 +109,15 @@ export function SearchResults({
       return;
     }
     const known = getLocationByPincode(location);
-    setPlaceName(
-      known ? [known.locality, known.city].filter(Boolean).join(", ") : "",
-    );
+    const knownName = known
+      ? [known.locality, known.city].filter(Boolean).join(", ")
+      : "";
+    if (knownName) {
+      setPlaceName(knownName);
+      if (!typedLocation.current) setText(knownName);
+    }
     let cancelled = false;
-    api<{ location: { locality: string; city: string } }>(
+    api<{ location: { locality: string; city: string; pincode?: string } }>(
       `/locations/${location}`,
       { auth: false },
     )
@@ -196,17 +126,28 @@ export function SearchResults({
         const name = [data.location.locality, data.location.city]
           .filter(Boolean)
           .join(", ");
-        if (name) setPlaceName(name);
+        if (!name) return;
+        setPlaceName(name);
+        if (!typedLocation.current) setText(name);
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
   }, [filters.location]);
+
   const nearLabel = placeName || filters.location;
+  const isPinSearch = /^\d{6}$/.test((filters.location || "").trim());
+
   useEffect(() => {
     const q = text.trim();
     if (q.length < 2) {
+      setHits([]);
+      setOpen(false);
+      return;
+    }
+    // Resolved pincode labels should not open the suggest dropdown.
+    if (!typedLocation.current && placeName && q === placeName) {
       setHits([]);
       setOpen(false);
       return;
@@ -235,7 +176,8 @@ export function SearchResults({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [text]);
+  }, [text, placeName]);
+
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
       if (!fieldRef.current?.contains(e.target as Node)) setOpen(false);
@@ -243,17 +185,32 @@ export function SearchResults({
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
+
   useEffect(() => {
     typedLocation.current = false;
     setText(params.get("location") || initialLocation);
     setOpen(false);
-    setLimit(12);
-  }, [params.get("location"), initialLocation]);
+    setPage(1);
+  }, [
+    params.get("location"),
+    params.get("category"),
+    params.get("company"),
+    initialLocation,
+    initialCategory,
+  ]);
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setLoadError("");
-    fetchJobs({ ...filters, sort })
+    const query: SearchFilters & { sort?: string } = {
+      location: filters.location,
+      category: filters.category,
+      company: filters.company,
+      sort: "recommended",
+    };
+    if (isPinSearch && filters.radius) query.radius = filters.radius;
+    fetchJobs(query)
       .then((list) => {
         if (!cancelled) setJobs(list);
       })
@@ -272,14 +229,11 @@ export function SearchResults({
   }, [
     filters.location,
     filters.category,
+    filters.company,
     filters.radius,
-    filters.salary,
-    filters.type,
-    filters.shift,
-    filters.vehicle,
-    filters.immediate,
-    sort,
+    isPinSearch,
   ]);
+
   function change(key: string, value: string | boolean) {
     const next = new URLSearchParams(params.toString());
     if (initialLocation && !next.has("location"))
@@ -288,37 +242,134 @@ export function SearchResults({
       next.set("category", initialCategory);
     if (value) next.set(key, String(value));
     else next.delete(key);
+    if (key === "location") {
+      next.delete("city");
+      next.delete("citySlug");
+    }
     const destination =
       key === "location" || initialCategory ? "/jobs/" : path;
     router.replace(`${destination}?${next}`, { scroll: false });
   }
+
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (/^\d+$/.test(text) && text.length !== 6) {
+    const typed = text.trim();
+    if (/^\d+$/.test(typed) && typed.length !== 6) {
       setError("Enter a valid 6-digit pincode.");
       return;
     }
     setError("");
     setOpen(false);
-    change("location", text.trim());
-  }
-  function pick(hit: LocationHit) {
-    const next = placeQuery(hit, text);
-    setText(next);
-    setError("");
-    setOpen(false);
+    // Keep the pincode query when the field is only showing the resolved label.
+    const next =
+      isPinSearch && placeName && typed === placeName
+        ? (filters.location || "").trim()
+        : typed;
     change("location", next);
   }
+
+  function pick(hit: LocationHit) {
+    const label = [hit.locality, hit.city].filter(Boolean).join(", ");
+    const searchValue = /^\d/.test(text.trim())
+      ? hit.pincode
+      : placeQuery(hit, text);
+    setText(label || searchValue);
+    setPlaceName(label);
+    typedLocation.current = false;
+    setError("");
+    setOpen(false);
+    change("location", searchValue);
+  }
+
+  const locationKey = (filters.location || "").trim();
+  const matchedCity = useMemo(() => {
+    if (!locationKey || isPinSearch) return undefined;
+    const bySlug = getCityBySlug(slugifyPlace(locationKey));
+    if (bySlug) return bySlug;
+    return getPhase1Cities().find(
+      (city) => city.name.toLowerCase() === locationKey.toLowerCase(),
+    );
+  }, [locationKey, isPinSearch]);
+
+  // Expand nationwide roles across phase1 localities (or one city) so cards
+  // are not stuck on the seed Koramangala pin.
+  const expandPlaces = useMemo(() => {
+    if (isPinSearch) return null;
+    if (matchedCity) return placesForCity(matchedCity);
+    if (!locationKey) return phase1PlaceSlots();
+    return null;
+  }, [isPinSearch, matchedCity, locationKey]);
+
+  const expanded = useMemo(() => {
+    if (expandPlaces) {
+      return pageExpandedJobs(jobs, expandPlaces, page, OPENINGS_PAGE_SIZE);
+    }
+    const total = jobs.length;
+    const totalPages = Math.max(1, Math.ceil(total / OPENINGS_PAGE_SIZE));
+    const safe = Math.min(page, totalPages);
+    const start = (safe - 1) * OPENINGS_PAGE_SIZE;
+    return {
+      rows: jobs.slice(start, start + OPENINGS_PAGE_SIZE),
+      total,
+    };
+  }, [expandPlaces, jobs, page]);
+
+  const pages = Math.max(1, Math.ceil(expanded.total / OPENINGS_PAGE_SIZE));
+  const safePage = Math.min(page, pages);
+  const visible = expanded.rows;
+
+  const openingsTitle = heading
+    ? heading
+    : companyLabel && !nearLabel && !categoryMeta
+      ? `Open roles at ${companyLabel}`
+      : companyLabel && nearLabel
+        ? `${companyLabel} openings near ${nearLabel}`
+        : categoryMeta && !nearLabel
+          ? `Open roles in ${categoryMeta.title}`
+          : nearLabel
+            ? `Openings near ${nearLabel}`
+            : "Open roles near you";
+
+  const crumb = (() => {
+    const fromCity = params.get("city");
+    const fromCitySlug = params.get("citySlug");
+    const locationLabel = (
+      params.get("location") ||
+      initialLocation ||
+      ""
+    ).trim();
+    if (fromCity && fromCitySlug) {
+      return [
+        { label: "Locations", href: "/locations" },
+        {
+          label: fromCity,
+          href: `/locations/${encodeURIComponent(fromCitySlug)}/`,
+        },
+        ...(locationLabel ? [{ label: locationLabel }] : []),
+      ];
+    }
+    if (companyLabel) {
+      return [
+        { label: "Find jobs", href: "/jobs" },
+        { label: companyLabel },
+      ];
+    }
+    if (categoryMeta) {
+      return [
+        { label: "Categories", href: "/categories" },
+        { label: categoryMeta.title },
+      ];
+    }
+    return [{ label: "Find jobs" }];
+  })();
+
   return (
     <>
       <div className="page-intro">
         <div className="container">
-          <Breadcrumb items={[{ label: "Find jobs" }]} />
+          <Breadcrumb items={crumb} />
           <div className="eyebrow">{uiText("goodWorkCloserToHome2")}</div>
-          <h1>
-            {heading ||
-              `Jobs ${nearLabel ? "near " + nearLabel : "near you"}`}
-          </h1>
+          <h1>{openingsTitle}</h1>
           <p>{uiText("findYourFitKnowYourEarningsMakeYourNextMove")}</p>
           <form className="results-search" onSubmit={submit}>
             <div ref={fieldRef}>
@@ -392,168 +443,99 @@ export function SearchResults({
           )}
         </div>
       </div>
-      <div className="container page-content search-layout">
-        <aside className="filters-sidebar">
-          <div className="row spread">
-            <h2>{uiText("filters")}</h2>
-            <button
-              className="text-link"
-              onClick={() =>
-                router.replace(
-                  `/jobs?${new URLSearchParams({ location: filters.location || "" })}`,
-                  { scroll: false },
-                )
-              }
-            >
-              {uiText("resetAll")}
-            </button>
-          </div>
-          <JobFilters filters={filters} onChange={change} />
-        </aside>
-        <section className="results-body">
-          <div className="results-toolbar">
-            {loading ? (
-              <h2>
-                <span className="shimmer shimmer-line" style={{ width: 180, height: 22 }} />
-              </h2>
-            ) : (
-              <h2>
-                {jobs.length} {jobs.length === 1 ? "job" : "jobs"}{" "}
-                <span>
-                  {nearLabel ? `near ${nearLabel}` : "to explore"}
-                </span>
-              </h2>
-            )}
-            <label className="sort-label">
-              {uiText("sortBy")}
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-                aria-label={uiText("sortJobs")}
-              >
-                <option value="recommended">{uiText("recommended")}</option>
-                <option value="salary">{uiText("highestEarnings")}</option>
-                <option
-                  value="distance"
-                  disabled={
-                    !getLocations().some(
-                      (l) =>
-                        l.pincode === filters.location ||
-                        l.locality.toLowerCase() ===
-                          filters.location?.toLowerCase(),
-                    )
-                  }
-                >
-                  {uiText("nearestFirstPincode")}
-                </option>
-              </select>
-            </label>
-          </div>
-          <div className="mobile-filters">
-            <Sheet>
-              <SheetTrigger asChild>
-                <button className="button button-outline">
-                  <SlidersHorizontal size={16} />
-                  {uiText("filters")}
-                </button>
-              </SheetTrigger>
-              <SheetContent side="bottom" className="filter-sheet">
-                <SheetHeader>
-                  <SheetTitle>{uiText("findYourFit")}</SheetTitle>
-                  <SheetDescription>
-                    {uiText("chooseTheWorkThatFitsYourDay")}
-                  </SheetDescription>
-                </SheetHeader>
-                <JobFilters filters={filters} onChange={change} />
-                <SheetClose asChild>
-                  <button className="button button-primary button-full">
-                    {uiText("show")} {jobs.length} {uiText("jobs2")}
-                  </button>
-                </SheetClose>
-              </SheetContent>
-            </Sheet>
-            {["5", "10", "25"].map((v) => (
+
+      <section
+        id="job-openings"
+        className="container section city-page-body openings-results"
+      >
+        <SectionHeading
+          title={
+            loading
+              ? "Openings"
+              : `${expanded.total.toLocaleString("en-IN")} ${
+                  expanded.total === 1 ? "opening" : "openings"
+                }${
+                  companyLabel
+                    ? ` at ${companyLabel}`
+                    : nearLabel
+                      ? ` near ${nearLabel}`
+                      : categoryMeta
+                        ? ` in ${categoryMeta.title}`
+                        : expandPlaces
+                          ? " across major cities"
+                          : ""
+                }${
+                  companyLabel && nearLabel ? ` near ${nearLabel}` : ""
+                }`
+          }
+        />
+
+        {isPinSearch && (
+          <div className="openings-radius-chips" role="group" aria-label="Distance">
+            {[
+              ["0", "Exact pincode"],
+              ["5", "Within 5 km"],
+              ["10", "Within 10 km"],
+              ["25", "Within 25 km"],
+            ].map(([value, label]) => (
               <button
-                key={v}
-                className={`quick-chip ${filters.radius === v ? "selected" : ""}`}
-                onClick={() => change("radius", v)}
+                key={value}
+                type="button"
+                className={`quick-chip ${filters.radius === value ? "selected" : ""}`}
+                onClick={() => change("radius", value)}
               >
-                {uiText("within")} {v} km
+                {label}
               </button>
             ))}
           </div>
-          <div className="active-filters">
-            {Object.entries(filters)
-              .filter(([k, v]) => v && k !== "location" && k !== "radius")
-              .map(([k, v]) => (
-                <button key={k} onClick={() => change(k, "")}>
-                  {k === "category"
-                    ? getCategories().find(
-                        (c) => c.id === v || c.aliases?.includes(String(v)),
-                      )?.title || String(v)
-                    : k === "immediate"
-                      ? "Immediate joining"
-                      : String(v)}
-                  <X size={12} />
-                </button>
-              ))}
+        )}
+
+        {loading ? (
+          <div className="job-grid" role="status" aria-busy="true">
+            <span className="sr-only">Loading jobs…</span>
+            {Array.from({ length: 6 }, (_, i) => (
+              <JobCardSkeleton key={i} />
+            ))}
           </div>
-          {loading ? (
-            <div className="search-job-grid" role="status" aria-busy="true">
-              <span className="sr-only">Loading jobs…</span>
-              {Array.from({ length: 6 }, (_, i) => (
-                <JobCardSkeleton key={i} />
-              ))}
-            </div>
-          ) : loadError ? (
-            <EmptyState title="API unavailable" description={loadError} />
-          ) : jobs.length ? (
-            <>
-              <div className="search-job-grid">
-                {jobs.slice(0, limit).map((job) => (
-                  <JobCard job={job} key={job.id} />
-                ))}
-              </div>
-              {limit < jobs.length && (
-                <button
-                  className="button button-outline load-more"
-                  onClick={() => setLimit((v) => v + 12)}
-                >
-                  {uiText("showMoreJobs")}
-                  <ArrowRight size={16} />
-                </button>
-              )}
-            </>
-          ) : (
-            <EmptyState
-              title={`No matching jobs ${nearLabel ? "near " + nearLabel : "yet"}`}
-              description="Try a wider radius or remove a filter. We’re adding more neighbourhoods."
-            >
+        ) : loadError ? (
+          <EmptyState title="API unavailable" description={loadError} />
+        ) : jobs.length ? (
+          <div className="city-openings">
+            <JobList jobs={visible} />
+            <OpeningsPager
+              page={safePage}
+              totalPages={pages}
+              onChange={setPage}
+              scrollToId="job-openings"
+            />
+          </div>
+        ) : (
+          <EmptyState
+            title={`No open roles ${nearLabel ? "near " + nearLabel : "yet"}`}
+            description="Try another area, category, or widen the distance for a pincode search."
+          >
+            {isPinSearch ? (
               <button
                 className="button button-primary"
+                type="button"
                 onClick={() =>
-                  change("radius", Number(filters.radius) < 10 ? "10" : "25")
+                  change("radius", Number(filters.radius || 10) < 25 ? "25" : "10")
                 }
               >
-                {uiText("searchWithin")}{" "}
-                {Number(filters.radius) < 10 ? "10" : "25"} km
+                Search within {Number(filters.radius || 10) < 25 ? "25" : "10"} km
               </button>
+            ) : (
               <button
-                className="button button-outline"
-                onClick={() => {
-                  update((s) => ({ ...s, notices: true }));
-                  toast(
-                    "Job alert preference saved.",
-                  );
-                }}
+                className="button button-primary"
+                type="button"
+                onClick={() => change("category", "")}
               >
-                <Bell size={16} />
-                {uiText("notifyMeAboutJobs")}
+                Browse all categories
               </button>
-            </EmptyState>
-          )}
-        </section>
-      </div>
+            )}
+          </EmptyState>
+        )}
+      </section>
     </>
   );
 }

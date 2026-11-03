@@ -107,6 +107,17 @@ export function LocationSearch({
     setOpen(false);
   }
 
+  function goToJobs(place: string) {
+    setOpen(false);
+    router.push(
+      `/jobs?${new URLSearchParams({
+        location: place,
+        ...(category ? { category } : {}),
+        radius: "10",
+      })}`,
+    );
+  }
+
   function locate() {
     if (!navigator.geolocation) {
       setError("Location is unavailable. Enter your pincode instead.");
@@ -127,10 +138,13 @@ export function LocationSearch({
             setError(
               "Couldn’t match a nearby pincode. Enter your pincode instead.",
             );
-          } else {
-            setLocation(data.location.pincode);
-            setError("");
+            setLocating(false);
+            return;
           }
+          const pin = data.location.pincode;
+          setLocation(pin);
+          setError("");
+          goToJobs(pin);
         } catch (err) {
           setError(
             err instanceof ApiError

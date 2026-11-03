@@ -6,6 +6,7 @@ import {
   listAdminJobs,
   createAdminJob,
   patchAdminJob,
+  runJobFreshness,
   listAdminApplications,
   patchAdminApplication,
   listAdminUsers,
@@ -55,6 +56,7 @@ adminRouter.get("/analytics/traffic", analyticsTraffic);
 adminRouter.get("/jobs", listAdminJobs);
 adminRouter.post("/jobs", createAdminJob);
 adminRouter.patch("/jobs/:id", patchAdminJob);
+adminRouter.post("/jobs/freshness-run", runJobFreshness);
 adminRouter.get("/users", listAdminUsers);
 adminRouter.post("/users", createStaffUser);
 adminRouter.patch("/users/:id", patchStaffCompanies);

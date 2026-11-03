@@ -52,6 +52,10 @@ async function main() {
   await bootstrapAdmin();
   const { startPartnerChecks } = await import("./services/partnerCheck.js");
   startPartnerChecks();
+  const { startJobFreshnessScheduler } = await import(
+    "./services/jobFreshness.js"
+  );
+  startJobFreshnessScheduler();
 
   const app = express();
   app.use(

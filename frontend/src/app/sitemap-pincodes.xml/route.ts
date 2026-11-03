@@ -4,8 +4,8 @@ import {
   xmlResponse,
 } from "@/lib/sitemaps";
 
-export const dynamic = "force-static";
+export const revalidate = 86400;
 
-export function GET() {
-  return xmlResponse(toUrlSetXml(buildPincodesSitemap()));
+export async function GET() {
+  return xmlResponse(toUrlSetXml(await buildPincodesSitemap()));
 }

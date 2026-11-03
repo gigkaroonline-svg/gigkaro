@@ -14,20 +14,47 @@ export async function fetchJobs(filters: SearchFilters & { sort?: string } = {})
   return data.jobs;
 }
 
-export async function fetchPublicJobSlugs() {
+async function fetchPublicJobsPayload(revalidate = 60) {
   const base = (
     process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000/api"
   ).replace(/\/$/, "");
+  const res = await fetch(`${base}/jobs`, { next: { revalidate } });
+  if (!res.ok) return [] as Job[];
+  const data = (await res.json()) as { jobs?: Job[] };
+  return data.jobs || [];
+}
+
+export async function fetchPublicJobSlugs() {
   try {
-    const res = await fetch(`${base}/jobs`, { next: { revalidate: 3600 } });
-    if (!res.ok) return [];
-    const data = (await res.json()) as { jobs?: { slug?: string }[] };
-    return (data.jobs || [])
+    return (await fetchPublicJobsPayload(3600))
       .map((job) => job.slug)
       .filter((slug): slug is string => Boolean(slug));
   } catch {
     return [];
   }
+}
+
+export async function fetchPublicJobs() {
+  try {
+    return await fetchPublicJobsPayload(60);
+  } catch {
+    return [];
+  }
+}
+
+export function relatedJobsFor(job: Job, pool: Job[]) {
+  const similar = pool
+    .filter((row) => row.id !== job.id && row.category === job.category)
+    .slice(0, 3);
+  const nearby = pool
+    .filter(
+      (row) =>
+        row.id !== job.id &&
+        ((job.pincode && row.pincode === job.pincode) ||
+          (!job.pincode && row.city === job.city)),
+    )
+    .slice(0, 3);
+  return { similar, nearby };
 }
 
 export async function fetchPublicJob(slug: string) {

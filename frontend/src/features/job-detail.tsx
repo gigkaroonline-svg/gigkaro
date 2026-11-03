@@ -1,5 +1,7 @@
-import { uiText } from "@/lib/i18n";
+"use client";
+
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   MapPin,
   Users,
@@ -19,29 +21,85 @@ import {
   SectionHeading,
 } from "@/components/primitives";
 import { JobCard, CompanyMark } from "@/components/job-card";
-import { ApplyButton } from "./application";
-import { getJobs } from "@/lib/services/jobs";
+import {
+  jobFaqItems,
+  jobOverviewContent,
+  jobPlaceLabel,
+} from "@/lib/job-copy";
+import { uiText } from "@/lib/i18n";
 import { resolvePostedAt } from "@/lib/posted-at";
+import {
+  cityHubPath,
+  getCityBySlug,
+  localityHubPath,
+  slugifyPlace,
+} from "@/lib/services/locations";
 import type { Job } from "@/types";
-export function JobDetail({ job }: { job: Job }) {
+import { ApplyButton } from "./application";
+
+function resolveCitySlug(city: string) {
+  const normalized = /delhi/i.test(city)
+    ? "delhi"
+    : slugifyPlace(city.replace(/\s+ncr$/i, ""));
+  return getCityBySlug(normalized)?.slug;
+}
+
+export function JobDetail({
+  job,
+  nearby = [],
+}: {
+  job: Job;
+  nearby?: Job[];
+}) {
+  const params = useSearchParams();
+  const city = (params.get("city") || job.city || "").trim();
+  const locality = (params.get("locality") || job.locality || "").trim();
+  const displayJob = { ...job, city, locality };
   const posted = resolvePostedAt(job.id, job.postedAt);
-  const similar = getJobs()
-    .filter((j) => j.id !== job.id && j.category === job.category)
-    .slice(0, 3);
-  const nearby = getJobs()
-    .filter((j) => j.id !== job.id && j.pincode === job.pincode)
-    .slice(0, 3);
-  const place = job.pincode || job.city;
+  const explorePlace = locality || city || job.pincode || "";
+  const placeLabel = jobPlaceLabel(displayJob);
+  const copyJob = {
+    ...displayJob,
+    salaryMin: job.salaryMin,
+    salaryMax: job.salaryMax,
+    incentiveMax: job.incentiveMax,
+  };
+  const overview = jobOverviewContent(copyJob);
+  const faqs = jobFaqItems(copyJob);
+  const citySlug = city ? resolveCitySlug(city) : undefined;
+  const exploreHref =
+    citySlug && locality
+      ? localityHubPath(citySlug, locality)
+      : citySlug
+        ? cityHubPath(citySlug)
+        : "/locations";
+  const crumb = [
+    { label: "Locations", href: "/locations" },
+    ...(city
+      ? [
+          {
+            label: city,
+            href: citySlug ? cityHubPath(citySlug) : "/locations",
+          },
+        ]
+      : [{ label: "Find jobs", href: "/jobs" }]),
+    ...(locality && citySlug
+      ? [
+          {
+            label: locality,
+            href: localityHubPath(citySlug, locality),
+          },
+        ]
+      : locality
+        ? [{ label: locality }]
+        : []),
+    { label: job.title },
+  ];
   return (
     <>
       <div className="page-intro">
         <div className="container">
-          <Breadcrumb
-            items={[
-              { label: "Find jobs", href: "/jobs" },
-              { label: job.title },
-            ]}
-          />
+          <Breadcrumb items={crumb} />
           <div className="detail-heading">
             <CompanyMark job={job} large />
             <div>
@@ -53,11 +111,8 @@ export function JobDetail({ job }: { job: Job }) {
                 {job.company}{" "}
                 <span className="inline-meta">
                   <MapPin size={15} />
-                  {[job.locality, job.city].filter(Boolean).join(", ") ||
-                    job.pincode}
-                  {job.pincode &&
-                    [job.locality, job.city].some(Boolean) &&
-                    ` · ${job.pincode}`}
+                  {placeLabel || job.pincode}
+                  {job.pincode && placeLabel ? ` · ${job.pincode}` : ""}
                 </span>
                 <span className="inline-meta">
                   <CalendarDays size={15} />
@@ -75,11 +130,11 @@ export function JobDetail({ job }: { job: Job }) {
             <div className="detail-earnings">
               <SalaryBadge min={job.salaryMin} max={job.salaryMax} />
               {job.incentiveMax > 0 && (
-              <p>
-                {uiText("potentialIncentivesUpTo")}
-                {job.incentiveMax.toLocaleString("en-IN")} {uiText("month")}
-              </p>
-            )}
+                <p>
+                  {uiText("potentialIncentivesUpTo")}
+                  {job.incentiveMax.toLocaleString("en-IN")} {uiText("month")}
+                </p>
+              )}
             </div>
             <div className="overview-grid">
               {[
@@ -102,31 +157,39 @@ export function JobDetail({ job }: { job: Job }) {
           </section>
           <section className="panel">
             <h2>{uiText("jobOverview")}</h2>
-            <p>{job.description}</p>
-            <h3 className="subsection-title">{uiText("whatYouLlDo")}</h3>
+            <p>{overview.overview}</p>
+            <dl className="job-overview-facts">
+              {overview.facts.map((fact) => (
+                <div key={fact.label}>
+                  <dt>{fact.label}</dt>
+                  <dd>{fact.value}</dd>
+                </div>
+              ))}
+            </dl>
+            <h3 className="subsection-title">Responsibilities</h3>
             <ul className="check-list">
-              <li>
-                <Check />
-                {uiText("completeYourAssignedWorkWithinYourLocalArea")}
-              </li>
-              <li>
-                <Check />
-                {uiText("coordinateWithTheLocalTeamAndFollowSafetyGuidelines")}
-              </li>
-              <li>
-                <Check />
-                {uiText("useThePartnerAppToManageDailyTasksAndEarnings")}
-              </li>
-            </ul>
-            <h3 className="subsection-title">{uiText("whatYouLlNeed")}</h3>
-            <ul className="check-list">
-              {(job.requirements ?? []).map((r) => (
-                <li key={r}>
+              {overview.responsibilities.map((line) => (
+                <li key={line}>
                   <Check />
-                  {r}
+                  {line}
                 </li>
               ))}
             </ul>
+            <h3 className="subsection-title">How to apply</h3>
+            <p>{overview.howToApply}</p>
+            {(job.requirements?.length ?? 0) > 0 && (
+              <>
+                <h3 className="subsection-title">{uiText("whatYouLlNeed")}</h3>
+                <ul className="check-list">
+                  {(job.requirements ?? []).map((r) => (
+                    <li key={r}>
+                      <Check />
+                      {r}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </section>
           <section className="panel">
             <h2>{uiText("workLocation")}</h2>
@@ -135,22 +198,20 @@ export function JobDetail({ job }: { job: Job }) {
                 <MapPin />
               </span>
               <div>
-                <h3>
-                  {[job.locality, job.city].filter(Boolean).join(", ") ||
-                    job.pincode}
-                </h3>
+                <h3>{placeLabel || job.pincode}</h3>
                 <p>
-                  {job.pincode
-                    ? `${uiText("pincode2")} ${job.pincode} ${uiText("localAreaAssignments")}`
-                    : `Openings across ${job.city}`}
+                  {placeLabel
+                    ? `${job.title} openings near ${placeLabel}${
+                        job.pincode ? ` · pincode ${job.pincode}` : ""
+                      }. Local area assignments with ${job.company}.`
+                    : job.pincode
+                      ? `${uiText("pincode2")} ${job.pincode} ${uiText("localAreaAssignments")}`
+                      : `Openings across ${city || job.city}`}
                 </p>
               </div>
             </div>
-            <Link
-              className="text-link"
-              href={`/jobs?location=${encodeURIComponent(place)}`}
-            >
-              {uiText("exploreMoreJobsIn")} {place}
+            <Link className="text-link" href={exploreHref}>
+              {uiText("exploreMoreJobsIn")} {explorePlace || "nearby areas"}
               <ArrowRight size={16} />
             </Link>
           </section>
@@ -180,13 +241,27 @@ export function JobDetail({ job }: { job: Job }) {
               )}
             </div>
           </section>
+          <section className="panel job-faq-panel">
+            <h2>Frequently asked questions</h2>
+            <p className="job-faq-intro">
+              Common questions about this {job.title} role
+              {placeLabel ? ` in ${placeLabel}` : ""} with {job.company}.
+            </p>
+            {faqs.map((item) => (
+              <details key={item.question}>
+                <summary>{item.question}</summary>
+                <p>{item.answer}</p>
+              </details>
+            ))}
+          </section>
         </div>
         <aside className="detail-apply panel">
           <VerifiedEmployerBadge />
           <h2>{uiText("readyForYourNextGig")}</h2>
           <SalaryBadge min={job.salaryMin} max={job.salaryMax} />
           <p>
-            {job.openings} {uiText("openingsIn")} {job.locality || job.city}
+            {job.openings} {uiText("openingsIn")}{" "}
+            {locality || city || job.locality || job.city}
           </p>
           <ApplyButton job={job} />
           <div className="privacy-note">
@@ -195,30 +270,16 @@ export function JobDetail({ job }: { job: Job }) {
           </div>
         </aside>
       </div>
-      {similar.length > 0 && (
-        <section className="container section">
-          <SectionHeading
-            title="More work like this"
-            href={`/jobs?category=${job.category}`}
-            action="View all similar jobs"
-          />
-          <div className="job-grid">
-            {similar.map((j) => (
-              <JobCard job={j} key={j.id} />
-            ))}
-          </div>
-        </section>
-      )}
       {nearby.length > 0 && (
         <section className="container section">
           <SectionHeading
             title="More jobs in your neighbourhood"
-            href={`/jobs?location=${encodeURIComponent(place)}`}
+            href={exploreHref}
             action="Explore nearby jobs"
           />
           <div className="job-grid">
-            {nearby.map((j) => (
-              <JobCard job={j} key={j.id} />
+            {nearby.map((row) => (
+              <JobCard job={row} key={row.id} />
             ))}
           </div>
         </section>

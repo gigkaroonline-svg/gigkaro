@@ -4,7 +4,7 @@ import {
   xmlResponse,
 } from "@/lib/sitemaps";
 
-export const dynamic = "force-static";
+export const revalidate = 86400;
 
 export function GET() {
   const lastModified = new Date().toISOString();
