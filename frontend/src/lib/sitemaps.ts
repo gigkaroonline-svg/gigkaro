@@ -1,10 +1,4 @@
-import {
-  getCityBySlug,
-  getCityLocalitiesCatalog,
-  getPhase1Cities,
-  isPhase1City,
-  localityHubPath,
-} from "@/lib/services/locations";
+import { publicApiBase } from "@/lib/api";
 import {
   activeJobPincodes,
   allPhase1LocalityHubs,
@@ -12,6 +6,13 @@ import {
 } from "@/lib/hub-index";
 import { jobCanonicalPath } from "@/lib/job-url";
 import { canonicalUrl, siteOrigin } from "@/lib/metadata";
+import {
+  getCityBySlug,
+  getCityLocalitiesCatalog,
+  getPhase1Cities,
+  isPhase1City,
+  localityHubPath,
+} from "@/lib/services/locations";
 
 const staticPaths = [
   "/",
@@ -54,10 +55,7 @@ type SitemapJob = {
 };
 
 function apiBase() {
-  const configured = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
-  if (configured) return configured;
-  if (process.env.NODE_ENV === "production") return "https://api.gigkaro.in/api";
-  return "http://127.0.0.1:5000/api";
+  return publicApiBase();
 }
 
 /** Google fetches the address in the index. The apex host only redirects, so publish the www file URL. */

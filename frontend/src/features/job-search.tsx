@@ -67,6 +67,11 @@ export function SearchResults({
   const [loadError, setLoadError] = useState("");
   const [error, setError] = useState("");
   const [placeName, setPlaceName] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const filters: SearchFilters = {
     location: params.get("location") ?? initialLocation,
@@ -292,13 +297,14 @@ export function SearchResults({
   }, [locationKey, isPinSearch]);
 
   // Expand nationwide roles across phase1 localities (or one city) so cards
-  // are not stuck on the seed Koramangala pin.
+  // are not stuck on the seed Koramangala pin. Defer the full 4k-slot list
+  // until client mount so /jobs SSR stays light on Vercel.
   const expandPlaces = useMemo(() => {
     if (isPinSearch) return null;
     if (matchedCity) return placesForCity(matchedCity);
-    if (!locationKey) return phase1PlaceSlots();
+    if (!locationKey) return mounted ? phase1PlaceSlots() : null;
     return null;
-  }, [isPinSearch, matchedCity, locationKey]);
+  }, [isPinSearch, matchedCity, locationKey, mounted]);
 
   const expanded = useMemo(() => {
     if (expandPlaces) {

@@ -24,7 +24,9 @@ const config: NextConfig = {
   async rewrites() {
     return {
       fallback: [
-        { source: "/job/:slug", destination: "/job/view" },
+        // Job detail is handled by /job/[slug] (dynamicParams). Keep /job/view
+        // as a manual client fallback only — rewriting every /job/* here caused
+        // Vercel routing to 500 on the dynamic segment.
         { source: "/blog/:slug", destination: "/blog/view" },
       ],
     };

@@ -1,6 +1,12 @@
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-  "http://127.0.0.1:5000/api";
+/** Public API origin for browser + SSR. Never fall back to localhost in production. */
+export function publicApiBase() {
+  const configured = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+  if (configured) return configured;
+  if (process.env.NODE_ENV === "production") return "https://api.gigkaro.in/api";
+  return "http://127.0.0.1:5000/api";
+}
+
+const API_URL = publicApiBase();
 
 const TOKEN_KEY = "gigkaro-token";
 
