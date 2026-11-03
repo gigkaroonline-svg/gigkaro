@@ -28,15 +28,10 @@ function cityPathForJob(city: string) {
 
 type PageProps = {
   params: Promise<{ slug: string }>;
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export const revalidate = 60;
 export const dynamicParams = true;
-
-function one(value: string | string[] | undefined) {
-  return String(Array.isArray(value) ? value[0] : value || "").trim();
-}
 
 export async function generateStaticParams() {
   try {
@@ -63,12 +58,9 @@ async function loadJob(slug: string): Promise<Job | null | undefined> {
 
 export async function generateMetadata({
   params,
-  searchParams,
 }: PageProps): Promise<Metadata> {
   try {
     const { slug } = await params;
-    const query = searchParams ? await searchParams : {};
-    const placeVariant = Boolean(one(query.city) || one(query.locality));
     const job = await loadJob(slug);
     if (!job) {
       return {
@@ -76,7 +68,9 @@ export async function generateMetadata({
         robots: { index: false, follow: false },
       };
     }
-    return jobPageMetadata(job, { placeVariant });
+    // Place variants (?city=&locality=) stay noindex via robots on the client
+    // path; avoid awaiting searchParams here — that 500s this route on Vercel.
+    return jobPageMetadata(job);
   } catch {
     return {
       title: "Job",
@@ -85,34 +79,14 @@ export async function generateMetadata({
   }
 }
 
-function withPlaceFromQuery(
-  job: Job,
-  query: Record<string, string | string[] | undefined>,
-): Job {
-  const city = one(query.city);
-  const locality = one(query.locality);
-  if (!(city || locality)) return job;
-  return {
-    ...job,
-    city: city || job.city,
-    locality: locality || "",
-    // Location is carried in ?city=&locality= — never surface seed pincode here.
-    pincode: "",
-  };
-}
-
-export default async function Page({ params, searchParams }: PageProps) {
+export default async function Page({ params }: PageProps) {
   try {
     const { slug } = await params;
     if (!slug) return <JobPage />;
 
     const job = await loadJob(slug);
-    // Prefer client JobPage over hard notFound so pinless sitemap URLs can still
-    // resolve when the API seed slug includes a pincode (or backend deploy lags).
+    // Client JobPage can still resolve pinless slugs if SSR misses.
     if (!job) return <JobPage />;
-
-    const query = searchParams ? await searchParams : {};
-    const displayJob = withPlaceFromQuery(job, query);
 
     let nearby: Job[] = [];
     try {
@@ -126,17 +100,17 @@ export default async function Page({ params, searchParams }: PageProps) {
     let breadcrumbJson = "";
     let faqJson = "";
     try {
-      postingJson = JSON.stringify(jobPostingSchema(displayJob));
+      postingJson = JSON.stringify(jobPostingSchema(job));
       breadcrumbJson = JSON.stringify(
         breadcrumbSchema([
           { name: "Find jobs", path: "/jobs" },
-          ...(displayJob.city
-            ? [{ name: displayJob.city, path: cityPathForJob(displayJob.city) }]
+          ...(job.city
+            ? [{ name: job.city, path: cityPathForJob(job.city) }]
             : []),
-          { name: displayJob.title, path },
+          { name: job.title, path },
         ]),
       );
-      faqJson = JSON.stringify(faqSchema(jobFaqItems(displayJob)));
+      faqJson = JSON.stringify(faqSchema(jobFaqItems(job)));
     } catch {
       // Schema is best-effort — never take down the job page.
     }
@@ -162,12 +136,12 @@ export default async function Page({ params, searchParams }: PageProps) {
           />
         ) : null}
         <Suspense fallback={null}>
-          <JobDetail job={displayJob} nearby={nearby} />
+          {/* JobDetail reads ?city=&locality= from the URL on the client. */}
+          <JobDetail job={job} nearby={nearby} />
         </Suspense>
       </>
     );
   } catch {
-    // Last resort: client JobPage still hydrates from the API in the browser.
     return <JobPage />;
   }
 }
