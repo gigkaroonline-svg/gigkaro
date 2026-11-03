@@ -18,7 +18,6 @@ export async function fetchJobs(filters: SearchFilters & { sort?: string } = {})
 async function fetchPublicJobsPayload(revalidate = 60) {
   const res = await fetch(`${publicApiBase()}/jobs`, {
     next: { revalidate },
-    signal: AbortSignal.timeout(8_000),
   });
   if (!res.ok) return [] as Job[];
   const data = (await res.json()) as { jobs?: Job[] };
@@ -79,10 +78,7 @@ export async function fetchPublicJob(slug: string) {
   try {
     const res = await fetch(
       `${publicApiBase()}/jobs/${encodeURIComponent(slug)}`,
-      {
-        next: { revalidate: 60 },
-        signal: AbortSignal.timeout(8_000),
-      },
+      { next: { revalidate: 60 } },
     );
     if (res.ok) {
       const data = (await res.json()) as { job?: Job };
@@ -126,10 +122,7 @@ export async function fetchPublicJobsByPincode(pincode: string) {
   try {
     const res = await fetch(
       `${publicApiBase()}/jobs/pincode/${encodeURIComponent(pincode)}`,
-      {
-        next: { revalidate: 60 },
-        signal: AbortSignal.timeout(8_000),
-      },
+      { next: { revalidate: 60 } },
     );
     if (!res.ok) return [];
     const data = (await res.json()) as { jobs?: Job[] };
