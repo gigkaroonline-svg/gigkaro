@@ -190,10 +190,16 @@ export async function HomePage() {
                   <ul key={copy} aria-hidden={copy === 1 ? true : undefined}>
                     {companies.map((company) => (
                       <li key={`${copy}-${company.key}`}>
-                        <img
-                          src={companyLogoSrc(company.logo)}
-                          alt={company.name}
-                        />
+                        <Link
+                          href={`/jobs/?company=${encodeURIComponent(company.key)}`}
+                          aria-label={`Browse ${company.name} jobs`}
+                          tabIndex={copy === 1 ? -1 : undefined}
+                        >
+                          <img
+                            src={companyLogoSrc(company.logo)}
+                            alt=""
+                          />
+                        </Link>
                       </li>
                     ))}
                   </ul>
