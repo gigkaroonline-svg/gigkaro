@@ -29,10 +29,15 @@ function cityPathForJob(city: string) {
 
 type PageProps = {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export const revalidate = 60;
 export const dynamicParams = true;
+
+function one(value: string | string[] | undefined) {
+  return String(Array.isArray(value) ? value[0] : value || "").trim();
+}
 
 export async function generateStaticParams() {
   try {
@@ -59,9 +64,12 @@ async function loadJob(slug: string): Promise<Job | null | undefined> {
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: PageProps): Promise<Metadata> {
   try {
     const { slug } = await params;
+    const query = searchParams ? await searchParams : {};
+    const placeVariant = Boolean(one(query.city) || one(query.locality));
     const job = await loadJob(slug);
     if (!job) {
       return {
@@ -69,7 +77,7 @@ export async function generateMetadata({
         robots: { index: false, follow: false },
       };
     }
-    return jobPageMetadata(job);
+    return jobPageMetadata(job, { placeVariant });
   } catch {
     return {
       title: "Job",
@@ -78,7 +86,23 @@ export async function generateMetadata({
   }
 }
 
-export default async function Page({ params }: PageProps) {
+function withPlaceFromQuery(
+  job: Job,
+  query: Record<string, string | string[] | undefined>,
+): Job {
+  const city = one(query.city);
+  const locality = one(query.locality);
+  if (!(city || locality)) return job;
+  return {
+    ...job,
+    city: city || job.city,
+    locality: locality || "",
+    // Location is carried in ?city=&locality= — never surface seed pincode here.
+    pincode: "",
+  };
+}
+
+export default async function Page({ params, searchParams }: PageProps) {
   try {
     const { slug } = await params;
     if (!slug) return <JobPage />;
@@ -86,6 +110,9 @@ export default async function Page({ params }: PageProps) {
     const job = await loadJob(slug);
     if (job === null) notFound();
     if (!job) return <JobPage />;
+
+    const query = searchParams ? await searchParams : {};
+    const displayJob = withPlaceFromQuery(job, query);
 
     let nearby: Job[] = [];
     try {
@@ -99,17 +126,17 @@ export default async function Page({ params }: PageProps) {
     let breadcrumbJson = "";
     let faqJson = "";
     try {
-      postingJson = JSON.stringify(jobPostingSchema(job));
+      postingJson = JSON.stringify(jobPostingSchema(displayJob));
       breadcrumbJson = JSON.stringify(
         breadcrumbSchema([
           { name: "Find jobs", path: "/jobs" },
-          ...(job.city
-            ? [{ name: job.city, path: cityPathForJob(job.city) }]
+          ...(displayJob.city
+            ? [{ name: displayJob.city, path: cityPathForJob(displayJob.city) }]
             : []),
-          { name: job.title, path },
+          { name: displayJob.title, path },
         ]),
       );
-      faqJson = JSON.stringify(faqSchema(jobFaqItems(job)));
+      faqJson = JSON.stringify(faqSchema(jobFaqItems(displayJob)));
     } catch {
       // Schema is best-effort — never take down the job page.
     }
@@ -135,7 +162,7 @@ export default async function Page({ params }: PageProps) {
           />
         ) : null}
         <Suspense fallback={null}>
-          <JobDetail job={job} nearby={nearby} />
+          <JobDetail job={displayJob} nearby={nearby} />
         </Suspense>
       </>
     );

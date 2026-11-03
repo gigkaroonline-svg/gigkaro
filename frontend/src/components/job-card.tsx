@@ -4,7 +4,7 @@ import { uiText } from "@/lib/i18n";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { jobHref } from "@/lib/services/demo-jobs";
+import { jobHrefWithPlace } from "@/lib/job-url";
 import {
   Bookmark,
   MapPin,
@@ -121,8 +121,9 @@ export function JobCard({
       : job.distanceFromSearch
         ? `~${Number(job.distanceKm.toFixed(1))} km away`
         : "";
-  // Always link the indexable canonical URL — place context stays on the hub page/card copy.
-  const href = jobHref(job);
+  // Hub-expanded rows keep ?city=&locality= for place-aware detail copy;
+  // canonical metadata still points at the clean job path.
+  const href = jobHrefWithPlace(job);
 
   return (
     <article className={`job-card ${compact ? "job-card-compact" : ""}`}>
