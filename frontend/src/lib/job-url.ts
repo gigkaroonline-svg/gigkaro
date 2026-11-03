@@ -27,14 +27,14 @@ export function jobHref(job: Job) {
 }
 
 /**
- * Hub cards may pass place context for breadcrumb/openings copy.
- * Those URLs stay noindex; canonical points at {@link jobHref}.
+ * Hub-expanded cards (`id` contains `__city__locality`) carry place in the
+ * query string for on-page copy. Canonical stays the clean {@link jobHref}.
  */
 export function jobHrefWithPlace(job: Job) {
   if (job.id.startsWith("posted_")) {
     return `/job/local?id=${encodeURIComponent(job.id)}`;
   }
-  const fromHub = job.showEverywhere || job.id.includes("__");
+  const fromHub = job.id.includes("__");
   if (!fromHub) return jobHref(job);
   const params = new URLSearchParams();
   if (job.city?.trim()) params.set("city", job.city.trim());

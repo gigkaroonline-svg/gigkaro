@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { JobDetail } from "@/features/job-detail";
 import { EmptyState } from "@/components/primitives";
-import { api } from "@/lib/api";
+import { fetchJobBySlug } from "@/lib/services/api-jobs";
 import type { Job } from "@/types";
 
 export function JobPage() {
@@ -24,18 +24,18 @@ export function JobPage() {
     const query = new URLSearchParams(window.location.search);
     const city = query.get("city")?.trim();
     const locality = query.get("locality")?.trim();
-    api<{ job: Job }>(`/jobs/${encodeURIComponent(slug)}`, { auth: false })
+    fetchJobBySlug(slug)
       .then((data) => {
         if (cancelled) return;
         setJob(
-          (city || locality) && data.job.showEverywhere
+          (city || locality) && data.showEverywhere
             ? {
-                ...data.job,
-                city: city || data.job.city,
+                ...data,
+                city: city || data.city,
                 locality: locality || "",
                 pincode: "",
               }
-            : data.job,
+            : data,
         );
       })
       .catch(() => {

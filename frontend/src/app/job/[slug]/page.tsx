@@ -29,10 +29,15 @@ function cityPathForJob(city: string) {
 
 type PageProps = {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export const revalidate = 60;
 export const dynamicParams = true;
+
+function one(value: string | string[] | undefined) {
+  return String(Array.isArray(value) ? value[0] : value || "").trim();
+}
 
 export async function generateStaticParams() {
   try {
@@ -59,9 +64,12 @@ async function loadJob(slug: string): Promise<Job | null | undefined> {
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: PageProps): Promise<Metadata> {
   try {
     const { slug } = await params;
+    const query = searchParams ? await searchParams : {};
+    const placeVariant = Boolean(one(query.city) || one(query.locality));
     const job = await loadJob(slug);
     if (!job) {
       return {
@@ -69,7 +77,7 @@ export async function generateMetadata({
         robots: { index: false, follow: false },
       };
     }
-    return jobPageMetadata(job);
+    return jobPageMetadata(job, { placeVariant });
   } catch {
     return {
       title: "Job",

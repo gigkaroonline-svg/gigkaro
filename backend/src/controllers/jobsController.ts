@@ -242,11 +242,14 @@ export async function getJobBySlug(
           ) || null;
         if (job) placePin = pin;
       } else {
+        // Canonical/sitemap URLs omit the seed pincode (blinkit-delivery-job).
         const base = slugWithoutPincode(slug);
         if (base) {
+          const escaped = base.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
           const candidates = await Job.find({
             status: "Active",
             showEverywhere: true,
+            slug: { $regex: `^${escaped}(-\\d{6})?$` },
           });
           job =
             candidates.find(
