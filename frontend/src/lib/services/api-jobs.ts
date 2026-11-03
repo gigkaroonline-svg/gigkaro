@@ -1,5 +1,5 @@
 import type { Job, SearchFilters } from "@/types";
-import { api } from "@/lib/api";
+import { api, publicApiBase } from "@/lib/api";
 
 export async function fetchJobs(filters: SearchFilters & { sort?: string } = {}) {
   const params = new URLSearchParams();
@@ -15,10 +15,10 @@ export async function fetchJobs(filters: SearchFilters & { sort?: string } = {})
 }
 
 async function fetchPublicJobsPayload(revalidate = 60) {
-  const base = (
-    process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000/api"
-  ).replace(/\/$/, "");
-  const res = await fetch(`${base}/jobs`, { next: { revalidate } });
+  const res = await fetch(`${publicApiBase()}/jobs`, {
+    next: { revalidate },
+    signal: AbortSignal.timeout(8_000),
+  });
   if (!res.ok) return [] as Job[];
   const data = (await res.json()) as { jobs?: Job[] };
   return data.jobs || [];
@@ -58,13 +58,14 @@ export function relatedJobsFor(job: Job, pool: Job[]) {
 }
 
 export async function fetchPublicJob(slug: string) {
-  const base = (
-    process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000/api"
-  ).replace(/\/$/, "");
   try {
-    const res = await fetch(`${base}/jobs/${encodeURIComponent(slug)}`, {
-      next: { revalidate: 60 },
-    });
+    const res = await fetch(
+      `${publicApiBase()}/jobs/${encodeURIComponent(slug)}`,
+      {
+        next: { revalidate: 60 },
+        signal: AbortSignal.timeout(8_000),
+      },
+    );
     if (res.status === 404) return null;
     if (!res.ok) throw new Error("Could not load job.");
     const data = (await res.json()) as { job?: Job };
@@ -91,13 +92,13 @@ export async function fetchJobsByPincode(pincode: string) {
 }
 
 export async function fetchPublicJobsByPincode(pincode: string) {
-  const base = (
-    process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000/api"
-  ).replace(/\/$/, "");
   try {
     const res = await fetch(
-      `${base}/jobs/pincode/${encodeURIComponent(pincode)}`,
-      { next: { revalidate: 60 } },
+      `${publicApiBase()}/jobs/pincode/${encodeURIComponent(pincode)}`,
+      {
+        next: { revalidate: 60 },
+        signal: AbortSignal.timeout(8_000),
+      },
     );
     if (!res.ok) return [];
     const data = (await res.json()) as { jobs?: Job[] };
