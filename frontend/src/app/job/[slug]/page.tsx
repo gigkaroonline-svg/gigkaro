@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
 import { JobDetail } from "@/features/job-detail";
 import { JobPage } from "@/features/job-page";
 import {
@@ -108,7 +107,8 @@ export default async function Page({ params, searchParams }: PageProps) {
     if (!slug) return <JobPage />;
 
     const job = await loadJob(slug);
-    if (job === null) notFound();
+    // Prefer client JobPage over hard notFound so pinless sitemap URLs can still
+    // resolve when the API seed slug includes a pincode (or backend deploy lags).
     if (!job) return <JobPage />;
 
     const query = searchParams ? await searchParams : {};
