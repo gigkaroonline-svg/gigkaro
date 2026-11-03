@@ -17,6 +17,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { api, ApiError } from "@/lib/api";
 import { trackEvent } from "@/lib/first-party-analytics";
+import { similarJobsPath } from "@/lib/hub-index";
 import type { Job } from "@/types";
 
 export const applicationSchema = z.object({
@@ -221,7 +222,7 @@ export function ApplyButton({
             <Link
               className="text-link"
               onClick={() => setOpen(false)}
-              href={`/jobs?category=${job.category}&location=${encodeURIComponent(job.pincode || job.city)}`}
+              href={similarJobsPath(job)}
             >
               {uiText("viewSimilarJobs")}
               <ArrowRight size={15} />

@@ -52,6 +52,14 @@ const jobSchema = new Schema(
     },
     /** When true, job appears for any location/pincode search. */
     showEverywhere: { type: Boolean, default: false, index: true },
+    /** Last Google Indexing API notify for the canonical job URL. */
+    lastIndexedAt: { type: Date, default: null, index: true },
+    lastIndexStatus: {
+      type: String,
+      enum: ["ok", "failed", "skipped"],
+      default: undefined,
+    },
+    lastIndexError: { type: String, default: "" },
     employerId: { type: Schema.Types.ObjectId, ref: "User" },
     postedByAdminId: { type: Schema.Types.ObjectId, ref: "User" },
   },

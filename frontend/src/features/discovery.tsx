@@ -2,10 +2,12 @@ import { uiText } from "@/lib/i18n";
 import Link from "next/link";
 import { MapPin, ArrowRight, Building2 } from "lucide-react";
 import {
+  getCityBySlug,
+  getCityLocalitiesCatalog,
   getLocations,
   getPopularLocations,
+  slugifyPlace,
 } from "@/lib/services/locations";
-import { getCategoryCounts } from "@/lib/services/jobs";
 import { fetchPublicJobsByPincode } from "@/lib/services/api-jobs";
 import {
   fetchNearbyLocations,
@@ -19,7 +21,7 @@ import {
   SectionHeading,
   EmptyState,
 } from "@/components/primitives";
-import { LocationSearch } from "@/components/search";
+import { CityLocalitiesDirectory } from "@/features/city-localities-directory";
 export async function PincodePage({ pincode }: { pincode: string }) {
   const place = await fetchPublicLocation(pincode);
   const location = place ?? {
@@ -32,6 +34,13 @@ export async function PincodePage({ pincode }: { pincode: string }) {
   const jobs = await fetchPublicJobsByPincode(pincode);
   const companies = [...new Set(jobs.map((j) => j.company))];
   const nearby = await fetchNearbyLocations(location.city, pincode);
+  const citySlug = location.city
+    ? getCityBySlug(
+        /delhi/i.test(location.city)
+          ? "delhi"
+          : slugifyPlace(location.city.replace(/\s+ncr$/i, "")),
+      )?.slug
+    : undefined;
   const min = jobs.length ? Math.min(...jobs.map((j) => j.salaryMin)) : 0,
     max = jobs.length ? Math.max(...jobs.map((j) => j.salaryMax)) : 0;
   return (
@@ -61,7 +70,7 @@ export async function PincodePage({ pincode }: { pincode: string }) {
       <div className="container section">
         <SectionHeading
           title={`Current jobs in ${area}`}
-          href={`/jobs?location=${pincode}&radius=0`}
+          href={`/jobs/${pincode}`}
           action="See all jobs"
         />
         {jobs.length ? (
@@ -69,13 +78,19 @@ export async function PincodePage({ pincode }: { pincode: string }) {
         ) : (
           <EmptyState
             title={`No jobs in ${pincode} yet`}
-            description="Try a wider radius. Your local guide is still here."
+            description="Browse openings in the wider city hub instead."
           >
             <Link
               className="button button-primary"
-              href={`/jobs?location=${pincode}&radius=10`}
+              href={
+                citySlug
+                  ? `/locations/${encodeURIComponent(citySlug)}/`
+                  : "/locations"
+              }
             >
-              {uiText("searchWithin10Km")}
+              {citySlug
+                ? `Explore ${location.city || "city"} jobs`
+                : "Browse locations"}
             </Link>
           </EmptyState>
         )}
@@ -118,7 +133,13 @@ export async function PincodePage({ pincode }: { pincode: string }) {
                 </Link>
               ))
             ) : (
-              <Link href={`/jobs?location=${location.city}`}>
+              <Link
+                href={
+                  citySlug
+                    ? `/locations/${encodeURIComponent(citySlug)}/`
+                    : `/jobs/${pincode}`
+                }
+              >
                 {uiText("exploreAllOf")} {location.city}
                 <ArrowRight size={14} />
               </Link>
@@ -163,8 +184,6 @@ export async function DiscoveryPage({
 }: {
   kind: "categories" | "locations";
 }) {
-  const categoryCounts =
-    kind === "categories" ? await getCategoryCounts() : {};
   return (
     <>
       <div className="page-intro">
@@ -191,28 +210,15 @@ export async function DiscoveryPage({
         {kind === "categories" ? (
           <div className="category-grid">
             {getCategories().map((c) => (
-              <CategoryCard
-                key={c.id}
-                category={c}
-                count={categoryCounts[c.id] || 0}
-              />
+              <CategoryCard key={c.id} category={c} />
             ))}
           </div>
         ) : (
           <>
-            <LocationSearch compact />
-            <div className="location-grid" style={{ marginTop: 30 }}>
-              {getPopularLocations().map((l) => (
-                <Link key={l.slug} href={`/jobs?location=${l.city}`}>
-                  <Building2 />
-                  <div>
-                    <h3>{l.city}</h3>
-                    <p>{l.state}</p>
-                  </div>
-                  <ArrowRight size={17} />
-                </Link>
-              ))}
-            </div>
+            <CityLocalitiesDirectory
+              cities={getCityLocalitiesCatalog()}
+              popular={getPopularLocations().slice(0, 12)}
+            />
             <div style={{ marginTop: 50 }}>
               <SectionHeading title="Browse by pincode" />
               <div className="pincode-grid">

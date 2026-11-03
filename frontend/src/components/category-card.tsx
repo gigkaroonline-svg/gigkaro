@@ -37,25 +37,26 @@ const icons = {
   Headset,
   HardHat,
 };
-export function CategoryCard({
-  category,
-  count,
-}: {
-  category: Category;
-  count: number;
-}) {
+const CATEGORY_SEO_PATH: Record<string, string> = {
+  delivery: "/delivery-jobs/bengaluru",
+  warehouse: "/warehouse-jobs/bengaluru",
+  logistics: "/logistics-jobs/bengaluru",
+  field: "/field-jobs/bengaluru",
+  ev: "/ev-rider-jobs/bengaluru",
+};
+
+export function CategoryCard({ category }: { category: Category }) {
   const Icon = icons[category.icon as keyof typeof icons] || Bike;
+  const href = CATEGORY_SEO_PATH[category.id] || "/categories";
   return (
-    <Link href={`/jobs?category=${category.id}`} className="category-card">
+    <Link href={href} className="category-card">
       <div className={`icon-tile ${category.color}`}>
         <Icon size={22} />
       </div>
       <h3>{category.title}</h3>
       <p>{category.subtitle}</p>
       <span>
-        {count > 0
-          ? `${count} open ${count === 1 ? "role" : "roles"}`
-          : "Browse roles"}
+        Browse roles
         <ArrowUpRight size={15} />
       </span>
     </Link>

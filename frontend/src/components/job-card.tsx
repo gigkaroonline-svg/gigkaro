@@ -121,6 +121,8 @@ export function JobCard({
       : job.distanceFromSearch
         ? `~${Number(job.distanceKm.toFixed(1))} km away`
         : "";
+  // Always link the indexable canonical URL — place context stays on the hub page/card copy.
+  const href = jobHref(job);
 
   return (
     <article className={`job-card ${compact ? "job-card-compact" : ""}`}>
@@ -128,7 +130,7 @@ export function JobCard({
         <CompanyMark job={job} />
         <div className="job-heading">
           <h3>
-            <Link href={jobHref(job)}>{job.title}</Link>
+            <Link href={href}>{job.title}</Link>
           </h3>
           <p>
             {job.company}
@@ -140,8 +142,16 @@ export function JobCard({
       <p className="job-location">
         <MapPin size={14} />
         <span>
-          {[job.locality, job.city].filter(Boolean).join(", ") || job.pincode}
-          {job.pincode && [job.locality, job.city].some(Boolean) && (
+          {(() => {
+            const locality = (job.locality || "").trim();
+            const city = (job.city || "").trim();
+            const place =
+              locality && city && locality.toLowerCase() !== city.toLowerCase()
+                ? `${locality}, ${city}`
+                : locality || city || job.pincode;
+            return place;
+          })()}
+          {job.pincode && (job.locality || job.city) && (
             <span className="job-pin"> · {job.pincode}</span>
           )}
         </span>
@@ -173,7 +183,7 @@ export function JobCard({
       </div>
       <div className="job-card-bottom">
         <span>Posted {resolvePostedAt(job.id, job.postedAt).label}</span>
-        <Link className="apply-link" href={jobHref(job)}>
+        <Link className="apply-link" href={href}>
           View job
           <ArrowUpRight size={14} />
         </Link>

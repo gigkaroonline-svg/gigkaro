@@ -87,6 +87,7 @@ export type PostedJob = {
 export type SearchFilters = {
   location?: string;
   category?: string;
+  company?: string;
   radius?: string;
   salary?: string;
   type?: string;

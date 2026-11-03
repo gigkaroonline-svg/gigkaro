@@ -16,12 +16,11 @@ import {
   Layers,
   Users,
   Sparkles,
-  Building2,
 } from "lucide-react";
 import { LocationSearch } from "@/components/search";
 import { CategoryCard } from "@/components/category-card";
 import { SectionHeading } from "@/components/primitives";
-import { getCategoryCounts } from "@/lib/services/jobs";
+import { PopularCitiesGrid } from "@/features/popular-cities-grid";
 import { getCategories } from "@/lib/services/categories";
 import { getPopularLocations } from "@/lib/services/locations";
 import {
@@ -109,12 +108,15 @@ export function Hero() {
           <LocationSearch />
           <div className="popular-searches">
             <span>{uiText("popular")}</span>
-            {["Delivery", "Warehouse", "EV Rider"].map((v, i) => (
-              <Link
-                href={`/jobs?category=${["delivery", "warehouse", "ev"][i]}`}
-                key={v}
-              >
-                {v}
+            {(
+              [
+                ["Delivery", "/delivery-jobs/bengaluru"],
+                ["Warehouse", "/warehouse-jobs/bengaluru"],
+                ["EV Rider", "/ev-rider-jobs/bengaluru"],
+              ] as const
+            ).map(([label, href]) => (
+              <Link href={href} key={label}>
+                {label}
                 <ArrowRight size={12} />
               </Link>
             ))}
@@ -174,10 +176,7 @@ export function Hero() {
   );
 }
 export async function HomePage() {
-  const [categoryCounts, companies] = await Promise.all([
-    getCategoryCounts(),
-    fetchPublicCompanies(),
-  ]);
+  const companies = await fetchPublicCompanies();
   return (
     <>
       <Hero />
@@ -190,8 +189,11 @@ export async function HomePage() {
                 {[0, 1].map((copy) => (
                   <ul key={copy} aria-hidden={copy === 1 ? true : undefined}>
                     {companies.map((company) => (
-                      <li key={company.key}>
-                        <img src={companyLogoSrc(company.logo)} alt={company.name} />
+                      <li key={`${copy}-${company.key}`}>
+                        <img
+                          src={companyLogoSrc(company.logo)}
+                          alt={company.name}
+                        />
                       </li>
                     ))}
                   </ul>
@@ -229,11 +231,7 @@ export async function HomePage() {
         />
         <div className="category-grid">
           {getCategories().map((c) => (
-            <CategoryCard
-              key={c.id}
-              category={c}
-              count={categoryCounts[c.id] || 0}
-            />
+            <CategoryCard key={c.id} category={c} />
           ))}
         </div>
       </section>
@@ -285,22 +283,9 @@ export async function HomePage() {
             eyebrow="LOCAL WORK. ACROSS INDIA."
             title="Where do you want to work?"
             href="/locations"
-            action="Browse jobs by pincode"
+            action="Browse all locations"
           />
-          <div className="location-grid">
-            {getPopularLocations()
-              .slice(0, 8)
-              .map((l) => (
-              <Link key={l.slug} href={`/jobs?location=${l.city}`}>
-                <Building2 size={24} />
-                <div>
-                  <h3>{l.city}</h3>
-                  <p>Browse jobs</p>
-                </div>
-                <ArrowRight size={16} />
-              </Link>
-            ))}
-          </div>
+          <PopularCitiesGrid cities={getPopularLocations().slice(0, 12)} />
         </div>
       </section>
       <section className="section container">

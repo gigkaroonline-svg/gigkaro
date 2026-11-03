@@ -116,3 +116,13 @@ export function slugForPlace(slug: string, storedPin: string, placePin: string) 
   if (at < 0) return slug;
   return `${slug.slice(0, at)}-${placePin}${slug.slice(at + needle.length)}`;
 }
+
+/** City/locality hub links omit the seed pincode: delivery-partner-560034 → delivery-partner */
+export function slugWithoutPincode(slug: string) {
+  return (
+    String(slug || "")
+      .replace(/-\d{6}(?=-|$)/g, "")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "") || String(slug || "")
+  );
+}

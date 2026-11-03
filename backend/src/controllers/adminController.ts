@@ -12,6 +12,7 @@ import { serializeJob } from "../utils/jobs.js";
 import { uploadCompanyLogo } from "../utils/gcs.js";
 import { locationCatalog } from "../data/taxonomy.js";
 import { getIndiaPincode } from "../utils/indiaPincodes.js";
+import { notifyGoogleJobUrl } from "../utils/googleIndexing.js";
 import type { AuthRequest } from "../middleware/auth.js";
 
 function locationLabelForPincode(pincode: string) {
@@ -308,6 +309,27 @@ export async function createAdminJob(
       postedByAdminId: req.userId,
     });
 
+    void notifyGoogleJobUrl(
+      job.slug,
+      data.status === "Active" ? "URL_UPDATED" : "URL_DELETED",
+      { showEverywhere: Boolean(job.showEverywhere) },
+    ).then((result) => {
+      void Job.updateOne(
+        { _id: job._id },
+        {
+          $set: {
+            lastIndexedAt: new Date(),
+            lastIndexStatus: result.skipped
+              ? "skipped"
+              : result.ok
+                ? "ok"
+                : "failed",
+            lastIndexError: result.ok ? "" : result.error || "Indexing failed",
+          },
+        },
+      );
+    });
+
     res.status(201).json({ job: serializeJob(job) });
   } catch (err) {
     next(err);
@@ -419,7 +441,55 @@ export async function patchAdminJob(
       res.status(404).json({ error: "Job not found." });
       return;
     }
+    void notifyGoogleJobUrl(
+      job.slug,
+      parsed.data.status === "Active" ? "URL_UPDATED" : "URL_DELETED",
+      { showEverywhere: Boolean(job.showEverywhere) },
+    ).then((result) => {
+      void Job.updateOne(
+        { _id: job._id },
+        {
+          $set: {
+            lastIndexedAt: new Date(),
+            lastIndexStatus: result.skipped
+              ? "skipped"
+              : result.ok
+                ? "ok"
+                : "failed",
+            lastIndexError: result.ok ? "" : result.error || "Indexing failed",
+          },
+        },
+      );
+    });
     res.json({ job: serializeJob(job) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function runJobFreshness(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const slotRaw = String(req.body?.slot || req.query.slot || "A").toUpperCase();
+    const slot = (["A", "B", "C"].includes(slotRaw) ? slotRaw : "A") as
+      | "A"
+      | "B"
+      | "C";
+    const dryRun =
+      req.body?.dryRun === true ||
+      req.query.dryRun === "1" ||
+      req.query.dryRun === "true";
+    const force =
+      req.body?.force === true ||
+      req.query.force === "1" ||
+      req.query.force === "true";
+    const limit = Number(req.body?.limit || req.query.limit || 0) || undefined;
+    const { runJobFreshnessSlot } = await import("../services/jobFreshness.js");
+    const result = await runJobFreshnessSlot(slot, { dryRun, force, limit });
+    res.json({ result });
   } catch (err) {
     next(err);
   }

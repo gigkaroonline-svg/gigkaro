@@ -1,7 +1,12 @@
 import type { Request, Response, NextFunction } from "express";
 import { Job } from "../models/Job.js";
 import { Company } from "../models/Company.js";
-import { distanceKm, serializeJob, slugForPlace } from "../utils/jobs.js";
+import {
+  distanceKm,
+  serializeJob,
+  slugForPlace,
+  slugWithoutPincode,
+} from "../utils/jobs.js";
 import {
   bestPlaceMatch,
   getIndiaPincode,
@@ -81,6 +86,7 @@ export async function listJobs(
     const f = {
       location: String(req.query.location || ""),
       category: String(req.query.category || ""),
+      company: String(req.query.company || ""),
       radius: String(req.query.radius || ""),
       salary: String(req.query.salary || ""),
       type: String(req.query.type || ""),
@@ -147,6 +153,14 @@ export async function listJobs(
           categoryGroupId(j.category) !== categoryGroupId(f.category)
         )
           return false;
+        if (f.company) {
+          const companyKey = f.company.trim().toLowerCase();
+          const jobCompanyId = (j.companyId || "").toLowerCase();
+          const jobCompany = (j.company || "").trim().toLowerCase();
+          if (jobCompanyId !== companyKey && jobCompany !== companyKey) {
+            return false;
+          }
+        }
         if (f.salary) {
           const [min, max] = f.salary.split("-").map(Number);
           if (j.salaryMax < min || (max && j.salaryMin > max)) return false;
@@ -173,11 +187,17 @@ export async function listJobs(
         // Nationwide roles surface under the searched pin, not the seed locality.
         if (job.showEverywhere && origin) {
           const cityWide = origin.scope === "city";
+          const sameCity =
+            (job.city || "").toLowerCase() === (origin.city || "").toLowerCase();
           return serializeJob(job as never, {
             slug: cityWide
               ? job.slug
               : slugForPlace(job.slug, job.pincode, origin.pincode),
-            locality: cityWide ? "" : origin.locality,
+            locality: cityWide
+              ? sameCity
+                ? job.locality || ""
+                : ""
+              : origin.locality,
             city: origin.city,
             pincode: cityWide ? "" : origin.pincode,
             lat: origin.lat,
@@ -221,6 +241,18 @@ export async function getJobBySlug(
             (item) => slugForPlace(item.slug, item.pincode, pin) === slug,
           ) || null;
         if (job) placePin = pin;
+      } else {
+        const base = slugWithoutPincode(slug);
+        if (base) {
+          const candidates = await Job.find({
+            status: "Active",
+            showEverywhere: true,
+          });
+          job =
+            candidates.find(
+              (item) => slugWithoutPincode(item.slug) === base,
+            ) || null;
+        }
       }
     }
     if (!job) {

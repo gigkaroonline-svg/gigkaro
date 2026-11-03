@@ -169,20 +169,20 @@ export function Footer() {
                 heading: "Popular locations",
                 headingHref: "/locations",
                 items: [
-                  ["Bengaluru", "/delivery-jobs/bengaluru/"],
-                  ["Delhi NCR", "/delivery-jobs/delhi/"],
-                  ["Mumbai", "/delivery-jobs/mumbai/"],
-                  ["Hyderabad", "/delivery-jobs/hyderabad/"],
+                  ["Bengaluru", "/locations/bengaluru/"],
+                  ["Delhi NCR", "/locations/delhi/"],
+                  ["Mumbai", "/locations/mumbai/"],
+                  ["Hyderabad", "/locations/hyderabad/"],
                 ],
               },
               {
                 heading: "More locations",
                 headingHref: "/locations",
                 items: [
-                  ["Chennai", "/delivery-jobs/chennai/"],
-                  ["Pune", "/delivery-jobs/pune/"],
-                  ["Kolkata", "/delivery-jobs/kolkata/"],
-                  ["Ahmedabad", "/delivery-jobs/ahmedabad/"],
+                  ["Chennai", "/locations/chennai/"],
+                  ["Pune", "/locations/pune/"],
+                  ["Kolkata", "/locations/kolkata/"],
+                  ["Ahmedabad", "/locations/ahmedabad/"],
                 ],
               },
             ] as {

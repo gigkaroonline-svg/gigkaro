@@ -240,7 +240,11 @@ export function CandidatePage({ view = "overview" }: { view?: string }) {
               </div>
               <SectionHeading
                 title="Recommended for your neighbourhood"
-                href={`/jobs?location=${profile.pincode}`}
+                href={
+                  /^\d{6}$/.test(String(profile.pincode || "").trim())
+                    ? `/jobs/${profile.pincode}`
+                    : "/jobs"
+                }
                 action="Explore jobs"
               />
               {recommended.length ? (
