@@ -162,7 +162,9 @@ export function JobDetail({
               <div className="row">
                 <VerifiedEmployerBadge />
               </div>
-              <h1>{job.title}</h1>
+              <h1>
+                {placeLabel ? `${job.title} in ${placeLabel}` : job.title}
+              </h1>
               <p>
                 {job.company}{" "}
                 <span className="inline-meta">
