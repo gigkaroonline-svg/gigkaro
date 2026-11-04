@@ -1,3 +1,4 @@
+import { jobsSearchHref } from "@/lib/jobs-search-url";
 import { getCityBySlug } from "@/lib/services/locations";
 
 /** Popular company × city search keywords for the footer SEO strip. */
@@ -125,10 +126,11 @@ export const FOOTER_JOB_KEYWORDS: FooterKeyword[] = [
 ];
 
 export function footerKeywordHref(keyword: FooterKeyword) {
-  const params = new URLSearchParams({ location: keyword.location });
-  if (keyword.company) params.set("company", keyword.company);
-  if (keyword.category) params.set("category", keyword.category);
-  return `/jobs/?${params.toString()}`;
+  return jobsSearchHref({
+    location: keyword.location,
+    company: keyword.company,
+    category: keyword.category,
+  });
 }
 
 function cityDisplayName(slug: string, catalogName: string) {
