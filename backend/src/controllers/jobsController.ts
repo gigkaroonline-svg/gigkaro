@@ -227,7 +227,9 @@ export async function getJobBySlug(
   try {
     maybeRefreshPostedDates();
     const slug = String(req.params.slug || "");
-    let job = await Job.findOne({ slug, status: "Active" });
+    let job =
+      (await Job.findOne({ slug, status: "Active" })) ||
+      (await Job.findOne({ previousSlugs: slug, status: "Active" }));
     let placePin = "";
     if (!job) {
       const pin = slug.match(/-(\d{6})(?=-|$)/)?.[1] || "";

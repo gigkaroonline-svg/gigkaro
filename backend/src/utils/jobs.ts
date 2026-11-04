@@ -126,3 +126,45 @@ export function slugWithoutPincode(slug: string) {
       .replace(/^-|-$/g, "") || String(slug || "")
   );
 }
+
+export function slugifyJobPart(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60);
+}
+
+/**
+ * Unique job slug with company in the stem and any counter *before* the pincode.
+ * Avoids SEO-hostile forms like delivery-boy-560034-1 (pinless → delivery-boy-1).
+ */
+export async function allocateJobSlug(input: {
+  title: string;
+  companyKey: string;
+  pincode: string;
+  exists: (slug: string) => Promise<boolean>;
+}) {
+  const pin = String(input.pincode || "").trim();
+  const company = slugifyJobPart(input.companyKey) || "company";
+  const title = slugifyJobPart(input.title) || "job";
+  const stem = slugifyJobPart(`${title}-${company}`) || "job";
+  const candidates = [
+    pin ? `${stem}-${pin}` : stem,
+    ...Array.from({ length: 40 }, (_, i) =>
+      pin ? `${stem}-${i + 2}-${pin}` : `${stem}-${i + 2}`,
+    ),
+    pin
+      ? `${stem}-${Date.now().toString(36)}-${pin}`
+      : `${stem}-${Date.now().toString(36)}`,
+  ];
+  for (const slug of candidates) {
+    if (!(await input.exists(slug))) return slug;
+  }
+  return candidates[candidates.length - 1];
+}
+
+/** True when slug ends with -{pincode}-{n} from the old collision scheme. */
+export function isLegacyPincodeCounterSlug(slug: string) {
+  return /-\d{6}-\d+$/.test(String(slug || ""));
+}
