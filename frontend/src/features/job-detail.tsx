@@ -74,7 +74,7 @@ export function JobDetail({
   ).trim();
   const displayJob = { ...job, city, locality };
 
-  // Prefer /job/{city}/{locality}/{slug}/ over legacy query or slug-first paths.
+  // Canonicalize to /job/{city}/{locality}/{slug}/ (lowercase, hyphenated).
   useEffect(() => {
     const qCity = (params.get("city") || "").trim();
     const qLocality = (params.get("locality") || "").trim();
@@ -94,11 +94,11 @@ export function JobDetail({
       // Legacy /job/{slug}/{city}/{locality}/
       nextCity = decodeURIComponent(segments[2] || "");
       nextLocality = decodeURIComponent(segments[3] || "");
-    } else if (segments.length >= 3) {
-      return;
-    } else {
+    } else if (!(city || locality) || segments.length < 2) {
       return;
     }
+
+    if (!nextCity) return;
 
     const target = jobHrefWithPlace({
       ...job,
