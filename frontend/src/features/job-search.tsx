@@ -16,6 +16,7 @@ import {
   placesForCity,
 } from "@/lib/city-openings";
 import { uiText } from "@/lib/i18n";
+import { jobsSearchHref } from "@/lib/jobs-search-url";
 import { fetchJobs } from "@/lib/services/api-jobs";
 import { getCategories } from "@/lib/services/categories";
 import {
@@ -45,11 +46,13 @@ function placeQuery(hit: LocationHit, typed: string) {
 export function SearchResults({
   initialLocation = "",
   initialCategory = "",
+  initialCompany = "",
   initialJobs,
   heading,
 }: {
   initialLocation?: string;
   initialCategory?: string;
+  initialCompany?: string;
   /** SSR-seeded openings so crawlers never see a broken API state. */
   initialJobs?: Job[];
   heading?: string;
@@ -78,7 +81,7 @@ export function SearchResults({
   const filters: SearchFilters = {
     location: params.get("location") ?? initialLocation,
     category: params.get("category") ?? initialCategory,
-    company: params.get("company") || "",
+    company: params.get("company") || initialCompany || "",
     radius:
       params.get("radius") ||
       (/^\d{6}$/.test(
@@ -240,21 +243,53 @@ export function SearchResults({
   ]);
 
   function change(key: string, value: string | boolean) {
-    const next = new URLSearchParams(params.toString());
-    if (initialLocation && !next.has("location"))
-      next.set("location", initialLocation);
-    if (initialCategory && !next.has("category"))
-      next.set("category", initialCategory);
-    if (value) next.set(key, String(value));
-    else next.delete(key);
+    const next = {
+      location: filters.location,
+      category: filters.category,
+      company: filters.company,
+      radius: filters.radius,
+      city: params.get("city") || "",
+      citySlug: params.get("citySlug") || "",
+    };
+    if (initialLocation && !next.location) next.location = initialLocation;
+    if (initialCategory && !next.category) next.category = initialCategory;
+    if (initialCompany && !next.company) next.company = initialCompany;
+    if (value) next[key as keyof typeof next] = String(value);
+    else next[key as keyof typeof next] = "";
     if (key === "location") {
-      next.delete("city");
-      next.delete("citySlug");
+      next.city = "";
+      next.citySlug = "";
     }
-    const destination =
-      key === "location" || initialCategory ? "/jobs/" : path;
-    router.replace(`${destination}?${next}`, { scroll: false });
+    if (key !== "radius" && !/^\d{6}$/.test((next.location || "").trim())) {
+      next.radius = "";
+    }
+    router.replace(jobsSearchHref(next), { scroll: false });
   }
+
+  // Prefer /jobs/{location}/{company}/ over legacy query URLs.
+  useEffect(() => {
+    if (!mounted) return;
+    const location = (filters.location || "").trim();
+    const company = (filters.company || "").trim();
+    if (!location || !company || filters.category) return;
+    if (!/^\/jobs\/?$/.test(path)) return;
+    const target = jobsSearchHref({
+      location,
+      company,
+      radius: filters.radius,
+    });
+    if (target !== path && !target.startsWith(`${path}?`)) {
+      router.replace(target, { scroll: false });
+    }
+  }, [
+    mounted,
+    path,
+    filters.location,
+    filters.company,
+    filters.category,
+    filters.radius,
+    router,
+  ]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
