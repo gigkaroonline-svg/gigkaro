@@ -28,7 +28,7 @@ import {
   jobPlaceLabel,
 } from "@/lib/job-copy";
 import { uiText } from "@/lib/i18n";
-import { jobHrefWithPlace } from "@/lib/job-url";
+import { jobCanonicalSlug, jobHrefWithPlace } from "@/lib/job-url";
 import { resolvePostedAt } from "@/lib/posted-at";
 import {
   cityHubPath,
@@ -74,18 +74,36 @@ export function JobDetail({
   ).trim();
   const displayJob = { ...job, city, locality };
 
-  // Prefer /job/{slug}/{city}/{locality}/ over legacy ?city=&locality=.
+  // Prefer /job/{city}/{locality}/{slug}/ over legacy query or slug-first paths.
   useEffect(() => {
     const qCity = (params.get("city") || "").trim();
     const qLocality = (params.get("locality") || "").trim();
-    if (!qCity && !qLocality) return;
     const segments = path.split("/").filter(Boolean);
-    // Already on /job/{slug}/{city}[...] — do not bounce.
-    if (segments.length >= 3) return;
+    const slug = jobCanonicalSlug(job);
+    let nextCity = city;
+    let nextLocality = locality;
+
+    if (qCity || qLocality) {
+      nextCity = qCity || city;
+      nextLocality = qLocality || locality;
+    } else if (
+      segments[0] === "job" &&
+      segments.length >= 3 &&
+      segments[1] === slug
+    ) {
+      // Legacy /job/{slug}/{city}/{locality}/
+      nextCity = decodeURIComponent(segments[2] || "");
+      nextLocality = decodeURIComponent(segments[3] || "");
+    } else if (segments.length >= 3) {
+      return;
+    } else {
+      return;
+    }
+
     const target = jobHrefWithPlace({
       ...job,
-      city: qCity || city,
-      locality: qLocality || locality,
+      city: nextCity,
+      locality: nextLocality,
     });
     const targetPath = target.split("?")[0].replace(/\/$/, "");
     const currentPath = path.replace(/\/$/, "");

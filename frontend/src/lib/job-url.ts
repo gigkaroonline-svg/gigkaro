@@ -39,7 +39,7 @@ export function jobHref(job: Job) {
 }
 
 /**
- * Card/hub links use `/job/{slug}/{city}/{locality}/` (never pincode).
+ * Place-aware card/hub links: `/job/{city}/{locality}/{slug}/` (slug last).
  * Canonical metadata still uses the clean {@link jobHref} path.
  */
 export function jobHrefWithPlace(job: Job) {
@@ -48,8 +48,10 @@ export function jobHrefWithPlace(job: Job) {
   }
   const city = (job.city || "").trim();
   const locality = (job.locality || "").trim();
-  const base = `${jobCanonicalPath(job)}/`;
-  if (!city) return base;
-  if (!locality) return `${base}${jobPlacePathSegment(city)}/`;
-  return `${base}${jobPlacePathSegment(city)}/${jobPlacePathSegment(locality)}/`;
+  const slug = jobCanonicalSlug(job);
+  if (!city) return `/job/${encodeURIComponent(slug)}/`;
+  if (!locality) {
+    return `/job/${jobPlacePathSegment(city)}/${encodeURIComponent(slug)}/`;
+  }
+  return `/job/${jobPlacePathSegment(city)}/${jobPlacePathSegment(locality)}/${encodeURIComponent(slug)}/`;
 }
