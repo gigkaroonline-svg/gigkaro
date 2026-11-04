@@ -4,7 +4,11 @@ import Loading from "@/app/loading";
 import { decodeJobsPathSegment } from "@/lib/jobs-search-url";
 import { pageMetadata } from "@/lib/metadata";
 
-export const dynamicParams = true;
+/** Unknown paths fall back to /jobs/ via rewrite (Vercel SSR of these 500s). */
+export const dynamicParams = false;
+export function generateStaticParams() {
+  return [] as { location: string }[];
+}
 
 export async function generateMetadata({
   params,

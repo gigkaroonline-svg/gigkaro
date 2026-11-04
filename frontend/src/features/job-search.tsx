@@ -16,7 +16,10 @@ import {
   placesForCity,
 } from "@/lib/city-openings";
 import { uiText } from "@/lib/i18n";
-import { jobsSearchHref } from "@/lib/jobs-search-url";
+import {
+  decodeJobsPathSegment,
+  jobsSearchHref,
+} from "@/lib/jobs-search-url";
 import { fetchJobs } from "@/lib/services/api-jobs";
 import { getCategories } from "@/lib/services/categories";
 import {
@@ -63,7 +66,18 @@ export function SearchResults({
   const suggestId = useId();
   const fieldRef = useRef<HTMLDivElement>(null);
   const typedLocation = useRef(false);
-  const [text, setText] = useState(params.get("location") || initialLocation);
+  const pathSegs = path.split("/").filter(Boolean);
+  const pathLocation =
+    pathSegs[0] === "jobs" && pathSegs[1]
+      ? decodeJobsPathSegment(pathSegs[1])
+      : "";
+  const pathCompany =
+    pathSegs[0] === "jobs" && pathSegs[2]
+      ? decodeJobsPathSegment(pathSegs[2])
+      : "";
+  const seedLocation = initialLocation || pathLocation;
+  const seedCompany = initialCompany || pathCompany;
+  const [text, setText] = useState(params.get("location") || seedLocation);
   const [hits, setHits] = useState<LocationHit[]>([]);
   const [open, setOpen] = useState(false);
   const [searchingPlaces, setSearchingPlaces] = useState(false);
@@ -79,13 +93,13 @@ export function SearchResults({
   }, []);
 
   const filters: SearchFilters = {
-    location: params.get("location") ?? initialLocation,
+    location: params.get("location") ?? seedLocation,
     category: params.get("category") ?? initialCategory,
-    company: params.get("company") || initialCompany || "",
+    company: params.get("company") || seedCompany || "",
     radius:
       params.get("radius") ||
       (/^\d{6}$/.test(
-        ((params.get("location") ?? initialLocation) || "").trim(),
+        ((params.get("location") ?? seedLocation) || "").trim(),
       )
         ? "10"
         : ""),
@@ -198,14 +212,14 @@ export function SearchResults({
 
   useEffect(() => {
     typedLocation.current = false;
-    setText(params.get("location") || initialLocation);
+    setText(params.get("location") || seedLocation);
     setOpen(false);
     setPage(1);
   }, [
     params.get("location"),
     params.get("category"),
     params.get("company"),
-    initialLocation,
+    seedLocation,
     initialCategory,
   ]);
 
@@ -251,9 +265,9 @@ export function SearchResults({
       city: params.get("city") || "",
       citySlug: params.get("citySlug") || "",
     };
-    if (initialLocation && !next.location) next.location = initialLocation;
+    if (seedLocation && !next.location) next.location = seedLocation;
     if (initialCategory && !next.category) next.category = initialCategory;
-    if (initialCompany && !next.company) next.company = initialCompany;
+    if (seedCompany && !next.company) next.company = seedCompany;
     if (value) next[key as keyof typeof next] = String(value);
     else next[key as keyof typeof next] = "";
     if (key === "location") {
@@ -376,7 +390,7 @@ export function SearchResults({
     const fromCitySlug = params.get("citySlug");
     const locationLabel = (
       params.get("location") ||
-      initialLocation ||
+      seedLocation ||
       ""
     ).trim();
     if (fromCity && fromCitySlug) {

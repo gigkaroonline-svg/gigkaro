@@ -24,10 +24,13 @@ const config: NextConfig = {
   async rewrites() {
     return {
       fallback: [
-        // Job detail is handled by /job/[slug] (dynamicParams). Keep /job/view
-        // as a manual client fallback only — rewriting every /job/* here caused
-        // Vercel routing to 500 on the dynamic segment.
+        // Prerendered paths are served from the filesystem first. Unknown
+        // dynamic paths must not SSR on Vercel (that 500s); fall back to the
+        // static client shells instead — same pattern as blog.
         { source: "/blog/:slug", destination: "/blog/view" },
+        { source: "/job/:path*", destination: "/job/view" },
+        { source: "/jobs/:location/:company", destination: "/jobs/" },
+        { source: "/jobs/:location", destination: "/jobs/" },
       ],
     };
   },

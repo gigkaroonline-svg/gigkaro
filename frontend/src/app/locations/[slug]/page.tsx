@@ -16,7 +16,7 @@ import {
 } from "@/lib/services/locations";
 
 export const revalidate = 3600;
-export const dynamicParams = true;
+export const dynamicParams = false;
 
 export function generateStaticParams() {
   return getCityLocalitiesCatalog().map((city) => ({ slug: city.slug }));

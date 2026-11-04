@@ -23,7 +23,8 @@ type Resolved = {
 };
 
 export const revalidate = 60;
-export const dynamicParams = true;
+/** Only prerendered slugs SSR. Unknown / place paths use /job/view via rewrite. */
+export const dynamicParams = false;
 
 export async function generateStaticParams() {
   try {
