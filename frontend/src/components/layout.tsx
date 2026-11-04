@@ -23,6 +23,10 @@ import {
   SheetClose,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import {
+  FOOTER_JOB_KEYWORDS,
+  footerKeywordHref,
+} from "@/data/footer-keywords";
 export function GigKaroLogo() {
   return (
     <Link href="/" className="logo" aria-label={uiText("gigkaroHome")}>
@@ -88,8 +92,31 @@ export function MainHeader() {
   );
 }
 export function Footer() {
+  const path = usePathname();
+  const hideKeywords =
+    path.startsWith("/admin") ||
+    path.startsWith("/employer") ||
+    path.startsWith("/candidate") ||
+    path.startsWith("/login") ||
+    path.startsWith("/register") ||
+    path.startsWith("/verify-otp");
+
   return (
     <footer className="footer">
+      {!hideKeywords && (
+        <div className="footer-keywords">
+          <div className="container">
+            <p className="footer-keywords-heading">Popular searches</p>
+            <ul className="footer-keywords-list">
+              {FOOTER_JOB_KEYWORDS.map((keyword) => (
+                <li key={keyword.label}>
+                  <Link href={footerKeywordHref(keyword)}>{keyword.label}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
       <div className="container">
         <div className="footer-grid">
           <div className="footer-brand">
