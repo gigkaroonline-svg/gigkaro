@@ -100,16 +100,20 @@ export const FOOTER_JOB_KEYWORDS: FooterKeyword[] = [
     location: "Bangalore",
   },
   {
-    label: "Xpress Bees jobs in Mumbai",
-    company: "xpress-bees",
-    location: "Mumbai",
+    label: "delivery boy jobs near me",
+    category: "delivery",
+    location: "Bangalore",
   },
   {
     label: "Loadshare jobs in Delhi",
     company: "loadshare",
     location: "Delhi",
   },
-  { label: "Zippee jobs in Hyderabad", company: "zippee", location: "Hyderabad" },
+  {
+    label: "part time delivery jobs bangalore",
+    category: "delivery",
+    location: "Bangalore",
+  },
   { label: "Porter jobs in Pune", company: "porter", location: "Pune" },
   {
     label: "Swiggy Instamart jobs in Chennai",
