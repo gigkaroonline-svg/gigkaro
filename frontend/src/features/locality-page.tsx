@@ -6,7 +6,8 @@ import {
   SectionHeading,
 } from "@/components/primitives";
 import { LocalityOpeningsList } from "@/features/locality-openings-list";
-import { fetchJobs } from "@/lib/services/api-jobs";
+import { jobsForLocalityPlace } from "@/lib/city-openings";
+import { fetchJobsSafe } from "@/lib/services/api-jobs";
 import {
   cityHubPath,
   localitySeoBlurb,
@@ -20,14 +21,12 @@ export async function LocalityPage({
   city: CityLocalityEntry;
   locality: string;
 }) {
-  let jobs = [] as Awaited<ReturnType<typeof fetchJobs>>;
-  try {
-    jobs = await fetchJobs({ location: locality });
-  } catch {
-    jobs = [];
-  }
-  const openingLabel = `${jobs.length.toLocaleString("en-IN")} ${
-    jobs.length === 1 ? "opening" : "openings"
+  // Resolve by city so showEverywhere roles remap correctly, then stamp the
+  // selected neighbourhood (free-text locality search keeps the seed place).
+  const jobs = await fetchJobsSafe({ location: city.name });
+  const rows = jobsForLocalityPlace(jobs, city, locality);
+  const openingLabel = `${rows.length.toLocaleString("en-IN")} ${
+    rows.length === 1 ? "opening" : "openings"
   }`;
 
   return (
@@ -63,8 +62,12 @@ export async function LocalityPage({
         className="container section city-page-body"
       >
         <SectionHeading title={`Openings near ${locality}`} />
-        {jobs.length ? (
-          <LocalityOpeningsList jobs={jobs} />
+        {rows.length ? (
+          <LocalityOpeningsList
+            jobs={jobs}
+            city={city}
+            locality={locality}
+          />
         ) : (
           <EmptyState
             title={`No open roles in ${locality} yet`}

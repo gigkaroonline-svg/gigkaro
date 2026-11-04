@@ -82,6 +82,29 @@ export function expandJobsForLocalities(
   return [...pinned, ...rows];
 }
 
+/** Openings for one neighbourhood: keep pinned matches, stamp city-wide roles. */
+export function jobsForLocalityPlace(
+  jobs: Job[],
+  city: CityLocalityEntry,
+  locality: string,
+): Job[] {
+  const placeName = locality.trim();
+  if (!placeName) return [];
+  const key = placeName.toLowerCase();
+  const { pinned, cityWide } = splitPinnedAndWide(jobs, city.name);
+  const matchingPinned = pinned.filter(
+    (job) => (job.locality || "").trim().toLowerCase() === key,
+  );
+  const expanded = cityWide.map((job) => ({
+    ...job,
+    id: `${job.id}__${slugifyPlace(city.name)}__${slugifyPlace(placeName)}`,
+    city: city.name,
+    locality: placeName,
+    pincode: "",
+  }));
+  return [...matchingPinned, ...expanded];
+}
+
 /**
  * Page expanded openings without materialising every row (phase1 can be 3k+ places).
  * Locality-first across `places`, then city-wide jobs.
