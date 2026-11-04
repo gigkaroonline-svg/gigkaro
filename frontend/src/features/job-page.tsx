@@ -4,14 +4,60 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { JobDetail } from "@/features/job-detail";
 import { EmptyState } from "@/components/primitives";
+import { jobPlaceDisplayName } from "@/lib/job-url";
 import { fetchJobBySlug } from "@/lib/services/api-jobs";
+import { getCityBySlug, slugifyPlace } from "@/lib/services/locations";
 import type { Job } from "@/types";
+
+function looksLikeJobSlug(segment: string) {
+  const key = slugifyPlace(segment);
+  if (!key) return false;
+  if (getCityBySlug(key)) return false;
+  return key.includes("-");
+}
+
+/** Parse /job/{slug}/, place-first, or legacy slug-first paths. */
+function parseJobPath(pathname: string) {
+  const segs = pathname.split("/").filter(Boolean);
+  if (segs[0] !== "job" || segs.length < 2) {
+    return { slug: "", city: "", locality: "" };
+  }
+  const parts = segs.slice(1);
+  if (parts.length === 1) {
+    return { slug: parts[0], city: "", locality: "" };
+  }
+  if (!looksLikeJobSlug(parts[0])) {
+    if (parts.length === 2) {
+      return {
+        slug: parts[1],
+        city: jobPlaceDisplayName(parts[0], "city"),
+        locality: "",
+      };
+    }
+    return {
+      slug: parts[parts.length - 1],
+      city: jobPlaceDisplayName(parts[0], "city"),
+      locality: jobPlaceDisplayName(parts[1], "locality", parts[0]),
+    };
+  }
+  // Legacy /job/{slug}/{city}/[{locality}/]
+  return {
+    slug: parts[0],
+    city: parts[1] ? jobPlaceDisplayName(parts[1], "city") : "",
+    locality: parts[2]
+      ? jobPlaceDisplayName(parts[2], "locality", parts[1])
+      : "",
+  };
+}
 
 export function JobPage() {
   const [job, setJob] = useState<Job | null | undefined>(undefined);
+  const [placeCity, setPlaceCity] = useState("");
+  const [placeLocality, setPlaceLocality] = useState("");
 
   useEffect(() => {
-    const slug = window.location.pathname.split("/").filter(Boolean).at(-1);
+    const parsed = parseJobPath(window.location.pathname);
+    const slug = parsed.slug;
     if (slug && /^\d{6}$/.test(slug)) {
       window.location.replace(`/jobs/${slug}/`);
       return;
@@ -22,8 +68,16 @@ export function JobPage() {
     }
     let cancelled = false;
     const query = new URLSearchParams(window.location.search);
-    const city = query.get("city")?.trim();
-    const locality = query.get("locality")?.trim();
+    const city =
+      parsed.city ||
+      query.get("city")?.trim() ||
+      "";
+    const locality =
+      parsed.locality ||
+      query.get("locality")?.trim() ||
+      "";
+    setPlaceCity(city);
+    setPlaceLocality(locality);
     fetchJobBySlug(slug)
       .then((data) => {
         if (cancelled) return;
@@ -48,8 +102,9 @@ export function JobPage() {
 
   useEffect(() => {
     if (!job) return;
-    document.title = `${job.title} in ${job.locality || job.city} — ₹${job.salaryMin / 1000}k–₹${job.salaryMax / 1000}k | GigKaro`;
-  }, [job]);
+    const place = placeLocality || placeCity || job.locality || job.city;
+    document.title = `${job.title} in ${place} — ₹${job.salaryMin / 1000}k–₹${job.salaryMax / 1000}k | GigKaro`;
+  }, [job, placeCity, placeLocality]);
 
   if (job === undefined) {
     return (
@@ -78,5 +133,11 @@ export function JobPage() {
     );
   }
 
-  return <JobDetail job={job} />;
+  return (
+    <JobDetail
+      job={job}
+      placeCity={placeCity}
+      placeLocality={placeLocality}
+    />
+  );
 }
