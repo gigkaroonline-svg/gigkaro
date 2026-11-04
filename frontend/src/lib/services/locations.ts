@@ -85,7 +85,7 @@ const CITY_BLURBS: Record<string, string> = {
   bengaluru:
     "Bengaluru has dense last-mile hiring across Koramangala, HSR, Whitefield and beyond—delivery, warehouse and field gigs close to home.",
   delhi:
-    "Delhi NCR openings span South Delhi, Noida-adjacent belts and dense residential clusters—apply to roles that keep your commute short.",
+    "Delhi NCR openings span South Delhi, Noida adjacent belts and dense residential clusters. Apply to roles that keep your commute short.",
   mumbai:
     "Mumbai gigs cluster around Andheri, Bandra, Thane-adjacent hubs and more—find delivery and warehouse shifts near your locality.",
   hyderabad:
