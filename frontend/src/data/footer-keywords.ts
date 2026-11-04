@@ -16,11 +16,7 @@ const KEYWORD_COMPANIES: { key: string; name: string }[] = [
   { key: "bigbasket", name: "Bigbasket" },
   { key: "porter", name: "Porter" },
   { key: "flipkart-minutes", name: "Flipkart Minutes" },
-  { key: "xpress-bees", name: "Xpress Bees" },
   { key: "loadshare", name: "Loadshare" },
-  { key: "zippee", name: "Zippee" },
-  { key: "pronto", name: "Pronto" },
-  { key: "everest-fleet", name: "Everest Fleet" },
   { key: "snabbit", name: "Snabbit" },
   { key: "blinkit-picker-packer", name: "Blinkit Picker Packer" },
 ];
@@ -28,10 +24,33 @@ const KEYWORD_COMPANIES: { key: string; name: string }[] = [
 const KEYWORD_CATEGORIES: { id: string; name: string }[] = [
   { id: "delivery", name: "Delivery" },
   { id: "warehouse", name: "Warehouse" },
-  { id: "logistics", name: "Logistics" },
-  { id: "field", name: "Field" },
-  { id: "telecaller", name: "Telecaller" },
-  { id: "construction", name: "Construction" },
+];
+
+/** Extra delivery search phrases for city hubs (`{city}` → selected city). */
+const CITY_DELIVERY_PHRASES: {
+  label: (city: string) => string;
+  category: string;
+}[] = [
+  {
+    label: () => "delivery boy jobs near me",
+    category: "delivery",
+  },
+  {
+    label: (city) => `delivery boy job vacancy in ${city}`,
+    category: "delivery",
+  },
+  {
+    label: (city) => `delivery jobs for freshers in ${city}`,
+    category: "delivery",
+  },
+  {
+    label: (city) => `part time delivery jobs ${city}`,
+    category: "delivery",
+  },
+  {
+    label: (city) => `full time delivery jobs ${city}`,
+    category: "delivery",
+  },
 ];
 
 /** Search-friendly city labels for SEO keywords. */
@@ -117,6 +136,7 @@ export function keywordsForCity(slug: string): FooterKeyword[] {
   const city = getCityBySlug(slug);
   if (!city) return [];
   const location = cityDisplayName(city.slug, city.name);
+  const cityLower = location.toLowerCase();
   const companyKeywords = KEYWORD_COMPANIES.map(({ key, name }) => ({
     label: `${name} jobs in ${location}`,
     company: key,
@@ -127,7 +147,15 @@ export function keywordsForCity(slug: string): FooterKeyword[] {
     category: id,
     location,
   }));
-  return [...companyKeywords, ...categoryKeywords].slice(0, 20);
+  const deliveryPhrases = CITY_DELIVERY_PHRASES.map(({ label, category }) => ({
+    label: label(cityLower),
+    category,
+    location,
+  }));
+  return [...companyKeywords, ...categoryKeywords, ...deliveryPhrases].slice(
+    0,
+    20,
+  );
 }
 
 /** Resolve city slug from /locations/[slug] or /locations/[slug]/[locality]. */
