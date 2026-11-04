@@ -121,7 +121,7 @@ export function JobCard({
       : job.distanceFromSearch
         ? `~${Number(job.distanceKm.toFixed(1))} km away`
         : "";
-  // Hub-expanded rows keep ?city=&locality= for place-aware detail copy;
+  // Hub-expanded rows keep /job/{slug}/{city}/{locality}/ for place-aware detail;
   // canonical metadata still points at the clean job path.
   const href = jobHrefWithPlace(job);
 

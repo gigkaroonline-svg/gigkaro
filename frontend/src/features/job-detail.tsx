@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   MapPin,
   Users,
@@ -27,6 +28,7 @@ import {
   jobPlaceLabel,
 } from "@/lib/job-copy";
 import { uiText } from "@/lib/i18n";
+import { jobHrefWithPlace } from "@/lib/job-url";
 import { resolvePostedAt } from "@/lib/posted-at";
 import {
   cityHubPath,
@@ -47,14 +49,50 @@ function resolveCitySlug(city: string) {
 export function JobDetail({
   job,
   nearby = [],
+  placeCity = "",
+  placeLocality = "",
 }: {
   job: Job;
   nearby?: Job[];
+  placeCity?: string;
+  placeLocality?: string;
 }) {
   const params = useSearchParams();
-  const city = (params.get("city") || job.city || "").trim();
-  const locality = (params.get("locality") || job.locality || "").trim();
+  const router = useRouter();
+  const path = usePathname();
+  const city = (
+    placeCity ||
+    params.get("city") ||
+    job.city ||
+    ""
+  ).trim();
+  const locality = (
+    placeLocality ||
+    params.get("locality") ||
+    job.locality ||
+    ""
+  ).trim();
   const displayJob = { ...job, city, locality };
+
+  // Prefer /job/{slug}/{city}/{locality}/ over legacy ?city=&locality=.
+  useEffect(() => {
+    const qCity = (params.get("city") || "").trim();
+    const qLocality = (params.get("locality") || "").trim();
+    if (!qCity && !qLocality) return;
+    const segments = path.split("/").filter(Boolean);
+    // Already on /job/{slug}/{city}[...] — do not bounce.
+    if (segments.length >= 3) return;
+    const target = jobHrefWithPlace({
+      ...job,
+      city: qCity || city,
+      locality: qLocality || locality,
+    });
+    const targetPath = target.split("?")[0].replace(/\/$/, "");
+    const currentPath = path.replace(/\/$/, "");
+    if (targetPath && targetPath !== currentPath) {
+      router.replace(target, { scroll: false });
+    }
+  }, [params, path, router, job, city, locality]);
   const posted = resolvePostedAt(job.id, job.postedAt);
   const explorePlace = locality || city || job.pincode || "";
   const placeLabel = jobPlaceLabel(displayJob);

@@ -18,7 +18,19 @@ export function jobCanonicalPath(job: Pick<Job, "slug" | "showEverywhere">) {
   return `/job/${jobCanonicalSlug(job)}`;
 }
 
-/** Clean indexable job URL (no city/locality query). */
+export function jobPlacePathSegment(value: string) {
+  return encodeURIComponent(String(value || "").trim());
+}
+
+export function decodeJobPlaceSegment(value: string) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+/** Clean indexable job URL (no city/locality). */
 export function jobHref(job: Job) {
   if (job.id.startsWith("posted_")) {
     return `/job/local?id=${encodeURIComponent(job.id)}`;
@@ -27,7 +39,7 @@ export function jobHref(job: Job) {
 }
 
 /**
- * Card/hub links include city + locality in the query (never pincode).
+ * Card/hub links use `/job/{slug}/{city}/{locality}/` (never pincode).
  * Canonical metadata still uses the clean {@link jobHref} path.
  */
 export function jobHrefWithPlace(job: Job) {
@@ -36,10 +48,8 @@ export function jobHrefWithPlace(job: Job) {
   }
   const city = (job.city || "").trim();
   const locality = (job.locality || "").trim();
-  const params = new URLSearchParams();
-  if (city) params.set("city", city);
-  if (locality) params.set("locality", locality);
-  const qs = params.toString();
   const base = `${jobCanonicalPath(job)}/`;
-  return qs ? `${base}?${qs}` : base;
+  if (!city) return base;
+  if (!locality) return `${base}${jobPlacePathSegment(city)}/`;
+  return `${base}${jobPlacePathSegment(city)}/${jobPlacePathSegment(locality)}/`;
 }
