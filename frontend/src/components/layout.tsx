@@ -159,9 +159,9 @@ export function Footer() {
               {
                 heading: "Find work",
                 items: [
-                  ["Delivery jobs", "/delivery-jobs/bengaluru"],
-                  ["Warehouse jobs", "/warehouse-jobs/bengaluru"],
-                  ["EV rider jobs", "/ev-rider-jobs/bengaluru/"],
+                  ["Delivery jobs", "/delivery-jobs/bengaluru/"],
+                  ["Warehouse jobs", "/warehouse-jobs/bengaluru/"],
+                  ["Logistics jobs", "/logistics-jobs/bengaluru/"],
                   ["Field jobs", "/field-jobs/bengaluru/"],
                 ],
               },
