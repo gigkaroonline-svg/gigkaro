@@ -43,10 +43,13 @@ export async function api<T>(
     const token = getToken();
     if (token) headers.set("Authorization", `Bearer ${token}`);
   }
-  const res = await fetch(`${API_URL}${path.startsWith("/") ? path : `/${path}`}`, {
-    ...options,
-    headers,
-  });
+  const res = await fetch(
+    `${publicApiBase()}${path.startsWith("/") ? path : `/${path}`}`,
+    {
+      ...options,
+      headers,
+    },
+  );
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     if (res.status === 401 && typeof window !== "undefined") {

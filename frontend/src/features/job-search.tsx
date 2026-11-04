@@ -45,10 +45,13 @@ function placeQuery(hit: LocationHit, typed: string) {
 export function SearchResults({
   initialLocation = "",
   initialCategory = "",
+  initialJobs,
   heading,
 }: {
   initialLocation?: string;
   initialCategory?: string;
+  /** SSR-seeded openings so crawlers never see a broken API state. */
+  initialJobs?: Job[];
   heading?: string;
 }) {
   const params = useSearchParams();
@@ -62,9 +65,8 @@ export function SearchResults({
   const [open, setOpen] = useState(false);
   const [searchingPlaces, setSearchingPlaces] = useState(false);
   const [page, setPage] = useState(1);
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState("");
+  const [jobs, setJobs] = useState<Job[]>(initialJobs ?? []);
+  const [loading, setLoading] = useState(!initialJobs);
   const [error, setError] = useState("");
   const [placeName, setPlaceName] = useState("");
   const [mounted, setMounted] = useState(false);
@@ -207,7 +209,6 @@ export function SearchResults({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    setLoadError("");
     const query: SearchFilters & { sort?: string } = {
       location: filters.location,
       category: filters.category,
@@ -219,11 +220,10 @@ export function SearchResults({
       .then((list) => {
         if (!cancelled) setJobs(list);
       })
-      .catch(() => {
-        if (!cancelled)
-          setLoadError(
-            "Could not load jobs from the API. Start the backend on port 5000.",
-          );
+      .catch((err) => {
+        // Never surface API/diagnostics on public crawlable pages.
+        // Keep SSR seed or the last good list instead of an error state.
+        console.error("[job-search] failed to load jobs", { query, err });
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -376,7 +376,19 @@ export function SearchResults({
           <Breadcrumb items={crumb} />
           <div className="eyebrow">{uiText("goodWorkCloserToHome2")}</div>
           <h1>{openingsTitle}</h1>
-          <p>{uiText("findYourFitKnowYourEarningsMakeYourNextMove")}</p>
+          <p>
+            {categoryMeta || nearLabel || companyLabel
+              ? [
+                  categoryMeta
+                    ? `Browse ${categoryMeta.title.toLowerCase()} openings`
+                    : companyLabel
+                      ? `Browse openings at ${companyLabel}`
+                      : "Browse gig openings",
+                  nearLabel ? ` near ${nearLabel}` : "",
+                  ". Know your earnings before you apply.",
+                ].join("")
+              : uiText("findYourFitKnowYourEarningsMakeYourNextMove")}
+          </p>
           <form className="results-search" onSubmit={submit}>
             <div ref={fieldRef}>
               <MapPin size={19} />
@@ -503,8 +515,6 @@ export function SearchResults({
               <JobCardSkeleton key={i} />
             ))}
           </div>
-        ) : loadError ? (
-          <EmptyState title="API unavailable" description={loadError} />
         ) : jobs.length ? (
           <div className="city-openings">
             <JobList jobs={visible} />
@@ -517,15 +527,38 @@ export function SearchResults({
           </div>
         ) : (
           <EmptyState
-            title={`No open roles ${nearLabel ? "near " + nearLabel : "yet"}`}
-            description="Try another area, category, or widen the distance for a pincode search."
+            title={
+              categoryMeta && nearLabel
+                ? `No ${categoryMeta.title.toLowerCase()} openings near ${nearLabel} right now`
+                : companyLabel && nearLabel
+                  ? `No open roles at ${companyLabel} near ${nearLabel} right now`
+                  : companyLabel
+                    ? `No open roles at ${companyLabel} right now`
+                    : categoryMeta
+                      ? `No ${categoryMeta.title.toLowerCase()} openings right now`
+                      : nearLabel
+                        ? `No open roles near ${nearLabel} right now`
+                        : "No matching jobs"
+            }
+            description={
+              categoryMeta || nearLabel || companyLabel
+                ? `New ${
+                    categoryMeta?.title.toLowerCase() || "gig"
+                  } roles are added often${
+                    nearLabel ? ` around ${nearLabel}` : ""
+                  }. Try another area, widen a pincode search, or browse all categories.`
+                : "Try another area, category, or widen the distance for a pincode search."
+            }
           >
             {isPinSearch ? (
               <button
                 className="button button-primary"
                 type="button"
                 onClick={() =>
-                  change("radius", Number(filters.radius || 10) < 25 ? "25" : "10")
+                  change(
+                    "radius",
+                    Number(filters.radius || 10) < 25 ? "25" : "10",
+                  )
                 }
               >
                 Search within {Number(filters.radius || 10) < 25 ? "25" : "10"} km

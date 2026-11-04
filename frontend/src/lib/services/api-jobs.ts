@@ -15,6 +15,18 @@ export async function fetchJobs(filters: SearchFilters & { sort?: string } = {})
   return data.jobs;
 }
 
+/** Public/SSR job list that never throws — logs failures for ops. */
+export async function fetchJobsSafe(
+  filters: SearchFilters & { sort?: string } = {},
+) {
+  try {
+    return await fetchJobs(filters);
+  } catch (err) {
+    console.error("[fetchJobsSafe] jobs request failed", { filters, err });
+    return [] as Job[];
+  }
+}
+
 async function fetchPublicJobsPayload(revalidate = 60) {
   const res = await fetch(`${publicApiBase()}/jobs`, {
     next: { revalidate },
