@@ -24,8 +24,8 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import {
-  FOOTER_JOB_KEYWORDS,
   footerKeywordHref,
+  footerKeywordsForPath,
 } from "@/data/footer-keywords";
 export function GigKaroLogo() {
   return (
@@ -108,7 +108,7 @@ export function Footer() {
           <div className="container">
             <p className="footer-keywords-heading">Popular searches</p>
             <ul className="footer-keywords-list">
-              {FOOTER_JOB_KEYWORDS.map((keyword) => (
+              {footerKeywordsForPath(path).map((keyword) => (
                 <li key={keyword.label}>
                   <Link href={footerKeywordHref(keyword)}>{keyword.label}</Link>
                 </li>
