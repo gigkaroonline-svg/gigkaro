@@ -4,6 +4,8 @@ const jobSchema = new Schema(
   {
     jobKey: { type: String, required: true, unique: true },
     slug: { type: String, required: true, unique: true },
+    /** Prior public slugs kept so old /job/... URLs still resolve after renames. */
+    previousSlugs: { type: [String], default: [], index: true },
     title: { type: String, required: true },
     company: { type: String, required: true },
     companyId: { type: String, required: true },

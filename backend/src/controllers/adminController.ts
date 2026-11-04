@@ -8,7 +8,7 @@ import { isStaffRole, recruiterStatuses } from "../auth/roles.js";
 import { hashPassword } from "../utils/password.js";
 import { Company } from "../models/Company.js";
 import { Category } from "../models/Category.js";
-import { serializeJob } from "../utils/jobs.js";
+import { allocateJobSlug, serializeJob } from "../utils/jobs.js";
 import { uploadCompanyLogo } from "../utils/gcs.js";
 import { locationCatalog } from "../data/taxonomy.js";
 import { getIndiaPincode } from "../utils/indiaPincodes.js";
@@ -268,12 +268,12 @@ export async function createAdminJob(
       return;
     }
 
-    const baseSlug = slugify(`${data.title}-${location.pincode}`) || "job";
-    let slug = baseSlug;
-    let n = 1;
-    while (await Job.exists({ slug })) {
-      slug = `${baseSlug}-${n++}`;
-    }
+    const slug = await allocateJobSlug({
+      title: data.title,
+      companyKey: company.key,
+      pincode: location.pincode,
+      exists: async (candidate) => Boolean(await Job.exists({ slug: candidate })),
+    });
     const jobKey = `admin_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     const job = await Job.create({

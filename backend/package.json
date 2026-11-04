@@ -8,6 +8,7 @@
     "start": "node --import tsx src/index.ts",
     "seed": "tsx src/seed/index.ts",
     "backfill:blog-seo": "tsx scripts/backfill-blog-seo.ts",
+    "fix:legacy-job-slugs": "tsx scripts/fix-legacy-job-slugs.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
