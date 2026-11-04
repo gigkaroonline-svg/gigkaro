@@ -87,9 +87,10 @@ export function findJobBySlugOrPinless(jobs: Job[], slug: string) {
 }
 
 export async function fetchPublicJob(slug: string) {
+  const key = String(slug || "").trim();
   try {
     const res = await fetch(
-      `${publicApiBase()}/jobs/${encodeURIComponent(slug)}`,
+      `${publicApiBase()}/jobs/${encodeURIComponent(key)}`,
       { next: { revalidate: 60 } },
     );
     if (res.ok) {
@@ -97,9 +98,10 @@ export async function fetchPublicJob(slug: string) {
       return data.job ?? null;
     }
     if (res.status !== 404) throw new Error("Could not load job.");
-    // Sitemap/canonicals omit the seed pincode; resolve against the public list
-    // when the API has not yet deployed pinless slug lookup.
-    const match = findJobBySlugOrPinless(await fetchPublicJobs(), slug);
+    // Only pinless-fallback for real job-style slugs. City/place tokens must
+    // not pull the full public jobs list (that 500s place URLs on Vercel).
+    if (!key.includes("-")) return null;
+    const match = findJobBySlugOrPinless(await fetchPublicJobs(), key);
     return match;
   } catch (err) {
     if (err instanceof Error && err.message === "Could not load job.") throw err;

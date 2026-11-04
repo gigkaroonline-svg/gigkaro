@@ -8,6 +8,7 @@ import {
 } from "@/lib/job-url";
 import { jobPageMetadata } from "@/lib/metadata";
 import { fetchPublicJobs } from "@/lib/services/api-jobs";
+import { getCityBySlug, slugifyPlace } from "@/lib/services/locations";
 import type { Job } from "@/types";
 
 type PageProps = {
@@ -53,6 +54,15 @@ function placeLabels(citySeg: string, localitySeg = "") {
   return { city, locality };
 }
 
+/** City/place segments must not trigger a full jobs-list pinless fallback. */
+function looksLikeJobSlug(segment: string) {
+  const key = slugifyPlace(segment);
+  if (!key) return false;
+  if (getCityBySlug(key)) return false;
+  // Job slugs are hyphenated role ids; bare city tokens are not.
+  return key.includes("-");
+}
+
 async function resolveParts(parts?: string[]): Promise<Resolved | null> {
   const segs = decodeParts(parts);
   if (!segs.length) return null;
@@ -63,9 +73,25 @@ async function resolveParts(parts?: string[]): Promise<Resolved | null> {
     return { slug: segs[0], city: "", locality: "", job };
   }
 
+  // Preferred place-first paths when the first segment is a city/place token.
+  if (!looksLikeJobSlug(segs[0])) {
+    if (segs.length === 2) {
+      const job = (await loadPublicJob(segs[1])) || null;
+      const labels = placeLabels(segs[0]);
+      return { slug: segs[1], city: labels.city, locality: "", job };
+    }
+    const job = (await loadPublicJob(segs[segs.length - 1])) || null;
+    const labels = placeLabels(segs[0], segs[1] || "");
+    return {
+      slug: segs[segs.length - 1],
+      city: labels.city,
+      locality: labels.locality,
+      job,
+    };
+  }
+
   // Legacy slug-first: /job/{slug}/{city}[/{locality}]
-  // Detect when the first segment is an actual job slug.
-  const legacyJob = await loadPublicJob(segs[0]);
+  const legacyJob = (await loadPublicJob(segs[0])) || null;
   if (legacyJob) {
     const labels = placeLabels(segs[1] || "", segs[2] || "");
     return {
@@ -76,17 +102,16 @@ async function resolveParts(parts?: string[]): Promise<Resolved | null> {
     };
   }
 
-  // Preferred: /job/{city}/{slug} or /job/{city}/{locality}/{slug}
+  // Fallback: treat as place-first even if the city slug looked hyphenated.
   if (segs.length === 2) {
     const job = (await loadPublicJob(segs[1])) || null;
     const labels = placeLabels(segs[0]);
     return { slug: segs[1], city: labels.city, locality: "", job };
   }
-
-  const job = (await loadPublicJob(segs[2])) || null;
-  const labels = placeLabels(segs[0], segs[1]);
+  const job = (await loadPublicJob(segs[segs.length - 1])) || null;
+  const labels = placeLabels(segs[0], segs[1] || "");
   return {
-    slug: segs[2],
+    slug: segs[segs.length - 1],
     city: labels.city,
     locality: labels.locality,
     job,
@@ -105,12 +130,13 @@ export async function generateMetadata({
         robots: { index: false, follow: false },
       };
     }
-    const meta = jobPageMetadata(resolved.job);
+    const meta = jobPageMetadata(resolved.job, {
+      placeVariant: Boolean(resolved.city || resolved.locality),
+    });
     if (resolved.city || resolved.locality) {
       const place = [resolved.locality, resolved.city].filter(Boolean).join(", ");
       return {
         ...meta,
-        robots: { index: false, follow: true },
         title: place ? `${resolved.job.title} in ${place}` : meta.title,
       };
     }
@@ -124,15 +150,19 @@ export async function generateMetadata({
 }
 
 export default async function Page({ params }: PageProps) {
-  const { parts } = await params;
-  const resolved = await resolveParts(parts);
-  if (!resolved) return <JobPage />;
+  try {
+    const { parts } = await params;
+    const resolved = await resolveParts(parts);
+    if (!resolved) return <JobPage />;
 
-  return (
-    <JobSlugPage
-      slug={resolved.slug}
-      placeCity={resolved.city}
-      placeLocality={resolved.locality}
-    />
-  );
+    return (
+      <JobSlugPage
+        slug={resolved.slug}
+        placeCity={resolved.city}
+        placeLocality={resolved.locality}
+      />
+    );
+  } catch {
+    return <JobPage />;
+  }
 }
