@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { JobSlugPage, loadPublicJob } from "@/features/job-slug-page";
 import { JobPage } from "@/features/job-page";
-import { decodeJobPlaceSegment, slugWithoutPincode } from "@/lib/job-url";
+import {
+  decodeJobPlaceSegment,
+  jobPlaceDisplayName,
+  slugWithoutPincode,
+} from "@/lib/job-url";
 import { jobPageMetadata } from "@/lib/metadata";
 import { fetchPublicJobs } from "@/lib/services/api-jobs";
 import type { Job } from "@/types";
@@ -41,6 +45,14 @@ function decodeParts(parts?: string[]) {
     .filter(Boolean);
 }
 
+function placeLabels(citySeg: string, localitySeg = "") {
+  const city = citySeg ? jobPlaceDisplayName(citySeg, "city") : "";
+  const locality = localitySeg
+    ? jobPlaceDisplayName(localitySeg, "locality", citySeg)
+    : "";
+  return { city, locality };
+}
+
 async function resolveParts(parts?: string[]): Promise<Resolved | null> {
   const segs = decodeParts(parts);
   if (!segs.length) return null;
@@ -55,10 +67,11 @@ async function resolveParts(parts?: string[]): Promise<Resolved | null> {
   // Detect when the first segment is an actual job slug.
   const legacyJob = await loadPublicJob(segs[0]);
   if (legacyJob) {
+    const labels = placeLabels(segs[1] || "", segs[2] || "");
     return {
       slug: segs[0],
-      city: segs[1] || "",
-      locality: segs[2] || "",
+      city: labels.city,
+      locality: labels.locality,
       job: legacyJob,
     };
   }
@@ -66,14 +79,16 @@ async function resolveParts(parts?: string[]): Promise<Resolved | null> {
   // Preferred: /job/{city}/{slug} or /job/{city}/{locality}/{slug}
   if (segs.length === 2) {
     const job = (await loadPublicJob(segs[1])) || null;
-    return { slug: segs[1], city: segs[0], locality: "", job };
+    const labels = placeLabels(segs[0]);
+    return { slug: segs[1], city: labels.city, locality: "", job };
   }
 
   const job = (await loadPublicJob(segs[2])) || null;
+  const labels = placeLabels(segs[0], segs[1]);
   return {
     slug: segs[2],
-    city: segs[0],
-    locality: segs[1],
+    city: labels.city,
+    locality: labels.locality,
     job,
   };
 }
