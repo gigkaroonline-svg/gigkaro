@@ -23,8 +23,11 @@ type Resolved = {
 };
 
 export const revalidate = 60;
-/** Place URLs must be routable for client navigations; keep their render cheap. */
-export const dynamicParams = true;
+/**
+ * Only prerendered canonical slugs are served by this route. Place URLs are
+ * rewritten to the static /job/view client shell — Vercel on-demand SSR 500s.
+ */
+export const dynamicParams = false;
 
 export async function generateStaticParams() {
   try {
@@ -141,7 +144,7 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   try {
     const { parts } = await params;
-    // Place URLs stay fetch-free in metadata so Vercel SSR cannot time out.
+    // Place paths are not served here (rewrite → /job/view); keep this light.
     if ((parts?.length || 0) > 1) return placeMetaFromParts(parts);
 
     const resolved = await resolveParts(parts);
@@ -151,9 +154,7 @@ export async function generateMetadata({
         robots: { index: false, follow: false },
       };
     }
-    return jobPageMetadata(resolved.job, {
-      placeVariant: Boolean(resolved.city || resolved.locality),
-    });
+    return jobPageMetadata(resolved.job);
   } catch {
     return {
       title: "Job",
@@ -165,8 +166,8 @@ export async function generateMetadata({
 export default async function Page({ params }: PageProps) {
   try {
     const { parts } = await params;
-    // Multi-segment place URLs: client JobPage only (no API during SSR).
-    // Avoids Vercel timeouts and keeps App Router client navigations working.
+    // Multi-segment place URLs should hit the /job/view rewrite; if this
+    // route still runs, stay fetch-free so Vercel cannot time out.
     if ((parts?.length || 0) > 1) return <JobPage />;
 
     const resolved = await resolveParts(parts);

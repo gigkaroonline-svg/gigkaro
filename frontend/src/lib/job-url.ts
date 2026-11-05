@@ -85,3 +85,10 @@ export function jobHrefWithPlace(job: Job) {
   if (!locality) return `/job/${citySeg}/${slug}/`;
   return `/job/${citySeg}/${jobPlacePathSegment(locality)}/${slug}/`;
 }
+
+/** Place paths are rewritten to /job/view — soft App Router nav 307/500s on Vercel. */
+export function jobHrefNeedsHardNav(href: string) {
+  const path = String(href || "").split("?")[0].replace(/\/$/, "");
+  const segs = path.split("/").filter(Boolean);
+  return segs[0] === "job" && segs.length >= 3;
+}

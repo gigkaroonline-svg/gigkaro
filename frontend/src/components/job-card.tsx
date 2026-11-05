@@ -4,7 +4,7 @@ import { uiText } from "@/lib/i18n";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { jobHrefWithPlace } from "@/lib/job-url";
+import { jobHrefNeedsHardNav, jobHrefWithPlace } from "@/lib/job-url";
 import { jobsSearchHref } from "@/lib/jobs-search-url";
 import {
   Bookmark,
@@ -125,6 +125,7 @@ export function JobCard({
   // Hub-expanded rows keep /job/{city}/{locality}/{slug}/ for place-aware detail;
   // canonical metadata still points at the clean job path.
   const href = jobHrefWithPlace(job);
+  const hardJobNav = jobHrefNeedsHardNav(href);
   const companyKey = (job.companyId || job.company || "").trim();
   const companyHref = companyKey
     ? jobsSearchHref({
@@ -139,13 +140,17 @@ export function JobCard({
         <CompanyMark job={job} />
         <div className="job-heading">
           <h3>
-            <Link href={href}>{job.title}</Link>
+            {hardJobNav ? (
+              <a href={href}>{job.title}</a>
+            ) : (
+              <Link href={href}>{job.title}</Link>
+            )}
           </h3>
           <p>
             {companyHref ? (
-              <Link className="job-company-link" href={companyHref}>
+              <a className="job-company-link" href={companyHref}>
                 {job.company}
-              </Link>
+              </a>
             ) : (
               job.company
             )}
@@ -198,10 +203,17 @@ export function JobCard({
       </div>
       <div className="job-card-bottom">
         <span>Posted {resolvePostedAt(job.id, job.postedAt).label}</span>
-        <Link className="apply-link" href={href}>
-          View job
-          <ArrowUpRight size={14} />
-        </Link>
+        {hardJobNav ? (
+          <a className="apply-link" href={href}>
+            View job
+            <ArrowUpRight size={14} />
+          </a>
+        ) : (
+          <Link className="apply-link" href={href}>
+            View job
+            <ArrowUpRight size={14} />
+          </Link>
+        )}
       </div>
     </article>
   );
