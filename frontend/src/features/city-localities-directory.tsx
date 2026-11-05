@@ -133,9 +133,9 @@ export function CityLocalitiesDirectory({
                     >
                       {city.localities.map((locality) => (
                         <li key={locality}>
-                          <Link href={localityHubPath(city.slug, locality)}>
+                          <a href={localityHubPath(city.slug, locality)}>
                             {locality}
-                          </Link>
+                          </a>
                         </li>
                       ))}
                     </ul>

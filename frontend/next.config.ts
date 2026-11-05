@@ -32,6 +32,7 @@ const config: NextConfig = {
         // Use hard <a> navigations for multi-segment job URLs so App Router soft
         // nav does not fight this rewrite.
         { source: "/job/:path*", destination: "/job/view" },
+        { source: "/locations/:slug/:locality", destination: "/locations/view" },
         { source: "/jobs/:location/:company", destination: "/jobs/" },
         { source: "/jobs/:location", destination: "/jobs/" },
       ],

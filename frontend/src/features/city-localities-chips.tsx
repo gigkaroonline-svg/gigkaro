@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { localityHubPath } from "@/lib/services/locations";
 
@@ -50,7 +49,8 @@ export function CityLocalitiesChips({
       >
         {localities.map((locality) => (
           <li key={locality}>
-            <Link href={localityHubPath(city.slug, locality)}>{locality}</Link>
+            {/* Hard nav: unknown localities are rewritten to /locations/view. */}
+            <a href={localityHubPath(city.slug, locality)}>{locality}</a>
           </li>
         ))}
         {showToggle && (
