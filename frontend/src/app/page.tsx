@@ -9,7 +9,7 @@ import {
   siteName,
 } from "@/lib/metadata";
 
-const title = "Find Gig Jobs Near You| Delivery, Warehouse & More | GigKaro";
+const title = "Find Gig Jobs Near You | Delivery, Warehouse & More | GigKaro";
 const description =
   "Find gig jobs near you across India. Apply for delivery, warehouse, logistics, quick-commerce, EV rider and other local jobs by pincode. Free for candidates.";
 const ogTitle = "Gig Jobs Near You in India | GigKaro";

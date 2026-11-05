@@ -1,5 +1,7 @@
 /** Build public /jobs search URLs. Prefer path form when location + company. */
 
+import { getCityBySlug, slugifyPlace } from "@/lib/services/locations";
+
 export type JobsSearchTarget = {
   location?: string;
   company?: string;
@@ -26,9 +28,37 @@ export function decodeJobsPathSegment(value: string) {
   }
 }
 
+/** True when a single /jobs/{segment}/ path should be treated as a place. */
+export function isJobsLocationSegment(segment: string) {
+  const value = clean(decodeJobsPathSegment(segment));
+  if (!value) return false;
+  if (/^\d{6}$/.test(value)) return true;
+  return Boolean(getCityBySlug(slugifyPlace(value)));
+}
+
+/** Parse /jobs/{location}/, /jobs/{company}/, or /jobs/{location}/{company}/. */
+export function parseJobsPath(pathname: string) {
+  const segs = pathname.split("/").filter(Boolean);
+  if (segs[0] !== "jobs" || segs.length < 2) {
+    return { location: "", company: "" };
+  }
+  const first = decodeJobsPathSegment(segs[1]);
+  if (segs.length >= 3) {
+    return {
+      location: first,
+      company: decodeJobsPathSegment(segs[2]),
+    };
+  }
+  if (isJobsLocationSegment(first)) {
+    return { location: first, company: "" };
+  }
+  return { location: "", company: first };
+}
+
 /**
  * `/jobs/{location}/{company}/` when both are set.
- * Otherwise `/jobs/` or `/jobs/{pincode}/` with query params for the rest.
+ * `/jobs/{company}/` for company-only (e.g. /jobs/blinkit/).
+ * `/jobs/{location}/` for place-only. Otherwise query params.
  */
 export function jobsSearchHref(input: JobsSearchTarget) {
   const location = clean(input.location);
@@ -40,6 +70,12 @@ export function jobsSearchHref(input: JobsSearchTarget) {
 
   if (location && company && !category) {
     const base = `/jobs/${jobsPathSegment(location)}/${jobsPathSegment(company)}/`;
+    if (radius) return `${base}?radius=${encodeURIComponent(radius)}`;
+    return base;
+  }
+
+  if (company && !location && !category) {
+    const base = `/jobs/${jobsPathSegment(company)}/`;
     if (radius) return `${base}?radius=${encodeURIComponent(radius)}`;
     return base;
   }
