@@ -95,6 +95,13 @@ export function JobDetail({
       // Legacy /job/{slug}/{city}/{locality}/
       nextCity = decodeURIComponent(segments[2] || "");
       nextLocality = decodeURIComponent(segments[3] || "");
+    } else if (
+      segments[0] === "job" &&
+      segments.length >= 2 &&
+      segments[segments.length - 1] === slug
+    ) {
+      // Already on place-first /job/{city}/[{locality}/]{slug}/ — leave it.
+      return;
     } else if (!(city || locality) || segments.length < 2) {
       return;
     }
