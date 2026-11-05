@@ -20,10 +20,11 @@ export const revalidate = 3600;
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  // Every phase-1 locality must be prerendered: dynamicParams is false so
-  // on-demand SSR cannot fill gaps (and city chips link to the full list).
+  // Keep the static set small — full phase-1 catalogs (~4k pages) time out
+  // Vercel builds because each page fetches jobs at generate time. Unknown
+  // localities fall through to the /locations/view rewrite.
   return getPhase1Cities().flatMap((city) =>
-    city.localities.map((locality) => ({
+    city.localities.slice(0, 40).map((locality) => ({
       slug: city.slug,
       locality: slugifyPlace(locality),
     })),
