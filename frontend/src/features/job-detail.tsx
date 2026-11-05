@@ -116,6 +116,12 @@ export function JobDetail({
     const targetPath = target.split("?")[0].replace(/\/$/, "");
     const currentPath = path.replace(/\/$/, "");
     if (targetPath && targetPath !== currentPath) {
+      // Hard navigation for place paths — soft replace fights the /job/view rewrite.
+      const segs = targetPath.split("/").filter(Boolean);
+      if (segs[0] === "job" && segs.length >= 3) {
+        window.location.replace(target);
+        return;
+      }
       router.replace(target, { scroll: false });
     }
   }, [params, path, router, job, city, locality]);

@@ -28,8 +28,10 @@ const config: NextConfig = {
         // dynamic paths must not SSR on Vercel (that 500s); fall back to the
         // static client shells instead — same pattern as blog.
         { source: "/blog/:slug", destination: "/blog/view" },
-        // Place job URLs are handled by job/[[...parts]] (cheap client shell).
-        // Do not rewrite /job/* — that fought App Router client navigations (307 loops).
+        // Unknown / place job paths → static client shell (Vercel SSR 500s otherwise).
+        // Use hard <a> navigations for multi-segment job URLs so App Router soft
+        // nav does not fight this rewrite.
+        { source: "/job/:path*", destination: "/job/view" },
         { source: "/jobs/:location/:company", destination: "/jobs/" },
         { source: "/jobs/:location", destination: "/jobs/" },
       ],
