@@ -23,8 +23,8 @@ type Resolved = {
 };
 
 export const revalidate = 60;
-/** Only prerendered slugs SSR. Unknown / place paths use /job/view via rewrite. */
-export const dynamicParams = false;
+/** Place URLs must be routable for client navigations; keep their render cheap. */
+export const dynamicParams = true;
 
 export async function generateStaticParams() {
   try {
@@ -119,11 +119,31 @@ async function resolveParts(parts?: string[]): Promise<Resolved | null> {
   };
 }
 
+function placeMetaFromParts(parts?: string[]): Metadata {
+  const segs = decodeParts(parts);
+  if (segs.length < 2) {
+    return { title: "Job", robots: { index: false, follow: false } };
+  }
+  const slug = looksLikeJobSlug(segs[0]) ? segs[0] : segs[segs.length - 1];
+  const labels = looksLikeJobSlug(segs[0])
+    ? placeLabels(segs[1] || "", segs[2] || "")
+    : placeLabels(segs[0], segs[1] || "");
+  const place = [labels.locality, labels.city].filter(Boolean).join(", ");
+  return {
+    title: place ? `Job in ${place}` : "Job",
+    robots: { index: false, follow: true },
+    alternates: slug ? { canonical: `/job/${slug}/` } : undefined,
+  };
+}
+
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   try {
     const { parts } = await params;
+    // Place URLs stay fetch-free in metadata so Vercel SSR cannot time out.
+    if ((parts?.length || 0) > 1) return placeMetaFromParts(parts);
+
     const resolved = await resolveParts(parts);
     if (!resolved?.job) {
       return {
@@ -131,17 +151,9 @@ export async function generateMetadata({
         robots: { index: false, follow: false },
       };
     }
-    const meta = jobPageMetadata(resolved.job, {
+    return jobPageMetadata(resolved.job, {
       placeVariant: Boolean(resolved.city || resolved.locality),
     });
-    if (resolved.city || resolved.locality) {
-      const place = [resolved.locality, resolved.city].filter(Boolean).join(", ");
-      return {
-        ...meta,
-        title: place ? `${resolved.job.title} in ${place}` : meta.title,
-      };
-    }
-    return meta;
   } catch {
     return {
       title: "Job",
@@ -153,6 +165,10 @@ export async function generateMetadata({
 export default async function Page({ params }: PageProps) {
   try {
     const { parts } = await params;
+    // Multi-segment place URLs: client JobPage only (no API during SSR).
+    // Avoids Vercel timeouts and keeps App Router client navigations working.
+    if ((parts?.length || 0) > 1) return <JobPage />;
+
     const resolved = await resolveParts(parts);
     if (!resolved) return <JobPage />;
 
