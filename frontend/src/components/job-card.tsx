@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { jobHrefWithPlace } from "@/lib/job-url";
+import { jobsSearchHref } from "@/lib/jobs-search-url";
 import {
   Bookmark,
   MapPin,
@@ -124,6 +125,13 @@ export function JobCard({
   // Hub-expanded rows keep /job/{city}/{locality}/{slug}/ for place-aware detail;
   // canonical metadata still points at the clean job path.
   const href = jobHrefWithPlace(job);
+  const companyKey = (job.companyId || job.company || "").trim();
+  const companyHref = companyKey
+    ? jobsSearchHref({
+        location: (job.city || "").trim() || undefined,
+        company: companyKey,
+      })
+    : "";
 
   return (
     <article className={`job-card ${compact ? "job-card-compact" : ""}`}>
@@ -134,7 +142,13 @@ export function JobCard({
             <Link href={href}>{job.title}</Link>
           </h3>
           <p>
-            {job.company}
+            {companyHref ? (
+              <Link className="job-company-link" href={companyHref}>
+                {job.company}
+              </Link>
+            ) : (
+              job.company
+            )}
             {job.verified && <span className="job-verified">Verified</span>}
           </p>
         </div>

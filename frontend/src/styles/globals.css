@@ -3615,6 +3615,14 @@ details p {
   gap: 20px;
   font-size: 14px;
 }
+.detail-heading .job-company-link {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 600;
+}
+.detail-heading .job-company-link:hover {
+  color: var(--primary);
+}
 .detail-heading > .save-button {
   margin-left: auto;
 }
@@ -6650,6 +6658,13 @@ details p {
   margin-top: 3px;
   font-size: 13px;
   color: #4c6078;
+}
+.job-card .job-company-link {
+  color: inherit;
+  text-decoration: none;
+}
+.job-card .job-company-link:hover {
+  color: var(--primary);
 }
 .job-verified {
   font-size: 11px;

@@ -20,8 +20,10 @@ export const revalidate = 3600;
 export const dynamicParams = false;
 
 export function generateStaticParams() {
+  // Every phase-1 locality must be prerendered: dynamicParams is false so
+  // on-demand SSR cannot fill gaps (and city chips link to the full list).
   return getPhase1Cities().flatMap((city) =>
-    city.localities.slice(0, 40).map((locality) => ({
+    city.localities.map((locality) => ({
       slug: city.slug,
       locality: slugifyPlace(locality),
     })),

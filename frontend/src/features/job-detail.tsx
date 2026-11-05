@@ -29,6 +29,7 @@ import {
 } from "@/lib/job-copy";
 import { uiText } from "@/lib/i18n";
 import { jobCanonicalSlug, jobHrefWithPlace } from "@/lib/job-url";
+import { jobsSearchHref } from "@/lib/jobs-search-url";
 import { resolvePostedAt } from "@/lib/posted-at";
 import {
   cityHubPath,
@@ -114,6 +115,13 @@ export function JobDetail({
   const posted = resolvePostedAt(job.id, job.postedAt);
   const explorePlace = locality || city || job.pincode || "";
   const placeLabel = jobPlaceLabel(displayJob);
+  const companyKey = (job.companyId || job.company || "").trim();
+  const companyHref = companyKey
+    ? jobsSearchHref({
+        location: (city || job.city || "").trim() || undefined,
+        company: companyKey,
+      })
+    : "";
   const copyJob = {
     ...displayJob,
     salaryMin: job.salaryMin,
@@ -166,7 +174,13 @@ export function JobDetail({
                 {placeLabel ? `${job.title} in ${placeLabel}` : job.title}
               </h1>
               <p>
-                {job.company}{" "}
+                {companyHref ? (
+                  <Link className="job-company-link" href={companyHref}>
+                    {job.company}
+                  </Link>
+                ) : (
+                  job.company
+                )}{" "}
                 <span className="inline-meta">
                   <MapPin size={15} />
                   {placeLabel || job.pincode}

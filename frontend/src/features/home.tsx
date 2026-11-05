@@ -191,7 +191,7 @@ export async function HomePage() {
                     {companies.map((company) => (
                       <li key={`${copy}-${company.key}`}>
                         <Link
-                          href={`/jobs/?company=${encodeURIComponent(company.key)}`}
+                          href={`/jobs/${encodeURIComponent(company.key)}/`}
                           aria-label={`Browse ${company.name} jobs`}
                           tabIndex={copy === 1 ? -1 : undefined}
                         >
