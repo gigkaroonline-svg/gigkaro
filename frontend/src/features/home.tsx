@@ -193,6 +193,7 @@ export async function HomePage() {
                         <Link
                           href={`/jobs/${encodeURIComponent(company.key)}/`}
                           aria-label={`Browse ${company.name} jobs`}
+                          prefetch={false}
                           tabIndex={copy === 1 ? -1 : undefined}
                         >
                           <img

@@ -127,7 +127,11 @@ export async function PincodePage({ pincode }: { pincode: string }) {
           <div className="nearby-chips">
             {nearby.length ? (
               nearby.map((l) => (
-                <Link key={l.pincode} href={`/jobs/${l.pincode}`}>
+                <Link
+                  key={l.pincode}
+                  href={`/jobs/${l.pincode}`}
+                  prefetch={false}
+                >
                   {l.locality} · {l.pincode}
                   <ArrowRight size={13} />
                 </Link>
@@ -223,7 +227,11 @@ export async function DiscoveryPage({
               <SectionHeading title="Browse by pincode" />
               <div className="pincode-grid">
                 {getLocations().map((l) => (
-                  <Link href={`/jobs/${l.pincode}`} key={l.pincode}>
+                  <Link
+                    href={`/jobs/${l.pincode}`}
+                    key={l.pincode}
+                    prefetch={false}
+                  >
                     <MapPin size={19} />
                     <div>
                       <strong>{l.pincode}</strong>

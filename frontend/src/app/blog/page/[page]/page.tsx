@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { BlogListing, blogListingMetadata, blogPageCount } from "../../listing";
 import { fetchPublishedPosts } from "@/lib/services/api-blogs";
 
-export const revalidate = 30;
+export const revalidate = 300;
 // Pages that were not built must not render on demand. That returns a 500 on Vercel.
 export const dynamicParams = false;
 

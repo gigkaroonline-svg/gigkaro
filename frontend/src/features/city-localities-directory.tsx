@@ -102,7 +102,11 @@ export function CityLocalitiesDirectory({
               return (
                 <li key={city.slug} className={expanded ? "open" : undefined}>
                   <div className="city-directory-row">
-                    <Link href={cityHref(city.slug)} className="city-directory-city">
+                    <Link
+                      href={cityHref(city.slug)}
+                      className="city-directory-city"
+                      prefetch={false}
+                    >
                       <MapPin size={18} aria-hidden />
                       <span>
                         <strong>{city.name}</strong>

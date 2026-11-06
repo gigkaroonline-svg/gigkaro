@@ -32,6 +32,7 @@ export function PopularCitiesGrid({ cities }: { cities: PopularCityCard[] }) {
           <Link
             key={place.slug}
             href={`/locations/${encodeURIComponent(place.slug)}/`}
+            prefetch={false}
           >
             {image ? (
               <img src={image} alt="" width={48} height={48} />
