@@ -112,10 +112,16 @@ export function BlogIndex({
                       {post.authorName ? ` · ${post.authorName}` : ""}
                     </p>
                     <h2>
-                      <Link href={`/blog/${post.slug}`}>{post.title}</Link>
+                      <Link href={`/blog/${post.slug}`} prefetch={false}>
+                        {post.title}
+                      </Link>
                     </h2>
                     <p className="blog-card-excerpt">{post.excerpt}</p>
-                    <Link className="text-link" href={`/blog/${post.slug}`}>
+                    <Link
+                      className="text-link"
+                      href={`/blog/${post.slug}`}
+                      prefetch={false}
+                    >
                       Read story
                     </Link>
                   </div>
@@ -262,7 +268,9 @@ export function BlogArticle({
             <ul>
               {related.map((item) => (
                 <li key={item.id}>
-                  <Link href={`/blog/${item.slug}/`}>{item.title}</Link>
+                  <Link href={`/blog/${item.slug}/`} prefetch={false}>
+                    {item.title}
+                  </Link>
                 </li>
               ))}
             </ul>

@@ -143,7 +143,9 @@ export function JobCard({
             {hardJobNav ? (
               <a href={href}>{job.title}</a>
             ) : (
-              <Link href={href}>{job.title}</Link>
+              <Link href={href} prefetch={false}>
+                {job.title}
+              </Link>
             )}
           </h3>
           <p>
@@ -209,7 +211,7 @@ export function JobCard({
             <ArrowUpRight size={14} />
           </a>
         ) : (
-          <Link className="apply-link" href={href}>
+          <Link className="apply-link" href={href} prefetch={false}>
             View job
             <ArrowUpRight size={14} />
           </Link>

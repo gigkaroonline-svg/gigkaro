@@ -53,7 +53,7 @@ export function CategoryCard({ category }: { category: Category }) {
     CATEGORY_SEO_PATH[category.id] ||
     `/jobs/?category=${encodeURIComponent(category.id)}`;
   return (
-    <Link href={href} className="category-card">
+    <Link href={href} className="category-card" prefetch={false}>
       <div className={`icon-tile ${category.color}`}>
         <Icon size={22} />
       </div>

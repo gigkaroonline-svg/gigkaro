@@ -211,11 +211,12 @@ export async function AboutPage() {
                       .filter((company) => company.key !== "gigkaro")
                       .map((company) => (
                         <li key={`${copy}-${company.key}`}>
-                          <Link
-                            href={`/jobs/${encodeURIComponent(company.key)}/`}
-                            aria-label={`Browse ${company.name} jobs`}
-                            tabIndex={copy === 1 ? -1 : undefined}
-                          >
+                        <Link
+                          href={`/jobs/${encodeURIComponent(company.key)}/`}
+                          aria-label={`Browse ${company.name} jobs`}
+                          prefetch={false}
+                          tabIndex={copy === 1 ? -1 : undefined}
+                        >
                             <img
                               src={companyLogoSrc(company.logo)}
                               alt={company.name}

@@ -110,7 +110,12 @@ export function Footer() {
             <ul className="footer-keywords-list">
               {footerKeywordsForPath(path).map((keyword) => (
                 <li key={keyword.label}>
-                  <Link href={footerKeywordHref(keyword)}>{keyword.label}</Link>
+                  <Link
+                    href={footerKeywordHref(keyword)}
+                    prefetch={false}
+                  >
+                    {keyword.label}
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -221,13 +226,15 @@ export function Footer() {
             <div key={heading}>
               <p className="footer-heading">
                 {headingHref ? (
-                  <Link href={headingHref}>{heading}</Link>
+                  <Link href={headingHref} prefetch={false}>
+                    {heading}
+                  </Link>
                 ) : (
                   heading
                 )}
               </p>
               {items.map(([label, href]) => (
-                <Link key={label} href={href}>
+                <Link key={label} href={href} prefetch={false}>
                   {label}
                 </Link>
               ))}
@@ -247,9 +254,15 @@ export function Footer() {
             Technologies Private Limited.
           </span>
           <div>
-            <Link href="/privacy">{uiText("privacy")}</Link>
-            <Link href="/terms">{uiText("terms")}</Link>
-            <Link href="/cookies">{uiText("cookies")}</Link>
+            <Link href="/privacy" prefetch={false}>
+              {uiText("privacy")}
+            </Link>
+            <Link href="/terms" prefetch={false}>
+              {uiText("terms")}
+            </Link>
+            <Link href="/cookies" prefetch={false}>
+              {uiText("cookies")}
+            </Link>
             <a href="/sitemap.xml">Sitemap</a>
             <a href="/llms.txt">llms.txt</a>
           </div>

@@ -19,7 +19,7 @@ const twitterDescription =
   "Find gig jobs near you across India by pincode and location.";
 const url = canonicalUrl("/");
 
-export const revalidate = 60;
+export const revalidate = 600;
 
 export const metadata: Metadata = {
   title: { absolute: title },
