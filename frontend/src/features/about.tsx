@@ -256,16 +256,33 @@ export async function AboutPage() {
           other.
         </p>
         <p>
-          That’s when we stopped asking “How do we post more jobs?” and started
-          asking “How do we help the right person actually start work?”
+          That’s when we stopped asking, “How do we post more jobs?” and started
+          asking, “How do we help the right person actually start work?”
+        </p>
+        <p className="about-emphasis">
+          <em>GigKaro is our answer.</em>
+        </p>
+        <h3>Why we are building GigKaro</h3>
+        <p>
+          GigKaro builds on the experience of EarlyJobs, where we saw how
+          fragmented India’s hiring ecosystem remains.
         </p>
         <p>
-          <strong>GigKaro is our answer.</strong>
+          Businesses need reliable frontline workers in specific localities.
+          Workers need access to genuine employment opportunities closer to
+          home.
         </p>
-        <blockquote className="about-pullquote">
-          <p>“Workers are local. Hiring is often not.”</p>
-          <footer>Saurav Kumar, Founder, EarlyJobs</footer>
-        </blockquote>
+        <p>
+          We believe the next generation of workforce infrastructure must go
+          beyond job discovery. It must connect local demand with local talent
+          and make successful employment measurable.
+        </p>
+        <p className="about-emphasis">
+          <em>
+            Our belief: A person’s pincode should not limit their access to
+            opportunity.
+          </em>
+        </p>
       </section>
 
       <section className="container section about-block">
