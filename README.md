@@ -75,6 +75,8 @@ Admin-posted jobs default to `showEverywhere: true`, so they appear in public se
 
 ## Frontend notes
 
+
+
 Candidate and admin portals talk to the API (`NEXT_PUBLIC_API_URL`).
 
 ## Verification
