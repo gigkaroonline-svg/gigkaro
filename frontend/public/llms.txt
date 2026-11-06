@@ -1,0 +1,104 @@
+# GigKaro
+
+> GigKaro is India’s pincode-level gig hiring network. We connect businesses with frontline workers who live nearby, and we measure success by one thing: people who actually join.
+
+Work is local. Hiring should be too.
+
+GigKaro is proudly built by EarlyJobs, operated by Victa EarlyJobs Technologies Private Limited. Tagline: Kaam Karo. Kamao.
+
+## About
+
+- [About GigKaro](https://www.gigkaro.in/about/): Full company story, model, values, vision and FAQ
+- GigKaro is not a job portal. We don’t sell job posts, subscriptions or candidate databases.
+- Success-based hiring: we earn when a candidate successfully joins.
+- Coverage across 19,000+ pincodes in India.
+- We never sell candidate data. Where API integration is enabled, applications flow Worker → GigKaro → API → employer system.
+
+## Primary pages
+
+- [Home](https://www.gigkaro.in/): Find gig jobs near you across India
+- [Find jobs](https://www.gigkaro.in/jobs/): Browse open gig roles by location, company and category
+- [Locations](https://www.gigkaro.in/locations/): City and locality hiring hubs
+- [Categories](https://www.gigkaro.in/categories/): Browse work by role type
+- [Hire / Start Hiring](https://www.gigkaro.in/hire/): For businesses hiring frontline teams
+- [Contact / Partner](https://www.gigkaro.in/contact/): Partner with GigKaro in your city or pincode
+- [Blog](https://www.gigkaro.in/blog/): Guides and updates on gig work and local hiring
+- [Sitemap](https://www.gigkaro.in/sitemap.xml): Machine-readable index of public URLs
+
+## Job categories
+
+- [Delivery jobs](https://www.gigkaro.in/delivery-jobs/)
+- [Warehouse jobs](https://www.gigkaro.in/warehouse-jobs/)
+- [Logistics jobs](https://www.gigkaro.in/logistics-jobs/)
+- [Field jobs](https://www.gigkaro.in/field-jobs/)
+- [EV rider jobs](https://www.gigkaro.in/ev-rider-jobs/)
+
+Roles we commonly cover: Delivery, Quick Commerce, Logistics, Warehousing, Retail, Drivers, EV & Mobility, Field Operations.
+
+## Who GigKaro is for
+
+### Workers
+Find work near you. No resume needed. Less travel, less friction, more local opportunity. Always free for candidates.
+
+### Businesses
+Hire frontline teams in the localities where you operate. High-volume, multi-city, pincode-level, success-based hiring focused on joinings, not more resumes.
+
+### Tech / Ops
+Plug into the GigKaro API and get candidates straight into your system where integration is enabled.
+
+### Partners
+Build local hiring with GigKaro in your city or pincode.
+
+## How hiring works
+
+Reach → Apply → Engage → Screen → Select → Join
+
+1. Reach relevant workers in the exact location needed
+2. Apply simply on any phone
+3. Engage the worker with the opportunity
+4. Screen and move the right candidates forward
+5. Support selection
+6. Drive the joining outcome that counts
+
+## What makes GigKaro different
+
+Traditional job portals are job-posting driven, sell posts/subscriptions, focus on applications and broad discovery, and often treat candidate data as a product.
+
+GigKaro is hiring-outcome driven, success-based, joining-focused, pincode and locality-focused, API-first, and treats hiring outcome as the product. Job portals help you find applications. GigKaro helps you get joinings.
+
+## EarlyJobs ecosystem
+
+- EarlyJobs — The Recruitment Network: distributed recruiters for high-volume hiring
+- Huntlo AI — AI Hiring Infrastructure: source, engage, screen and hire with AI
+- GigKaro — The Gig Hiring Network: frontline execution across pincodes
+
+## Vision and mission
+
+Vision: Build the world’s most accessible local hiring network for the frontline workforce.
+
+Mission: Make good work accessible closer to where people live, while helping businesses build frontline teams faster. More local. More direct. More technology-driven. More outcome-focused.
+
+## Values
+
+- Local first. Good work should be close to home.
+- Outcomes over activity. Joinings, not job posts.
+- Workers are people. Never products.
+- Direct and transparent. Candidates go straight to you.
+- Built for scale. One locality or thousands.
+
+## FAQ
+
+- Is GigKaro a job portal? No. We don’t sell job posts, subscriptions or candidate databases. Our model is success-based, tied to joinings.
+- How does GigKaro make money? When a candidate successfully joins your company.
+- Do you sell candidate data? Never.
+- How does candidate data reach employers? Through API integration, where enabled, directly into their system.
+- Which roles do you cover? Delivery, quick commerce, logistics, warehousing, retail, drivers, EV and mobility, field operations and more.
+- How many pincodes do you cover? 19,000+ across India.
+- Who is behind GigKaro? EarlyJobs, operated by Victa EarlyJobs Technologies Private Limited.
+
+## Optional
+
+- [Privacy](https://www.gigkaro.in/privacy/)
+- [Terms](https://www.gigkaro.in/terms/)
+- [Cookies](https://www.gigkaro.in/cookies/)
+- [robots.txt](https://www.gigkaro.in/robots.txt)
