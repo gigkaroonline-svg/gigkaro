@@ -1,6 +1,5 @@
 import { publicApiBase } from "@/lib/api";
 import {
-  activeJobPincodes,
   allPhase1LocalityHubs,
   countPinnedJobsForLocality,
 } from "@/lib/hub-index";
@@ -455,17 +454,6 @@ export async function buildLocationsSitemap(): Promise<SitemapEntry[]> {
   return [...cityHubs, ...phase1Localities, ...categoryCityPages];
 }
 
-export async function buildPincodesSitemap(): Promise<SitemapEntry[]> {
-  const jobs = await fetchActiveJobs();
-  const pins = activeJobPincodes(jobs);
-  return [
-    ...pins.map((pin) => entry(`/jobs/${pin}`, 0.7)),
-    ...categoryPaths.flatMap((path) =>
-      pins.map((pin) => entry(`${path}/${pin}`, 0.6)),
-    ),
-  ];
-}
-
 export async function buildJobsSitemap(): Promise<SitemapEntry[]> {
   const jobs = selectJobsForSitemap(await fetchActiveJobs());
   return jobs.map((job) =>
@@ -509,6 +497,5 @@ export const sitemapIndexFiles = [
   "/sitemap-static.xml",
   "/sitemap-jobs.xml",
   "/sitemap-locations.xml",
-  "/sitemap-pincodes.xml",
   "/sitemap-blog.xml",
 ] as const;

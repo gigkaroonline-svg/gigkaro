@@ -250,6 +250,8 @@ export function Footer() {
             <Link href="/privacy">{uiText("privacy")}</Link>
             <Link href="/terms">{uiText("terms")}</Link>
             <Link href="/cookies">{uiText("cookies")}</Link>
+            <a href="/sitemap.xml">Sitemap</a>
+            <a href="/llms.txt">llms.txt</a>
           </div>
         </div>
       </div>
