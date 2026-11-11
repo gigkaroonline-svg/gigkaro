@@ -10,7 +10,7 @@ import {
   fetchPublishedPosts,
 } from "@/lib/services/api-blogs";
 
-export const revalidate = 300;
+export const revalidate = 86400;
 // Slugs missing from the build are rewritten to /blog/view.
 // Rendering them in this route returns a 500 on Vercel.
 export const dynamicParams = false;

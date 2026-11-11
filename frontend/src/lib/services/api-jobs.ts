@@ -27,7 +27,7 @@ export async function fetchJobsSafe(
   }
 }
 
-async function fetchPublicJobsPayload(revalidate = 60) {
+async function fetchPublicJobsPayload(revalidate = 3600) {
   const res = await fetch(`${publicApiBase()}/jobs`, {
     next: { revalidate },
   });
@@ -48,7 +48,7 @@ export async function fetchPublicJobSlugs() {
 
 export async function fetchPublicJobs() {
   try {
-    return await fetchPublicJobsPayload(60);
+    return await fetchPublicJobsPayload(3600);
   } catch {
     return [];
   }
@@ -91,7 +91,7 @@ export async function fetchPublicJob(slug: string) {
   try {
     const res = await fetch(
       `${publicApiBase()}/jobs/${encodeURIComponent(key)}`,
-      { next: { revalidate: 60 } },
+      { next: { revalidate: 3600 } },
     );
     if (res.ok) {
       const data = (await res.json()) as { job?: Job };
@@ -136,7 +136,7 @@ export async function fetchPublicJobsByPincode(pincode: string) {
   try {
     const res = await fetch(
       `${publicApiBase()}/jobs/pincode/${encodeURIComponent(pincode)}`,
-      { next: { revalidate: 60 } },
+      { next: { revalidate: 3600 } },
     );
     if (!res.ok) return [];
     const data = (await res.json()) as { jobs?: Job[] };
