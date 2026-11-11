@@ -22,7 +22,7 @@ type Resolved = {
   job: Job | null;
 };
 
-export const revalidate = 600;
+export const revalidate = 7200;
 /**
  * Only prerendered canonical slugs are served by this route. Place URLs are
  * rewritten to the static /job/view client shell — Vercel on-demand SSR 500s.

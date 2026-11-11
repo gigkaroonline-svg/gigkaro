@@ -148,8 +148,8 @@ export function buildStaticSitemap(): SitemapEntry[] {
 async function fetchActiveJobs(): Promise<SitemapJob[]> {
   try {
     const res = await fetch(`${apiBase()}/jobs`, {
-      // Shorter than 24h so the daily job drip can expand same day.
-      next: { revalidate: 3600 },
+      // Align with daily sitemap rebuild.
+      next: { revalidate: 86400 },
     });
     if (!res.ok) return [];
     const data = (await res.json()) as { jobs?: SitemapJob[] };

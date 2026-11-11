@@ -4,8 +4,8 @@ import {
   xmlResponse,
 } from "@/lib/sitemaps";
 
-// 30 min so rotating IST unlock times are picked up the same day.
-export const revalidate = 1800;
+// Once per day — locality drip expands at most once daily.
+export const revalidate = 86400;
 
 export async function GET() {
   return xmlResponse(toUrlSetXml(await buildLocationsSitemap()));

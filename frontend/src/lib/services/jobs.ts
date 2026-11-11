@@ -11,7 +11,7 @@ export async function getCategoryCounts() {
   ).replace(/\/$/, "");
   const counts: Record<string, number> = {};
   try {
-    const res = await fetch(`${base}/jobs`, { next: { revalidate: 60 } });
+    const res = await fetch(`${base}/jobs`, { next: { revalidate: 3600 } });
     if (!res.ok) return counts;
     const data = (await res.json()) as { jobs?: { category?: string }[] };
     for (const job of data.jobs || []) {

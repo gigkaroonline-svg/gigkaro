@@ -1,6 +1,6 @@
 import { BlogListing, blogListingMetadata } from "./listing";
 
-export const revalidate = 300;
+export const revalidate = 86400;
 
 export async function generateMetadata() {
   return blogListingMetadata(1);

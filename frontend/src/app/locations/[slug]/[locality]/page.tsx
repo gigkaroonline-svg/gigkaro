@@ -16,7 +16,7 @@ import {
   slugifyPlace,
 } from "@/lib/services/locations";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 export const dynamicParams = false;
 
 export function generateStaticParams() {

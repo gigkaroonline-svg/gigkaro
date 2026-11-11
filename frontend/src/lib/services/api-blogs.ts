@@ -23,9 +23,8 @@ function apiBase() {
 export async function fetchPublishedPosts() {
   try {
     const res = await fetch(`${apiBase()}/blogs`, {
-      // Short ISR window so new admin publishes show up quickly without
-      // force-dynamic (which was 500'ing on Vercel for /blog).
-      next: { revalidate: 30, tags: ["blogs"] },
+      // Hourly cache — keeps ISR/origin usage down on Hobby.
+      next: { revalidate: 3600, tags: ["blogs"] },
     });
     if (!res.ok) return [];
     const data = (await res.json()) as { posts?: BlogPost[] };
@@ -39,7 +38,7 @@ export async function fetchPublishedPost(slug: string) {
   try {
     const res = await fetch(
       `${apiBase()}/blogs/${encodeURIComponent(slug)}`,
-      { next: { revalidate: 30, tags: ["blogs", `blog:${slug}`] } },
+      { next: { revalidate: 3600, tags: ["blogs", `blog:${slug}`] } },
     );
     if (res.status === 404) return null;
     if (!res.ok) return undefined;

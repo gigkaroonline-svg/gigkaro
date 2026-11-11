@@ -13,7 +13,7 @@ export async function fetchPublicCompanies() {
     process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000/api"
   ).replace(/\/$/, "");
   try {
-    const res = await fetch(`${base}/companies`, { next: { revalidate: 60 } });
+    const res = await fetch(`${base}/companies`, { next: { revalidate: 3600 } });
     if (!res.ok) return [];
     const data = (await res.json()) as { companies?: PublicCompany[] };
     return (data.companies || []).filter((company) => company.logo);
